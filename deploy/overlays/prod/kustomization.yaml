@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: app-prod
+resources:
+- ../../base
+images:
+- name: backend
+  newName: ghcr.io/fastapi-traefik-devops/fastapi-backend
+  newTag: sha-0000000000000000000000000000000000000000
+- name: frontend
+  newName: ghcr.io/fastapi-traefik-devops/fastapi-frontend
+  newTag: sha-0000000000000000000000000000000000000000
+replicas:
+- name: backend
+  count: 2
+- name: frontend
+  count: 2
+patches:
+- target:
+    kind: ConfigMap
+    name: backend-config
+  patch: "apiVersion: v1\ndata:\n  BACKEND_CORS_ORIGINS: https://prod.example.com\n\
+    \  DOMAIN: prod.example.com\n  ENVIRONMENT: production\n  FRONTEND_HOST: https://prod.example.com\n\
+    kind: ConfigMap\nmetadata:\n  name: backend-config\n"
+- target:
+    kind: Ingress
+    name: app-ingress
+  patch: "- op: replace\n  path: /spec/rules/0/host\n  value: prod.example.com\n-\
+    \ op: replace\n  path: /spec/tls/0/hosts/0\n  value: prod.example.com\n"

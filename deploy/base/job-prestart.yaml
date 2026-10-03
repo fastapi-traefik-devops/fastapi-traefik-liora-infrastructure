@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: prestart
+  annotations:
+    argocd.argoproj.io/sync-wave: '0'
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      imagePullSecrets:
+      - name: ghcr-pull-secret
+      containers:
+      - name: prestart
+        image: backend:unconfigured
+        command:
+        - bash
+        - scripts/prestart.sh
+        envFrom:
+        - configMapRef:
+            name: backend-config
+        - secretRef:
+            name: backend-secrets
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+      automountServiceAccountToken: false
+  activeDeadlineSeconds: 600
