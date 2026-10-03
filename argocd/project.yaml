@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: fastapi
+  namespace: argocd
+spec:
+  description: FastAPI GitOps environments
+  sourceRepos:
+    - https://github.com/fastapi-traefik-devops/fastapi-traefik-datascientest-project.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: app-dev
+    - server: https://kubernetes.default.svc
+      namespace: app-stage
+    - server: https://kubernetes.default.svc
+      namespace: app-prod
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - group: ''
+      kind: ConfigMap
+    - group: ''
+      kind: Service
+    - group: ''
+      kind: PersistentVolumeClaim
+    - group: apps
+      kind: Deployment
+    - group: batch
+      kind: Job
+    - group: networking.k8s.io
+      kind: Ingress
