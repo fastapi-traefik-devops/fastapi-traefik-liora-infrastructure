@@ -6,10 +6,12 @@ resources:
 images:
 - name: backend
   newName: ghcr.io/fastapi-traefik-devops/fastapi-backend
-  newTag: sha-0000000000000000000000000000000000000000
+  newTag: sha-3303e93b753e8282dc7b461c583fb8ace43574a1
+  digest: sha256:ea2d0aaf163f15f1bf749ee69822ebe33e619d2a00a5813d348732936b56f00b
 - name: frontend
   newName: ghcr.io/fastapi-traefik-devops/fastapi-frontend
-  newTag: sha-0000000000000000000000000000000000000000
+  newTag: sha-3303e93b753e8282dc7b461c583fb8ace43574a1
+  digest: sha256:a8d07b6be8ae8c76cc8133c885ba8ec3c095ded005db251aaf6a190e88426f82
 replicas:
 - name: backend
   count: 1
