@@ -29,3 +29,10 @@ patches:
     name: app-ingress
   patch: "- op: replace\n  path: /spec/rules/0/host\n  value: stage.example.com\n\
     - op: replace\n  path: /spec/tls/0/hosts/0\n  value: stage.example.com\n"
+- target:
+    kind: Deployment
+    name: backend
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/command
+      value: ["fastapi", "run", "--workers", "1", "app/main.py"]
