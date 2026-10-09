@@ -6,10 +6,12 @@ resources:
 images:
 - name: backend
   newName: ghcr.io/fastapi-traefik-devops/fastapi-backend
-  newTag: sha-0000000000000000000000000000000000000000
+  newTag: sha-3303e93b753e8282dc7b461c583fb8ace43574a1
+  digest: sha256:ea2d0aaf163f15f1bf749ee69822ebe33e619d2a00a5813d348732936b56f00b
 - name: frontend
   newName: ghcr.io/fastapi-traefik-devops/fastapi-frontend
-  newTag: sha-0000000000000000000000000000000000000000
+  newTag: sha-3303e93b753e8282dc7b461c583fb8ace43574a1
+  digest: sha256:a8d07b6be8ae8c76cc8133c885ba8ec3c095ded005db251aaf6a190e88426f82
 replicas:
 - name: backend
   count: 1
@@ -19,11 +21,39 @@ patches:
 - target:
     kind: ConfigMap
     name: backend-config
-  patch: "apiVersion: v1\ndata:\n  BACKEND_CORS_ORIGINS: https://dev.example.com\n\
-    \  DOMAIN: dev.example.com\n  ENVIRONMENT: staging\n  FRONTEND_HOST: https://dev.example.com\n\
-    kind: ConfigMap\nmetadata:\n  name: backend-config\n"
+  patch: |
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: backend-config
+    data:
+      BACKEND_CORS_ORIGINS: http://dev.example.com
+      DOMAIN: dev.example.com
+      ENVIRONMENT: staging
+      FRONTEND_HOST: http://dev.example.com
 - target:
     kind: Ingress
     name: app-ingress
-  patch: "- op: replace\n  path: /spec/rules/0/host\n  value: dev.example.com\n- op:\
-    \ replace\n  path: /spec/tls/0/hosts/0\n  value: dev.example.com\n"
+  patch: |
+    - op: replace
+      path: /spec/rules/0/host
+      value: dev.example.com
+    - op: remove
+      path: /spec/tls
+    - op: add
+      path: /spec/rules/0/http/paths/-
+      value:
+        path: /docs
+        pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 80
+- target:
+    kind: Deployment
+    name: backend
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/command
+      value: ["fastapi", "run", "--workers", "1", "app/main.py"]
