@@ -41,7 +41,7 @@ net.bridge.bridge-nf-call-iptables = 1
 net.bridge.bridge-nf-call-ip6tables = 1
 EOF
 
-sysctl --system >/dev/null
+systemctl --system >/dev/null
 
 echo "Prepared $(hostname)"
 echo
