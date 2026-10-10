@@ -1,0 +1,4 @@
+# Copy to vault.yml, replace the value, then:
+# ansible-vault encrypt group_vars/all/vault.yml
+
+k3s_token: "CHANGE_ME"

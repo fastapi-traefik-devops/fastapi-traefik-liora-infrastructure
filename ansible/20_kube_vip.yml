@@ -1,0 +1,57 @@
+---
+- name: Install kube-vip control-plane VIP
+  hosts: "{{ groups['k3s_servers'][0] }}"
+  become: true
+
+  tasks:
+    - name: Verify VIP interface exists
+      ansible.builtin.command: "ip link show {{ k3s_vip_interface }}"
+      changed_when: false
+
+    - name: Apply kube-vip RBAC
+      ansible.builtin.command:
+        cmd: k3s kubectl apply -f https://kube-vip.io/manifests/rbac.yaml
+      register: kubevip_rbac
+      changed_when: "'created' in kubevip_rbac.stdout or 'configured' in kubevip_rbac.stdout"
+
+    - name: Pull pinned kube-vip image
+      ansible.builtin.command:
+        cmd: >-
+          k3s ctr --namespace k8s.io images pull
+          ghcr.io/kube-vip/kube-vip:{{ kube_vip_version }}
+      changed_when: false
+
+    - name: Ensure K3s auto-manifest directory exists
+      ansible.builtin.file:
+        path: /var/lib/rancher/k3s/server/manifests
+        state: directory
+        mode: "0755"
+
+    - name: Generate kube-vip control-plane-only DaemonSet
+      ansible.builtin.shell: |
+        set -euo pipefail
+        k3s ctr --namespace k8s.io run --rm --net-host \
+          ghcr.io/kube-vip/kube-vip:{{ kube_vip_version }} kube-vip-generator \
+          /kube-vip manifest daemonset \
+            --interface {{ k3s_vip_interface | quote }} \
+            --address {{ k3s_api_vip | quote }} \
+            --inCluster \
+            --taint \
+            --controlplane \
+            --arp \
+            --leaderElection \
+          > /var/lib/rancher/k3s/server/manifests/kube-vip.yaml
+      args:
+        executable: /bin/bash
+
+    - name: Apply kube-vip DaemonSet
+      ansible.builtin.command:
+        cmd: k3s kubectl apply -f /var/lib/rancher/k3s/server/manifests/kube-vip.yaml
+      register: kubevip_apply
+      changed_when: "'created' in kubevip_apply.stdout or 'configured' in kubevip_apply.stdout"
+
+    - name: Wait for API VIP
+      ansible.builtin.wait_for:
+        host: "{{ k3s_api_vip }}"
+        port: 6443
+        timeout: 180
