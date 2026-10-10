@@ -43,5 +43,9 @@ k3s kubectl -n kube-system rollout status daemonset/kube-vip-ds --timeout=120s |
 
 echo
 echo "API VIP test:"
-curl -k --fail --max-time 5 "https://${API_VIP}:6443/livez"
+k3s kubectl \
+  --kubeconfig /etc/rancher/k3s/k3s.yaml \
+  --server="https://${API_VIP}:6443" \
+  --insecure-skip-tls-verify=true \
+  get --raw=/livez
 echo
