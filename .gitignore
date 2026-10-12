@@ -1,0 +1,17 @@
+# Secrets
+ansible/group_vars/all/vault.yml
+kubernetes/tls/cloudflare-api-token.secret.yaml
+.env
+*.secret
+*.key
+*.pem
+
+# Generated local artifacts
+ansible/artifacts/
+kubeconfig
+*.kubeconfig
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
