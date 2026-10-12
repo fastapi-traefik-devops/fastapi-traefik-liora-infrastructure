@@ -8,9 +8,15 @@
       ansible.builtin.command: "ip link show {{ k3s_vip_interface }}"
       changed_when: false
 
-    - name: Apply kube-vip RBAC
+    - name: Copy kube-vip RBAC manifest to the node
+      ansible.builtin.copy:
+        src: rbac.yaml
+        dest: /tmp/kube-vip-rbac.yaml
+        mode: '0644'
+
+    - name: Apply kube-vip RBAC locally
       ansible.builtin.command:
-        cmd: k3s kubectl apply -f https://kube-vip.io/manifests/rbac.yaml
+        cmd: k3s kubectl apply -f /tmp/kube-vip-rbac.yaml
       register: kubevip_rbac
       changed_when: "'created' in kubevip_rbac.stdout or 'configured' in kubevip_rbac.stdout"
 
@@ -55,3 +61,4 @@
         host: "{{ k3s_api_vip }}"
         port: 6443
         timeout: 180
+
