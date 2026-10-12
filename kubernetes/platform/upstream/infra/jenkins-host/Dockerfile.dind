@@ -1,0 +1,11 @@
+FROM golang:1.27.2-alpine3.24@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d AS tools
+RUN apk add --no-cache python3 git gcc musl-dev linux-headers libseccomp-dev libseccomp-static pkgconf
+COPY tools.lock.json build-go-tools.py /build/
+RUN python3 /build/build-go-tools.py containerd-shim-runc-v2 runc
+
+FROM docker:29.9.0-dind@sha256:0b6d18a4a222e71c88be6034926b4f6cde2fc33c2218643d03ccfddc65995470
+# CLI plugins and ctr are not used by the daemon. Builds run from the CI agent.
+RUN apk upgrade --no-cache && rm -f /usr/local/bin/ctr \
+    /usr/local/libexec/docker/cli-plugins/docker-buildx \
+    /usr/local/libexec/docker/cli-plugins/docker-compose
+COPY --from=tools /out/containerd-shim-runc-v2 /out/runc /usr/local/bin/
