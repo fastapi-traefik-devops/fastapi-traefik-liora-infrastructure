@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-stage
+  namespace: argocd
+spec:
+  project: fastapi
+  source:
+    repoURL: https://github.com/fastapi-traefik-devops/fastapi-traefik-datascientest-project.git
+    targetRevision: main
+    path: deploy/overlays/stage
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: app-stage
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+    - PruneLast=true
