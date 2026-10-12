@@ -17,7 +17,7 @@ all:
     ansible_become: true
     ansible_python_interpreter: /usr/bin/python3
 
-    k3s_version: "v1.36.4+k3s1"
+    k3s_version: "v1.36.5+k3s1"
     k3s_api_vip: "192.168.77.10"
     k3s_vip_interface: "ens18"
     kube_vip_version: "v1.2.3"
