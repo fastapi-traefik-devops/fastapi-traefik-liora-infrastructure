@@ -13,6 +13,6 @@ qm set 203 --ipconfig0 ip=192.168.77.203/24,gw=192.168.77.1 --nameserver 1.1.1.1
 qm cloudinit update 201
 qm cloudinit update 202
 qm cloudinit update 203
-qm reboot 201
-qm reboot 202
-qm reboot 203
+qm start 201
+qm start 202
+qm start 203
