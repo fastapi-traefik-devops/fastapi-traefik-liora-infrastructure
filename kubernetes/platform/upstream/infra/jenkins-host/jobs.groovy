@@ -3,6 +3,15 @@ folder('app-ci')
 pipelineJob('app-ci/main') {
   description('Docker CI: lint, unit/API/E2E tests, dependency/image/secret gates, immutable GHCR artifacts. No deployment.')
   disabled(false)
+  // Declared here as well as in the Jenkinsfile: Job DSL regenerates this job on every
+  // controller start, and the Jenkinsfile trigger only returns after the next run.
+  properties {
+    pipelineTriggers {
+      triggers {
+        pollSCM { scmpoll_spec('H/2 * * * *') }
+      }
+    }
+  }
   definition { cps { script(new File('/opt/phase1-bootstrap/Jenkinsfile').text); sandbox() } }
 }
 
