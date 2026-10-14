@@ -5,7 +5,34 @@ pipelineJob('app-ci/main') {
   disabled(false)
   definition { cps { script(new File('/opt/phase1-bootstrap/Jenkinsfile').text); sandbox() } }
 }
-folder('trusted')
+
+// Job DSL regenerates this folder on every controller start, which drops credentials added
+// in the UI. Define the registry credential here from controller-only Docker secrets so it
+// stays scoped to the trusted folder and survives recreation. Values never enter Git or logs.
+def secret = { String name -> new File("/run/secrets/${name}").text.trim() }
+folder('trusted') {
+  properties {
+    folderCredentialsProperty {
+      domainCredentials {
+        domainCredentials {
+          domain {
+            name('')
+            description('')
+          }
+          credentials {
+            usernamePassword {
+              scope('GLOBAL')
+              id('ghcr-write')
+              description('GHCR package-write token for trusted/publish only')
+              username(secret('ghcr-write-username'))
+              password(secret('ghcr-write-token'))
+            }
+          }
+        }
+      }
+    }
+  }
+}
 pipelineJob('trusted/publish') {
   description('Registry-only publisher on a separate Docker agent. Requires trusted-folder credential ghcr-write; no Git or Kubernetes access.')
   disabled(false)

@@ -31,11 +31,20 @@ The persistent named volumes hold Jenkins home, agent workspaces, the Docker bui
 
 ## Credentials and trust
 
-Reuse an existing authorized credential, or create one if none exists, in the Jenkins Credentials Store of the protected `trusted` folder:
+The registry credential lives in the Credentials Store of the protected `trusted` folder and is defined by `jobs.groovy` from two controller-only Docker secrets. Job DSL regenerates the folder on every controller start, so a credential added only in the UI is lost on recreation; do not add it by hand.
 
-| ID | Type | Value |
+| ID | Type | Source |
 | --- | --- | --- |
-| `ghcr-write` | Username with password | GitHub account plus a real GHCR package-write token authorized for `ghcr.io/fastapi-traefik-devops` |
+| `ghcr-write` | Username with password | `.jenkins-host/secrets/ghcr-write-username` (GitHub account) and `.jenkins-host/secrets/ghcr-write-token` (classic token with `write:packages` for `ghcr.io/fastapi-traefik-devops`), both mode 0600 and ignored by Git |
+
+Create both files before the first `up`; Compose refuses to start the controller without them. Write them without echoing the token, for example `umask 077; read -rs TOKEN; printf '%s' "$TOKEN" > .jenkins-host/secrets/ghcr-write-token; unset TOKEN`.
+
+### After recreating the controller
+
+1. Login uses the current value of `.jenkins-host/secrets/jenkins-admin-password`; JCasC applies it on every start.
+2. `trusted/publish` runs outside the sandbox, so a changed `Jenkinsfile.promote` waits in *Manage Jenkins → In-process Script Approval* until an administrator reviews and approves it.
+3. A job whose parameters were (re)defined needs one run before *Build with Parameters* appears.
+4. Check that `trusted → Credentials` lists `ghcr-write`.
 
 The token is not generated, stored in Git, or passed to the CI build agent. Jenkins injects it only during the trusted publisher stage. On this host the existing Docker GHCR credential was reused with the owner’s authorization, its backend push permission was verified, and it was imported directly into `trusted/ghcr-write` without logging its value. The pipeline itself does not read host Docker credentials. The publisher validates the exact successful `app-ci/main` build number, Jenkins Git revision, all required gate names, source SHA, and both Docker archive hashes before authenticating. Existing SHA tags with different digests are refused; matching tags are idempotent. Both component tags use `sha-` followed by the full 40-character Git SHA. A failed publisher job needs attention even if its source CI build passed.
 
@@ -57,7 +66,7 @@ The runner cleans only its own named temporary CI containers/network. It never a
 
 ## Operational limits
 
-The controller is capped at 768 MiB, the CI agent at 384 MiB, the publisher at 512 MiB, and DinD with all nested build containers at 2560 MiB. One executor runs on each Docker agent. Browser tests use the built Vite preview on the isolated CI network to avoid repeated development-server compilation. Verify disk space and Docker volumes periodically; retained image archives can be large. The existing `ghcr-write` credential is installed. An actual Jenkins SCM build and image publication still require the Phase 1 source to be available on the checked-out branch.
+The controller is capped at 768 MiB, the CI agent at 384 MiB, the publisher at 512 MiB, and DinD with all nested build containers at 2560 MiB. One executor runs on each Docker agent. Browser tests use the built Vite preview on the isolated CI network to avoid repeated development-server compilation. Verify disk space and Docker volumes periodically; retained image archives can be large. Phase 1 was verified end to end on 2026-10-14: `app-ci/main` #6 passed all gates and `trusted/publish` pushed and verified both `sha-d0a01c5…` images in GHCR.
 
 ## Infrastructure tool security builds
 
