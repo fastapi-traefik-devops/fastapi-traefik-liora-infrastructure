@@ -19,8 +19,8 @@ The reviewed pipeline source is [Jenkinsfile](../../Jenkinsfile) for `app-ci/mai
 From the repository root:
 
 ```bash
-python3 scripts/bootstrap-phase1-jenkins.py
-python3 scripts/verify-phase1-jenkins.py
+python3 infra/jenkins-host/scripts/bootstrap-phase1-jenkins.py
+python3 infra/jenkins-host/scripts/verify-phase1-jenkins.py
 ```
 
 The bootstrap builds digest-pinned controller and agent images, backs up the old persistent Jenkins home before migration, retains old containers with a `-pre-phase1` suffix, installs the locked plugin set, and starts the new Compose stack. It is safe to rerun after an interrupted start. The private home archive is under ignored `.jenkins-host/backups/` with mode 0600. Store an encrypted copy off host as part of normal operations; host-local storage alone does not cover disk failure. No cluster resource is changed.
