@@ -89,7 +89,7 @@ alertmanager:
     global:
       resolve_timeout: 5m
     route:
-      receiver: 'null'
+      receiver: slack
       group_by:
       - alertname
       - namespace
@@ -97,8 +97,15 @@ alertmanager:
       group_interval: 5m
       repeat_interval: 12h
     receivers:
-    - name: 'null'
+    - name: slack
+      slack_configs:
+      - api_url_file: /etc/alertmanager/secrets/monitoring-slack-webhook/slack-webhook
+        send_resolved: true
+        title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ "\n" }}{{ end }}'
   alertmanagerSpec:
+    secrets:
+    - monitoring-slack-webhook
     replicas: 1
     resources:
       requests:
