@@ -25,7 +25,9 @@ for name in sys.argv[1:]:
         with tarfile.open(fileobj=io.BytesIO(data), mode="r:gz") as archive:
             archive.extractall(directory, filter="data")
         source = next(path for path in directory.iterdir() if path.is_dir())
-        environment = dict(os.environ, GOTOOLCHAIN="local", GOMAXPROCS="2", GOMEMLIMIT="1200MiB", CGO_ENABLED="1" if item.get("cgo") else "0")
+        # Multi-module repositories (kustomize) build one module; ignore the repo's go.work.
+        source = source / item.get("module_dir", ".")
+        environment = dict(os.environ, GOTOOLCHAIN="local", GOMAXPROCS="2", GOMEMLIMIT="1200MiB", GOWORK="off", CGO_ENABLED="1" if item.get("cgo") else "0")
         patches = [f"{package}@{version}" for package, version in item["go_patches"].items()]
         subprocess.run(["go", "get", *patches], cwd=source, env=environment, check=True)
         arguments = ["go", "build", "-mod=mod", "-p", "2", "-trimpath"]
