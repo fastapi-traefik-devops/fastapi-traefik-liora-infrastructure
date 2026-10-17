@@ -21,3 +21,19 @@ expiry as a fallback. Allow the existing 1-minute group wait and 5-minute group
 interval for delivery. Confirm both messages in Slack; API acceptance alone
 does not prove channel receipt. The test adds no Prometheus rules and touches
 no workloads.
+
+Slack message formatting is per alert: status, alert name, available severity,
+environment, namespace, resource labels, summary/description, and UTC start time.
+Resolved alerts also include their UTC resolution time. Missing fields are
+omitted. Environment uses the explicit `environment` or `env` label first;
+otherwise exact `app-dev`, `app-stage`, or `app-prod` namespace/application names
+map to DEV, STAGE, or PROD. This formatting does not expand rule coverage to PROD.
+The current rules provide no dashboard/runbook URLs, so no links are invented.
+Route timing, grouping, Secret mount, and resolved delivery remain unchanged.
+
+Validate optional fields and grouped firing/resolved rendering with an amtool
+binary matching the deployed Alertmanager version:
+
+```sh
+python3 monitoring/test-slack-format.py --amtool /path/to/amtool
+```
