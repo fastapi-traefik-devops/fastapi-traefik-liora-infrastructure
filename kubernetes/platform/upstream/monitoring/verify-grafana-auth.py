@@ -86,7 +86,7 @@ try:
                 for namespace in (['app-dev', 'app-stage'] if '$namespace' in expr else ['']):
                     body = {'queries': [{'refId': 'A', 'expr': expr.replace('$namespace', namespace),
                         'instant': True, 'range': False, 'datasource': {'uid': 'prometheus', 'type': 'prometheus'},
-                        'format': 'time_series', 'intervalMs': 60000, 'maxDataPoints': 100}],
+                        'format': target.get('format', 'time_series'), 'intervalMs': 60000, 'maxDataPoints': 100}],
                         'from': 'now-5m', 'to': 'now'}
                     result = get_json(session, '/api/ds/query', body)['results']['A']
                     assert not result.get('error'), (desired['uid'], panel['title'])
