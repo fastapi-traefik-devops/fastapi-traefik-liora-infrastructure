@@ -90,6 +90,8 @@ alertmanager:
       resolve_timeout: 5m
     route:
       receiver: slack
+      # Clear the chart default Watchdog route to the removed null receiver.
+      routes: []
       group_by:
       - alertname
       - namespace
