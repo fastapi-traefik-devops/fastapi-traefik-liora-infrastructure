@@ -4,7 +4,7 @@
 # token shows the granted permissions. Prints names and permissions only, never a key or token.
 set -eu
 root=$(cd -- "$(dirname -- "$0")/../../.." && pwd)
-secrets="$root/.jenkins-host/secrets"
+secrets="${SECRETS_DIR:-$root/.jenkins-host/secrets}"  # override when run from another checkout
 repo=fastapi-traefik-devops/fastapi-traefik-datascientest-project
 api=https://api.github.com
 
