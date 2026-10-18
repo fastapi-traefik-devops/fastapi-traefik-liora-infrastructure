@@ -14,7 +14,9 @@ services:
     cpus: 1.0
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    ports: ['127.0.0.1:8085:8080']
+    # Loopback for SSH tunnels; the VM's private address is what the Proxmox host forwards
+    # as liora.aprt.info:8085. Plain HTTP until a TLS proxy is in front (see README).
+    ports: ['127.0.0.1:8085:8080', '192.168.77.100:8085:8080']
     environment:
       JAVA_OPTS: '-Xms128m -Xmx384m -XX:MaxMetaspaceSize=192m -Djenkins.install.runSetupWizard=false'
       CASC_JENKINS_CONFIG: /bootstrap/jenkins.yaml
