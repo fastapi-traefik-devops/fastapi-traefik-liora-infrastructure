@@ -48,6 +48,6 @@ security:
     usageStatisticsEnabled: true
 unclassified:
   location:
-    url: http://127.0.0.1:8085/
+    url: http://liora.aprt.info:8085/
 jobs:
   - file: /bootstrap/jobs.groovy
