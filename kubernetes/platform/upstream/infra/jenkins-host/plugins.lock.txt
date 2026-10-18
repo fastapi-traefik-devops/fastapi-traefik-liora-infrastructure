@@ -20,6 +20,9 @@ echarts-api:6.1.0-1321.v86c4c5114494
 font-awesome-api:7.3.1-1013.v0835a_879ec6d
 git:5.11.0
 git-client:6.6.1
+github:1.47.0
+github-api:1.330-492.v3941a_032db_2a_
+github-branch-source:1983.vfa_27ed961853
 gson-api:2.14.0-201.v8eefe5515533
 instance-identity:203.v15e81a_1b_7a_38
 ionicons-api:94.vcc3065403257
@@ -31,16 +34,19 @@ jakarta-mail-api:2.1.5-1
 jakarta-xml-bind-api:4.0.9-19.v2b_a_5b_44d9a_1c
 javax-activation-api:1.2.0-8
 jaxb:2.3.9-143.v5979df3304e6
+jjwt-api:0.13.0-141.vd58b_a_9592b_6c
 job-dsl:3732.v9a_c49a_61a_313
 joda-time-api:2.15.0-208.v6b_084e7a_d9f0
 jquery3-api:3.7.1-687.v68d468e40b_30
 json-api:20260814-226.v20f9685d642c
+json-path-api:3.0.0-218.vcd4dd1355de2
 junit:1437.v12280a_c49b_50
 lockable-resources:1560.va_b_cd589f23eb_
 mailer:534.v1b_36f5864073
 matrix-auth:3.3
 mina-sshd-api-common:2.19.0-192.v2b_a_7b_2c1dc71
 mina-sshd-api-core:2.19.0-192.v2b_a_7b_2c1dc71
+okhttp-api:5.3.2-200.vedb_720a_cf1f8
 pipeline-build-step:601.v6d4c6d1a_9dc7
 pipeline-groovy-lib:806.v408277b_33d1d
 pipeline-input-step:560.v56198a_642157
@@ -60,6 +66,7 @@ snakeyaml-api:2.7-152.vc672728cf536
 snakeyaml-engine-api:3.2-18.v885ed7ff698f
 ssh-credentials:372.va_250881b_08cd
 structs:362.va_b_695ef4fdf9
+token-macro:477.vd4f0dc3cb_cf1
 variant:70.va_d9f17f859e0
 woodstox-core-api:7.3.0-16.v017f30ed004c
 workflow-aggregator:608.v67378e9d3db_1
