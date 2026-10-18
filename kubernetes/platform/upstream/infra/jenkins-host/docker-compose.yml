@@ -23,8 +23,9 @@ services:
       - .:/bootstrap:ro
       - ../../Jenkinsfile:/opt/phase1-bootstrap/Jenkinsfile:ro
       - ../../Jenkinsfile.promote:/opt/phase1-bootstrap/Jenkinsfile.publish:ro
-    # ghcr-write-* feed the trusted-folder credential in jobs.groovy; never mounted on agents.
-    secrets: [jenkins-admin-password, ghcr-write-username, ghcr-write-token]
+    # Feed the folder-scoped credentials in jobs.groovy; never mounted on agents.
+    secrets: [jenkins-admin-password, ghcr-write-username, ghcr-write-token,
+              github-ci-app-id, github-ci-app-key, github-gitops-app-id, github-gitops-app-key]
     networks: [management]
   docker:
     build:
@@ -102,6 +103,14 @@ secrets:
     file: ../../.jenkins-host/secrets/ghcr-write-username
   ghcr-write-token:
     file: ../../.jenkins-host/secrets/ghcr-write-token
+  github-ci-app-id:
+    file: ../../.jenkins-host/secrets/github-ci-app-id
+  github-ci-app-key:
+    file: ../../.jenkins-host/secrets/github-ci-app-key.pem
+  github-gitops-app-id:
+    file: ../../.jenkins-host/secrets/github-gitops-app-id
+  github-gitops-app-key:
+    file: ../../.jenkins-host/secrets/github-gitops-app-key.pem
   agent-secret:
     file: ../../.jenkins-host/secrets/agent-secret
   publisher-secret:
