@@ -35,16 +35,21 @@ The registry credential lives in the Credentials Store of the protected `trusted
 
 | ID | Type | Source |
 | --- | --- | --- |
+| `github-ci-app` (folder `app-ci`) | GitHub App | `.jenkins-host/secrets/github-ci-app-id` and `github-ci-app-key.pem` (PKCS#8) of the **fastapi-ci** App: Contents read, Pull requests read, Commit statuses read & write. Multibranch scan, checkout and build status. |
+| `gitops-app` (folder `trusted`) | GitHub App | `.jenkins-host/secrets/github-gitops-app-id` and `github-gitops-app-key.pem` (PKCS#8) of the **fastapi-gitops** App: Contents read & write. Promotion commits by `trusted/publish`. |
 | `ghcr-write` | Username with password | `.jenkins-host/secrets/ghcr-write-username` (GitHub account) and `.jenkins-host/secrets/ghcr-write-token` (classic token with `write:packages` for `ghcr.io/fastapi-traefik-devops`), both mode 0600 and ignored by Git |
 
 Create both files before the first `up`; Compose refuses to start the controller without them. Write them without echoing the token, for example `umask 077; read -rs TOKEN; printf '%s' "$TOKEN" > .jenkins-host/secrets/ghcr-write-token; unset TOKEN`.
+
+Convert a GitHub App key to PKCS#8 before copying it: `openssl pkcs8 -topk8 -nocrypt -in app.private-key.pem -out github-ci-app-key.pem`. `scripts/check-github-apps.sh` signs a JWT with each key and prints the App's installation and permissions, never a key or token.
 
 ### After recreating the controller
 
 1. Login uses the current value of `.jenkins-host/secrets/jenkins-admin-password`; JCasC applies it on every start.
 2. `trusted/publish` runs outside the sandbox, so a changed `Jenkinsfile.promote` waits in *Manage Jenkins → In-process Script Approval* until an administrator reviews and approves it.
 3. A job whose parameters were (re)defined needs one run before *Build with Parameters* appears.
-4. Check that `trusted → Credentials` lists `ghcr-write`.
+4. Check that `trusted → Credentials` lists `ghcr-write` and `gitops-app`, and `app-ci → Credentials` lists `github-ci-app`.
+5. A changed `Jenkinsfile` needs nothing: the multibranch job reads it from the branch. After a pull that changes `Jenkinsfile.promote` or `infra/jenkins-host/`, recreate the controller (`docker rm -f host-jenkins`, then `up -d controller`); a restart can keep stale single-file mounts.
 
 The token is not generated, stored in Git, or passed to the CI build agent. Jenkins injects it only during the trusted publisher stage. On this host the existing Docker GHCR credential was reused with the owner’s authorization, its backend push permission was verified, and it was imported directly into `trusted/ghcr-write` without logging its value. The pipeline itself does not read host Docker credentials. The publisher validates the exact successful `app-ci/main` build number, Jenkins Git revision, all required gate names, source SHA, and both Docker archive hashes before authenticating. Existing SHA tags with different digests are refused; matching tags are idempotent. Both component tags use `sha-` followed by the full 40-character Git SHA. A failed publisher job needs attention even if its source CI build passed.
 
@@ -52,14 +57,24 @@ Only CI administrators may configure/replay the trusted job or manage its creden
 
 ## Gates
 
-`app-ci/main` performs checkout; backend locked dependencies, mypy/Ruff, unit and API/integration tests; frontend `npm ci`, Biome, Vite/TypeScript, Playwright; `pip-audit`, `npm audit`, Gitleaks for Git history and the current tracked/untracked tree; backend and frontend Docker builds and isolated non-root health smokes; Trivy vulnerability and secret scans for both images; and CI artifact attestation. Each command is mandatory and exits nonzero on failure. Python dependency findings fail the gate; npm High/Critical findings fail; Trivy High/Critical and image secret findings fail. There are no blanket scanner ignores. The exact reviewed exceptions in `.gitleaks.toml` and `.gitleaksignore` cover public plugin versions, encrypted SealedSecret ciphertext and historical demo tokens only.
+`app-ci` is a multibranch job: GitHub Branch Source scans the repository every 2 minutes (GitHub cannot reach this Jenkins) and builds `main` and pull requests, each pull request merged with its target. Forks are built only for people with write access. Every build reports a commit status to GitHub, which the `main` ruleset requires. The gates are defined once in `ci/phase1.py` and selected by profile:
+
+| Trigger | Profile | Afterwards |
+| --- | --- | --- |
+| Pull request | `full`: all 18 gates plus `gitops` (overlays, Argo CD objects, monitoring resources, CI-script tests) | status on the pull request |
+| Merge to `main` | `release`: config, secrets, dependency installs and audits, image builds, non-root smokes, Trivy, `attest` | archives, then `trusted/publish` |
+| Nightly on `main`, about 02:00 | `full` | status only |
+
+`python3 ci/phase1.py steps --profile release` prints a profile; the Jenkinsfile turns each step into a stage. Commits that change only `deploy/overlays/` skip the gates on `main`.
+
+The full profile performs checkout; backend locked dependencies, mypy/Ruff, unit and API/integration tests; frontend `npm ci`, Biome, Vite/TypeScript, Playwright; `pip-audit`, `npm audit`, Gitleaks for Git history and the current tracked/untracked tree; backend and frontend Docker builds and isolated non-root health smokes; Trivy vulnerability and secret scans for both images; and CI artifact attestation. Each command is mandatory and exits nonzero on failure. Python dependency findings fail the gate; npm High/Critical findings fail; Trivy High/Critical and image secret findings fail. There are no blanket scanner ignores. The exact reviewed exceptions in `.gitleaks.toml` and `.gitleaksignore` cover public plugin versions, encrypted SealedSecret ciphertext and historical demo tokens only.
 
 Tests use generated private disposable CI credentials, an isolated PostgreSQL container, and Mailpit. They publish no host ports. CI private files, reports, workspace artifacts and tools are ignored by Git. JUnit, coverage, dependency and image scan reports are archived by Jenkins. Failed tests/scans stop before attestation or publishing. The publisher never executes code from CI image archives.
 
 Local validation uses the same runner:
 
 ```bash
-python3 ci/phase1.py all
+python3 ci/phase1.py all --profile full
 ```
 
 The runner cleans only its own named temporary CI containers/network. It never applies Terraform, touches the Kubernetes cluster, deploys applications, or writes Git. Backend runtime and frontend nginx images retain the ports and paths expected by the existing deployment manifests; those manifests are outside Phase 1.
