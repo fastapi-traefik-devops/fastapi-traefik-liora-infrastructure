@@ -3,6 +3,8 @@
 // in the UI. Credentials are therefore defined here from controller-only Docker secrets, each
 // scoped to the folder that needs it. Values never enter Git or logs.
 def secret = { String name -> new File("/run/secrets/${name}").text.trim() }
+// GitHub App credentials have no DSL symbol, so Job DSL names them by class (gitHubAppCredentials)
+// and expects the private key as a Secret. Without an owner, each App uses its only installation.
 def org = 'fastapi-traefik-devops'
 def repo = 'fastapi-traefik-datascientest-project'
 
@@ -58,13 +60,12 @@ multibranchPipelineJob('app-ci') {
             description('')
           }
           credentials {
-            gitHubApp {
+            gitHubAppCredentials {
               scope('GLOBAL')
               id('github-ci-app')
               description('fastapi-ci GitHub App: read code and pull requests, write commit statuses')
               appID(secret('github-ci-app-id'))
-              privateKey(secret('github-ci-app-key'))
-              delegate.owner(org)  // explicit: 'owner' is also a Groovy closure property
+              privateKey(hudson.util.Secret.fromString(secret('github-ci-app-key')))
             }
           }
         }
@@ -91,13 +92,12 @@ folder('trusted') {
               password(secret('ghcr-write-token'))
             }
             // For GitOps promotion commits (next step); unused until then.
-            gitHubApp {
+            gitHubAppCredentials {
               scope('GLOBAL')
               id('gitops-app')
               description('fastapi-gitops GitHub App: promotion commits for trusted/publish only')
               appID(secret('github-gitops-app-id'))
-              privateKey(secret('github-gitops-app-key'))
-              delegate.owner(org)  // explicit: 'owner' is also a Groovy closure property
+              privateKey(hudson.util.Secret.fromString(secret('github-gitops-app-key')))
             }
           }
         }
