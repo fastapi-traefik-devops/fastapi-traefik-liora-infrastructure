@@ -1,6 +1,7 @@
 configuration-as-code:2134.ve13a_2fc90835
 workflow-aggregator:608.v67378e9d3db_1
 git:5.11.0
+github-branch-source:1983.vfa_27ed961853
 job-dsl:3732.v9a_c49a_61a_313
 credentials-binding:728.v902a_273b_8947
 junit:1437.v12280a_c49b_50
@@ -9,4 +10,3 @@ copyartifact:805.v9d1393350780
 lockable-resources:1560.va_b_cd589f23eb_
 pipeline-build-step:601.v6d4c6d1a_9dc7
 matrix-auth:3.3
-github-branch-source:1983.vfa_27ed961853
