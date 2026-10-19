@@ -91,7 +91,7 @@ folder('trusted') {
               username(secret('ghcr-write-username'))
               password(secret('ghcr-write-token'))
             }
-            // For GitOps promotion commits (next step); unused until then.
+            // GitOps promotion commits to main (stage overlay); bypasses the main ruleset.
             gitHubAppCredentials {
               scope('GLOBAL')
               id('gitops-app')
@@ -106,7 +106,7 @@ folder('trusted') {
   }
 }
 pipelineJob('trusted/publish') {
-  description('Registry-only publisher on a separate Docker agent. Requires trusted-folder credential ghcr-write; no Git or Kubernetes access.')
+  description('Trusted publisher on a separate Docker agent: pushes verified SHA images to GHCR, then commits the stage promotion (credentials ghcr-write and gitops-app). No Kubernetes access.')
   disabled(false)
   definition { cps { script(new File('/opt/phase1-bootstrap/Jenkinsfile.publish').text); sandbox(false) } }
 }

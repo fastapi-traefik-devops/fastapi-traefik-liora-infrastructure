@@ -65,6 +65,8 @@ Only CI administrators may configure/replay the trusted job or manage its creden
 | Merge to `main` | `release`: config, secrets, dependency installs and audits, image builds, non-root smokes, Trivy, `attest` | archives, then `trusted/publish` |
 | Nightly on `main`, about 02:00 | `full` | status only |
 
+**Stage promotion:** after a `release` build, `trusted/publish` pushes the `sha-` images and then runs `ci/promote-stage.sh`: `promote.py` verifies the digests in GHCR, rewrites `deploy/overlays/stage`, validates all overlays and pushes one commit `gitops(stage): promote <sha>` to `main` as the fastapi-gitops App, which every ruleset on `main` must list as bypass. Argo CD then syncs `app-stage`. That commit changes only overlays, so CI on `main` skips its gates.
+
 `python3 ci/phase1.py steps --profile release` prints a profile; the Jenkinsfile turns each step into a stage. Commits that change only `deploy/overlays/` skip the gates on `main`.
 
 The full profile performs checkout; backend locked dependencies, mypy/Ruff, unit and API/integration tests; frontend `npm ci`, Biome, Vite/TypeScript, Playwright; `pip-audit`, `npm audit`, Gitleaks for Git history and the current tracked/untracked tree; backend and frontend Docker builds and isolated non-root health smokes; Trivy vulnerability and secret scans for both images; and CI artifact attestation. Each command is mandatory and exits nonzero on failure. Python dependency findings fail the gate; npm High/Critical findings fail; Trivy High/Critical and image secret findings fail. There are no blanket scanner ignores. The exact reviewed exceptions in `.gitleaks.toml` and `.gitleaksignore` cover public plugin versions, encrypted SealedSecret ciphertext and historical demo tokens only.
