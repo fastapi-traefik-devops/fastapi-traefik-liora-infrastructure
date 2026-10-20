@@ -1,6 +1,0 @@
----
-- import_playbook: 00_prepare.yml
-- import_playbook: 10_first_server.yml
-- import_playbook: 20_kube_vip.yml
-- import_playbook: 30_join_servers.yml
-- import_playbook: 40_fetch_kubeconfig.yml

@@ -1,0 +1,31 @@
+---
+- name: Prepare the selected cluster token on VM 200
+  hosts: k3s_servers
+  gather_facts: false
+  tasks:
+    - name: Generate or reuse the cluster server token
+      ansible.builtin.set_fact:
+        token_ready: >-
+          {{ lookup('ansible.builtin.password',
+                    inventory_dir + '/../../../recovery/k3s-' + k3s_cluster_name + '.token',
+                    length=64, chars=['ascii_letters', 'digits']) | length > 0 }}
+      run_once: true
+      no_log: true
+
+- name: Check selected K3s cluster inputs
+  hosts: k3s_servers
+  gather_facts: false
+  tasks:
+    - name: Require a cluster-specific token and name
+      ansible.builtin.assert:
+        that:
+          - k3s_cluster_name | default('') in ['dev-stage', 'prod']
+          - k3s_token | default('') | length > 0
+        fail_msg: "The selected cluster token is missing or empty in recovery/."
+      run_once: true
+
+- import_playbook: 00_prepare.yml
+- import_playbook: 10_first_server.yml
+- import_playbook: 20_kube_vip.yml
+- import_playbook: 30_join_servers.yml
+- import_playbook: 40_fetch_kubeconfig.yml

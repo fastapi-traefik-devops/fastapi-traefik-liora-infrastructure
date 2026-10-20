@@ -1,0 +1,24 @@
+all:
+  children:
+    k3s_servers:
+      hosts:
+        k3s-2-01:
+          ansible_host: 192.168.77.211
+          node_ip: 192.168.77.211
+        k3s-2-02:
+          ansible_host: 192.168.77.212
+          node_ip: 192.168.77.212
+        k3s-2-03:
+          ansible_host: 192.168.77.213
+          node_ip: 192.168.77.213
+
+  vars:
+    ansible_user: root-admin
+    ansible_python_interpreter: /usr/bin/python3
+
+    k3s_cluster_name: prod
+    k3s_token: "{{ lookup('ansible.builtin.file', inventory_dir + '/../../../recovery/k3s-prod.token') }}"
+    k3s_version: "v1.36.5+k3s1"
+    k3s_api_vip: "192.168.77.12"
+    k3s_vip_interface: "eth0"
+    kube_vip_version: "v1.2.3"
