@@ -1,9 +1,15 @@
 # K3s Ansible automation
 
-Run the tested bootstrap sequence in `site.yml` separately for each cluster.
-`inventory-dev-stage.yml` targets VMs 201–203 and VIP `192.168.77.11`;
-`inventory-prod.yml` targets VMs 211–213 and VIP `192.168.77.12`.
-Do not pass both inventories to a single run.
+## Cluster inventories
+
+Run `site.yml` separately for each cluster. Do not pass both inventories to a single run.
+
+| Inventory | VM IDs | API VIP |
+| --- | --- | --- |
+| `inventory-dev-stage.yml` | 201–203 | `192.168.77.11` |
+| `inventory-prod.yml` | 211–213 | `192.168.77.12` |
+
+## Tokens and kubeconfigs
 
 At the start of each run, Ansible creates a 64-character server token in
 `recovery/k3s-<cluster>.token` if it is absent. Existing files are reused, so

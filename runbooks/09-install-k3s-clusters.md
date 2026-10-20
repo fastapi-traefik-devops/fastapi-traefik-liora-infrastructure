@@ -2,30 +2,34 @@
 
 **Where:** Run every command on management VM 200, from the repository root.
 
+## Cluster layout
+
 | Cluster | VM IDs | Node IPs | API VIP | Inventory |
 | --- | --- | --- | --- | --- |
 | dev/stage | 201–203 | `192.168.77.201–203` | `192.168.77.11` | `inventory-dev-stage.yml` |
 | prod | 211–213 | `192.168.77.211–213` | `192.168.77.12` | `inventory-prod.yml` |
 
-1. Complete [VM provisioning](08-provision-cluster-vms.md) and verify SSH
-   access from VM 200 to all six nodes. VM 200 is not a cluster node. Check
-   that `root-admin` exists on the clones, the recovery SSH key is authorized,
-   and the guest NIC is `eth0`. Review the pinned K3s and kube-vip versions
-   in both inventories before deploying.
+## Preflight on VM 200
 
-2. This playbook builds fresh clusters. Ansible generates a different server
-   token for each cluster on its first run and saves it under `recovery/`.
-   Subsequent runs reuse the saved value:
+- [ ] Complete [VM provisioning](08-provision-cluster-vms.md). VM 200 is not a cluster node. Check SSH access with the Ansible ping commands below.
+- [ ] Confirm `root-admin` exists on the clones, the recovery SSH key is authorized, and the guest NIC is `eth0`.
+- [ ] Review the pinned K3s and kube-vip versions in both inventories before deploying.
+
+This playbook builds fresh clusters. Ansible creates a different server token for each cluster on its first run and reuses the saved value later:
 
    ```text
    recovery/k3s-dev-stage.token
    recovery/k3s-prod.token
    ```
 
-   Preserve these ignored token files with future datastore backups.
+Preserve these ignored token files with future datastore backups.
 
-3. Install the playbook dependency and inspect each target list. Use the
-   administrator private key restored to `recovery/LIORA-id_ed25519` on VM 200.
+### If restoring an etcd snapshot
+
+> [!IMPORTANT]
+> A fresh cluster build does not restore application data. Use the original K3s server token and a separate [snapshot restore procedure](https://docs.k3s.io/datastore/backup-restore); a new token cannot decrypt the snapshot.
+
+- [ ] Install the playbook dependency and inspect each target list. Use the administrator private key restored to `recovery/LIORA-id_ed25519` on VM 200.
 
    ```sh
    ansible-galaxy collection install -r infrastructure/k3s-cluster/ansible/requirements.yml
@@ -33,10 +37,12 @@
    ansible-inventory -i infrastructure/k3s-cluster/ansible/inventory-prod.yml --graph
    ```
 
-   If these VMs replace earlier machines at the same IPs, confirm the VM-to-IP
-   mapping in Proxmox and remove their old SSH host keys from VM 200. This
-   command covers a rebuild of all six nodes; for a partial rebuild, list only
-   the affected IPs:
+### If VMs were recreated at the same IPs
+
+> [!NOTE]
+> Confirm the VM-to-IP mapping in Proxmox and remove their old SSH host keys from VM 200. This command covers all six nodes; for a partial rebuild, list only affected IPs.
+
+- [ ] Remove the affected old entries:
 
    ```sh
    for ip in 192.168.77.{201..203} 192.168.77.{211..213}; do
@@ -44,19 +50,23 @@
    done
    ```
 
-   Check access to both inventories with the restored private key:
+- [ ] Check access to both inventories with the restored private key:
 
    ```sh
    ansible k3s_servers -i infrastructure/k3s-cluster/ansible/inventory-dev-stage.yml -m ping --private-key recovery/LIORA-id_ed25519
    ansible k3s_servers -i infrastructure/k3s-cluster/ansible/inventory-prod.yml -m ping --private-key recovery/LIORA-id_ed25519
    ```
 
-   If SSH still reports `Permission denied (publickey)`, check that the
-   matching public key is authorized for `root-admin` on the VM. This is an
-   authentication failure, not a `known_hosts` failure.
+### If Ansible reports `Permission denied (publickey)`
 
-4. Install dev/stage, then prod. Each invocation uses only its own inventory,
-   VIP and saved token. Do not combine the two inventories in one run.
+> [!WARNING]
+> Check that the matching public key is authorized for `root-admin` on the VM. This is an authentication failure, not a `known_hosts` failure.
+
+## Install dev/stage and prod
+
+Run each cluster with its own inventory, VIP, and token. Do not combine the inventories in one run.
+
+- [ ] Install dev/stage, then prod:
 
    ```sh
    ansible-playbook -i infrastructure/k3s-cluster/ansible/inventory-dev-stage.yml \
@@ -68,10 +78,12 @@
      infrastructure/k3s-cluster/ansible/site.yml
    ```
 
-   If the node tasks have completed and only the kubeconfig fetch failed,
-   rerun that play alone. It reads the remote kubeconfig with `slurp` and
-   writes the named file on VM 200 with a delegated `copy` task. No temporary
-   kubeconfig file or cluster reinstall is needed.
+### If only kubeconfig retrieval fails
+
+> [!NOTE]
+> After node tasks complete, rerun only the kubeconfig play. It uses `slurp` and a delegated `copy` task; no cluster reinstall is needed.
+
+- [ ] Rerun the kubeconfig play:
 
    ```sh
    ansible-playbook -i infrastructure/k3s-cluster/ansible/inventory-prod.yml \
@@ -79,8 +91,12 @@
      infrastructure/k3s-cluster/ansible/40_fetch_kubeconfig.yml
    ```
 
-   If a prior run created a root-owned kubeconfig, repair only the affected
-   directory and file on VM 200, then rerun the kubeconfig play:
+### If a kubeconfig is owned by root
+
+> [!WARNING]
+> Repair only the affected directory and file on VM 200, then rerun the kubeconfig play. The current inventories leave privilege escalation to remote plays; local kubeconfig tasks run without it.
+
+- [ ] Repair the affected file:
 
    ```sh
    sudo chown "$(id -u):$(id -g)" "$HOME/.kube" "$HOME/.kube/config-prod"
@@ -88,14 +104,13 @@
    chmod 600 "$HOME/.kube/config-prod"
    ```
 
-   The current inventories leave privilege escalation to the remote plays;
-   local kubeconfig tasks explicitly run without escalation. Apply the same
-   ownership repair to `config-dev-stage` if that file was created as root.
+Apply the same ownership repair to `config-dev-stage` only if that file is root-owned.
 
-5. Merge the named kubeconfigs into the default `~/.kube/config` on VM 200.
-   The merge playbook checks both identities and API VIPs before writing.
-   The individual `config-dev-stage` and `config-prod` files remain available.
-   Use `kubectl` on VM 200 for the verification commands below.
+## Merge kubeconfigs and verify clusters
+
+The merge playbook checks both identities and API VIPs before writing `~/.kube/config`. Individual `config-dev-stage` and `config-prod` files remain available.
+
+- [ ] Merge and verify from VM 200:
 
    ```sh
    ansible-playbook -i localhost, -c local \
@@ -105,11 +120,4 @@
    kubectl --context prod get nodes -o wide
    ```
 
-   Expect contexts `dev-stage` and `prod`, users `admin-dev-stage` and
-   `admin-prod`, and default context `dev-stage`. Specify `--context` for
-   commands that target a particular cluster.
-
-**Disaster recovery:** A fresh cluster build generates or reuses the local
-tokens and does not restore application data. To restore an etcd snapshot,
-use its original server token and the K3s restore procedure. See
-the [K3s backup and restore requirements](https://docs.k3s.io/datastore/backup-restore).
+Expect contexts `dev-stage` and `prod`, users `admin-dev-stage` and `admin-prod`, and default context `dev-stage`. Specify `--context` for commands targeting a particular cluster.

@@ -12,19 +12,13 @@ Proxmox to inspect existing VMs and storage.
 
 ## Preflight
 
-1. Confirm template `9013`, `vnet77`, gateway `192.168.77.1`, and the selected
-   VM disk storage from [the template runbook](03-create-debian13-template.md).
-   Check that `recovery/.env` contains the current Proxmox API endpoint, node,
-   token, and `DISK_STORAGE`. Confirm that
-   `recovery/LIORA-id_ed25519.pub` is the public key intended for every node.
-   Inspect VMs `201`–`203` and `211`–`213` in Proxmox before planning. VM `200`
-   is reserved for management and is not part of either cluster.
+- [ ] Confirm template `9013`, `vnet77`, gateway `192.168.77.1`, and VM disk storage from [the template runbook](03-create-debian13-template.md).
+- [ ] Check that `recovery/.env` contains the current Proxmox API endpoint, node, token, and `DISK_STORAGE`. Confirm that `recovery/LIORA-id_ed25519.pub` is the intended public key for every node.
+- [ ] Inspect VMs `201`–`203` and `211`–`213` in Proxmox before planning. VM `200` is reserved for management and is not part of either cluster.
 
 ## Initialize Terraform and reconcile state
 
-1. Load the shared inputs, initialize the module, and validate it. Terraform
-   is the default; replace `terraform` with `tofu` consistently if using
-   OpenTofu.
+- [ ] Load the shared inputs, initialize the module, and validate it. Terraform is the default; use `tofu` consistently if you installed OpenTofu.
 
    ```sh
    source recovery/.env
@@ -35,81 +29,59 @@ Proxmox to inspect existing VMs and storage.
    terraform state list
    ```
 
-2. If these six VMs **already exist** from manual provisioning but are absent
-   from this module's state, import each existing VM **before** planning an
-   apply. Run only the import commands for VMs that exist and are not already
-   in `terraform state list`. Keep the existing state file; do not start with
-   a fresh state to work around a conflict.
+### If a VM already exists outside Terraform state
 
-   ```sh
-   terraform import 'proxmox_virtual_environment_vm.k3s["k3s-1-01"]' "$TF_VAR_pm_node/201"
-   terraform import 'proxmox_virtual_environment_vm.k3s["k3s-1-02"]' "$TF_VAR_pm_node/202"
-   terraform import 'proxmox_virtual_environment_vm.k3s["k3s-1-03"]' "$TF_VAR_pm_node/203"
-   terraform import 'proxmox_virtual_environment_vm.k3s["k3s-2-01"]' "$TF_VAR_pm_node/211"
-   terraform import 'proxmox_virtual_environment_vm.k3s["k3s-2-02"]' "$TF_VAR_pm_node/212"
-   terraform import 'proxmox_virtual_environment_vm.k3s["k3s-2-03"]' "$TF_VAR_pm_node/213"
-   ```
+> [!WARNING]
+> Import each existing VM **before** planning an apply. Run only the commands for VMs present in Proxmox but absent from `terraform state list`. Keep the existing state file; do not start with an empty state to work around a conflict.
 
-   The provider's [VM import format](https://github.com/bpg/terraform-provider-proxmox/blob/v0.111.1/docs/resources/virtual_environment_vm.md#import)
-   requires `node_name/vm_id`. Import records the existing VMs in Terraform
-   state; it does not rename them or change their guest configuration. A
-   following plan can still propose changes because manually created VMs may
-   differ from the module.
+- [ ] Import only the VMs that meet that condition:
+
+```sh
+terraform import 'proxmox_virtual_environment_vm.k3s["k3s-1-01"]' "$TF_VAR_pm_node/201"
+terraform import 'proxmox_virtual_environment_vm.k3s["k3s-1-02"]' "$TF_VAR_pm_node/202"
+terraform import 'proxmox_virtual_environment_vm.k3s["k3s-1-03"]' "$TF_VAR_pm_node/203"
+terraform import 'proxmox_virtual_environment_vm.k3s["k3s-2-01"]' "$TF_VAR_pm_node/211"
+terraform import 'proxmox_virtual_environment_vm.k3s["k3s-2-02"]' "$TF_VAR_pm_node/212"
+terraform import 'proxmox_virtual_environment_vm.k3s["k3s-2-03"]' "$TF_VAR_pm_node/213"
+```
+
+The provider's [VM import format](https://github.com/bpg/terraform-provider-proxmox/blob/v0.111.1/docs/resources/virtual_environment_vm.md#import) requires `node_name/vm_id`. Import records an existing VM in state without changing its guest configuration. A later plan may still propose changes to manually created VMs.
 
 ## Review and apply the plan
 
-1. Review the plan. On an empty Proxmox host with an empty state, it should
-   propose **six additions** with IDs `201`–`203` and `211`–`213`, template
-   `9013`, bridge `vnet77`, the selected Cloud-Init drive storage, matching
-   static IPs, `root-admin`, and the recovery public key. For imported VMs,
-   inspect every proposed update or replacement. Stop if Terraform proposes
-   to destroy or replace a running cluster VM unexpectedly.
+- [ ] Create and inspect the plan. On an empty host and state it should propose **six additions** with IDs `201`–`203` and `211`–`213`, template `9013`, bridge `vnet77`, selected Cloud-Init storage, matching static IPs, `root-admin`, and the recovery public key. Inspect every update or replacement of imported VMs.
 
    ```sh
    terraform plan -out=k3s.tfplan
    terraform show k3s.tfplan
    ```
 
-2. Apply the reviewed plan. Prefer `-parallelism=1` on this host so Terraform
-   runs VM operations sequentially. The full apply without this limit remains
-   available on a host that can handle concurrent clones. The first create
-   keeps QEMU guest agent waiting disabled; Ansible installs the agent later.
+### If the plan would replace a running cluster VM
+
+> [!WARNING]
+> Stop and reconcile state before applying an unexpected destruction or replacement.
+
+- [ ] Apply the reviewed plan. Use `-parallelism=1` on this host to run VM operations sequentially. The first create keeps QEMU guest agent waiting disabled; Ansible installs it later.
 
    ```sh
    terraform apply -parallelism=1 k3s.tfplan
    ```
 
-   Full apply with Terraform's default parallelism:
+### If the host can handle concurrent clones
 
-   ```sh
-   terraform apply k3s.tfplan
-   ```
-
-## Check the result
-
-Verify the result in Proxmox and from VM 200:
+> [!NOTE]
+> A full apply without `-parallelism=1` uses Terraform's default concurrency. Use this command **instead of** the sequential apply, only after reviewing the same saved plan.
 
 ```sh
-terraform output k3s_nodes
-ansible-inventory -i ../ansible/inventory-dev-stage.yml --graph
-ansible-inventory -i ../ansible/inventory-prod.yml --graph
-terraform plan
+terraform apply k3s.tfplan
 ```
 
-Confirm all six VMs are running with the planned IDs, names, IPs, VNet,
-Cloud-Init key, and storage. Check SSH to all six VMs before continuing
-with [the K3s installation runbook](09-install-k3s-clusters.md).
+### If cloning fails with a storage lock or leftover volume
 
-## Troubleshooting: storage lock and leftover clone volumes
+> [!WARNING]
+> On a host with limited storage throughput, concurrent clones can hit a `pve-storage-vmdata` lock timeout. A failed clone may leave a Cloud-Init volume; a retry then reports a dataset such as `zpve/vm-202-cloudinit` already exists. Inspect Proxmox and Terraform state before removing anything.
 
-On a host with limited storage throughput, several long-running clones can
-hit a Proxmox `pve-storage-vmdata` lock timeout. A failed clone can leave its
-Cloud-Init volume behind. The next attempt then reports that a dataset such
-as `zpve/vm-202-cloudinit` already exists.
-
-1. On VM 200, check `terraform state list` and `terraform plan`. Confirm which
-   VM IDs are absent from state and still proposed for creation. On the
-   Proxmox host, inspect those IDs and their volumes. For the verified case:
+- [ ] On VM 200, check `terraform state list` and `terraform plan`. Confirm which IDs are absent from state and still proposed for creation. On Proxmox, inspect only those IDs and volumes. For the verified case:
 
    ```sh
    qm config 202
@@ -118,31 +90,40 @@ as `zpve/vm-202-cloudinit` already exists.
    pvesm list vmdata --vmid 213
    ```
 
-2. Only if both VM configuration files are absent and the listed volumes are
-   the orphaned Cloud-Init volumes from the failed clones, free those exact
-   volumes on the Proxmox host. `pvesm free` destroys the selected volume.
-   Do not remove a volume referenced by an existing VM.
+- [ ] Only when **both** VM configuration files are absent and the listed volumes are orphaned Cloud-Init volumes from those failed clones, free the exact volumes on Proxmox. `pvesm free` destroys the selected volume; never remove one referenced by an existing VM.
 
    ```sh
    pvesm free vmdata:vm-202-cloudinit
    pvesm free vmdata:vm-213-cloudinit
    ```
 
-3. Back on VM 200, make a fresh plan after the partial apply. Prefer retrying
-   with sequential VM operations only if the plan proposes the expected
-   missing VMs and no unexpected changes or deletions:
+- [ ] On VM 200, make a fresh plan after the partial apply. Retry sequentially only if it proposes the expected missing VMs with no unexpected changes or deletions:
 
    ```sh
    terraform plan
    terraform apply -parallelism=1
    ```
 
-   If a separate apply for each missing VM is needed, target one at a time as
-   in the verified recovery. Resource targeting is for this exceptional
-   recovery case; always run a full plan afterward.
+#### If a separate retry for each missing VM is needed
+
+> [!WARNING]
+> Target one missing VM at a time only for this exceptional recovery case. Run a full plan afterward.
 
    ```sh
    terraform apply -target='proxmox_virtual_environment_vm.k3s["k3s-1-02"]'
    terraform apply -target='proxmox_virtual_environment_vm.k3s["k3s-2-03"]'
    terraform plan
    ```
+
+## Check the result
+
+- [ ] Verify the result in Proxmox and from VM 200:
+
+```sh
+terraform output k3s_nodes
+ansible-inventory -i ../ansible/inventory-dev-stage.yml --graph
+ansible-inventory -i ../ansible/inventory-prod.yml --graph
+terraform plan
+```
+
+- [ ] Confirm all six VMs are running with the planned IDs, names, IPs, VNet, Cloud-Init key, and storage. Continue to [K3s installation](09-install-k3s-clusters.md), where Ansible checks SSH access.

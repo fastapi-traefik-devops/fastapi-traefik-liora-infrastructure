@@ -1,5 +1,7 @@
 # Cilium alternative
 
+## Current cluster network
+
 Primary cluster:
 
 ```text
@@ -7,7 +9,7 @@ Flannel
 + K3s embedded network-policy controller
 ```
 
-This is intentionally boring.
+This is the current, simple baseline for the cluster.
 
 ## Move to Cilium when a requirement exists
 
