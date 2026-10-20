@@ -2,9 +2,11 @@
 
 **Where:** Management VM 200, Debian 13.
 
-Terraform is the default command used by the remaining runbooks. OpenTofu is an alternative: install one of them, then replace `terraform` with `tofu` in later commands if you choose OpenTofu.
+Terraform is the default command in the remaining runbooks. Install Terraform or OpenTofu; use `tofu` in place of `terraform` throughout if choosing OpenTofu.
 
 ## Ansible
+
+- [ ] Install Ansible and check its version:
 
 ```sh
 sudo apt-get install ansible
@@ -13,10 +15,12 @@ ansible --version
 
 ## Terraform (default)
 
-Install the tools required by the HashiCorp APT repository, then install Terraform:
+Install the tools required by the HashiCorp APT repository, then install Terraform.
 
->[!warning] don't forget `umask 022`
-> if you prefiously did `umask 077` - switch back to `umask 022` or installation will break.
+> [!IMPORTANT]
+> If an earlier step set `umask 077`, restore `umask 022` before installing APT packages. The command block does this first.
+
+- [ ] Install Terraform and check its version:
 
 ```sh
 umask 022
@@ -33,6 +37,8 @@ terraform version
 Compare the displayed signing-key fingerprint with the [official HashiCorp installation instructions](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli) before trusting the new repository.
 
 ## OpenTofu (alternative)
+
+- [ ] Install OpenTofu and check its version if you chose it instead of Terraform. Inspect the downloaded installer before running it:
 
 ```sh
 sudo apt-get update

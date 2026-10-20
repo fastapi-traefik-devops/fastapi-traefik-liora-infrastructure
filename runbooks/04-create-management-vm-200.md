@@ -2,9 +2,19 @@
 
 **Where:** Proxmox VE 9 host. VM 200 is created directly on Proxmox.
 
-1. Verify that template `9013` exists, `vnet77` is active, and VM ID `200` is free. If VM 200 already exists, inspect it and **do not clone another VM over it**.
-2. On a new host, make a full clone: `qm clone 9013 200 --name k3s-mgmt --full`.
-3. Set the VM's Cloud-Init network and identity, using a verified public-key file on the Proxmox host:
+## Preflight
+
+- [ ] Verify that template `9013` exists, `vnet77` is active, and VM ID `200` is free.
+
+### If VM 200 already exists
+
+> [!WARNING]
+> Inspect the existing VM. Do not clone another VM over it.
+
+## Clone and configure VM 200
+
+- [ ] On a new host, make a full clone: `qm clone 9013 200 --name k3s-mgmt --full`.
+- [ ] Set the VM's Cloud-Init network and identity with a verified public-key file on the Proxmox host:
 
    ```bash
    qm set 200 --cores 2 --memory 2048
@@ -13,6 +23,10 @@
    qm cloudinit update 200
    ```
 
-4. Check `qm config 200` and `qm cloudinit dump 200 user`; ensure only the public key is present. Start with `qm start 200`. Via the Proxmox console, verify the VM has address `.200`, default route via `.1`, DNS, and outbound connectivity.
-5. Confirm SSH login as `root-admin` through an available trusted path. VM 200 is **not** a K3s node.
+## Verify the management VM
+
+- [ ] Check `qm config 200` and `qm cloudinit dump 200 user`; ensure only the public key is present.
+- [ ] Start with `qm start 200`. In the Proxmox console, verify address `.200`, default route via `.1`, DNS, and outbound connectivity.
+- [ ] Confirm SSH login as `root-admin` through an available trusted path. VM 200 is **not** a K3s node.
+
 **Done when:** VM 200 is reachable at `192.168.77.200` with the intended SSH key.

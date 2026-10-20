@@ -2,9 +2,25 @@
 
 **Where:** Proxmox VE 9 host. **Purpose:** Public TCP `22200` → `192.168.77.200:22`.
 
-1. Keep provider console access open. Confirm that VM 200 runs SSH on port 22 and that `nft --version` succeeds. Identify the actual public-facing interface; the supplied live rule uses `vmbr0`.
-2. Inspect `/etc/nftables.d/custom77-nat.nft` and `nft list table ip custom77_nat`. If the VM 200 rule already exists, keep it; do not add a duplicate. **Do not replace the live file with the minimal [nftables example](../edge/nftables/custom77-nat.nft.example):** it may contain other working rules.
-3. On a replacement host without this table, adapt [custom77-nat.nft.example](../edge/nftables/custom77-nat.nft.example) to the actual public interface and install it as `/etc/nftables.d/custom77-nat.nft`. The rule forwards public TCP `22200` to `192.168.77.200:22` without embedding the public IP. If the file already exists, add only the missing rule inside its existing prerouting chain, preserving every other entry.
+## Inspect the host
+
+- [ ] Keep provider console access open. Confirm VM 200 runs SSH on port 22 and `nft --version` succeeds.
+- [ ] Identify the public-facing interface; the current live rule uses `vmbr0`.
+- [ ] Inspect `/etc/nftables.d/custom77-nat.nft` and `nft list table ip custom77_nat` before editing.
+
+### If the DNAT table already exists
+
+> [!IMPORTANT]
+> Keep any working VM 200 rule. Do not add a duplicate or replace the live file with the minimal [example](../edge/nftables/custom77-nat.nft.example); it may contain other rules. Add only a missing rule inside the existing prerouting chain.
+
+## Configure the VM 200 rule
+
+### If the DNAT table is absent
+
+> [!NOTE]
+> Use the [new-host example](../edge/nftables/custom77-nat.nft.example). It forwards TCP `22200` to `192.168.77.200:22` without embedding the public IP.
+
+- [ ] On a new host without the table, adapt the public interface and install the example as `/etc/nftables.d/custom77-nat.nft`. On an existing host, add only the missing rule to that file:
 
    ```nft
    # Proxmox VE 9 example for a new host. Adapt the public-facing interface.
@@ -22,8 +38,20 @@
    }
    ```
 
-4. Check the **complete** file with `nft -c -f /etc/nftables.d/custom77-nat.nft`. Apply it with `nft -f /etc/nftables.d/custom77-nat.nft` only after the check passes, then inspect `nft list table ip custom77_nat`. Never use `flush ruleset` here.
-5. Check whether an existing systemd unit already reloads this file. Reuse that unit if present. On a new host without a loader, install [custom77-nat.service.example](../edge/nftables/custom77-nat.service.example) as `/etc/systemd/system/custom77-nat.service`:
+### Validate the active rule
+
+- [ ] Check the **complete** file with `nft -c -f /etc/nftables.d/custom77-nat.nft`. Apply it with `nft -f /etc/nftables.d/custom77-nat.nft` only after the check passes. Inspect `nft list table ip custom77_nat`. Never use `flush ruleset` here.
+
+## Persist the rule across reboot
+
+- [ ] Check whether a systemd unit already reloads this file.
+
+### If the host has no loader
+
+> [!NOTE]
+> Install [custom77-nat.service.example](../edge/nftables/custom77-nat.service.example) as `/etc/systemd/system/custom77-nat.service`.
+
+- [ ] Only on a host without a loader, install and enable the service:
 
    ```ini
    [Unit]
@@ -42,7 +70,24 @@
    WantedBy=multi-user.target
    ```
 
-   Run `systemctl daemon-reload` and `systemctl enable --now custom77-nat.service`; verify `systemctl status custom77-nat.service`. Do not enable a second loader for the same table on an existing host.
-6. On the trusted client, set `PROXMOX_PUBLIC_IP` to the host's current public IPv4 address. Test from an external connection with `ssh -p 22200 root-admin@"$PROXMOX_PUBLIC_IP"`. Confirm the host forwarding/firewall path and VM return path if it fails. Verify the rule survives a controlled reboot when a reboot is scheduled; a syntax check alone does not prove persistence.
+- [ ] If you installed the service, run `systemctl daemon-reload` and `systemctl enable --now custom77-nat.service`; verify `systemctl status custom77-nat.service`.
 
-**Recovery IP change:** This DNAT rule matches `vmbr0` and port `22200`, so it contains no old public IP. Use the replacement host's current public IP in SSH clients and any other endpoint configuration. The [nftables examples](../edge/nftables/README.md) cover only this bootstrap SSH path; do not copy unrelated live rules into a new installation.
+### If a loader already exists
+
+> [!WARNING]
+> Reuse the existing loader. Do not enable a second loader for the same table.
+
+## Verify external access
+
+- [ ] On the trusted client, set `PROXMOX_PUBLIC_IP` to the host's current public IPv4 address. Test from an external connection with `ssh -p 22200 root-admin@"$PROXMOX_PUBLIC_IP"`.
+- [ ] Verify the rule survives a controlled reboot when one is scheduled; a syntax check alone does not prove persistence.
+
+### If the external SSH test fails
+
+> [!WARNING]
+> Check the host forwarding and firewall path, then VM 200's return path.
+
+### If the public IP changed during recovery
+
+> [!NOTE]
+> The DNAT rule matches the interface and port, so it contains no old public IP. Use the replacement IP in SSH clients and other endpoint settings. The [nftables examples](../edge/nftables/README.md) cover only this bootstrap SSH path; do not copy unrelated live rules.

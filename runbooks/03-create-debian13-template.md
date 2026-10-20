@@ -2,22 +2,35 @@
 
 **Where:** Proxmox VE 9 host. **Script:** `scripts/proxmox/create-debian13-template.sh`.
 
-1. Complete [the private VNet](01-create-private-vnet.md). Check `qm status 9013` and `qm config 9013` to see whether the ID is already in use. An existing template is safe: the script reports it and exits without changes. If ID 9013 belongs to a regular VM, the script stops without modifying it.
-2. On the Proxmox host, run `pvesm status` and `pvesm status --content images`. Check the free space and that the selected storage supports VM images. Run `bash scripts/proxmox/create-debian13-template.sh` without `DISK_STORAGE` to see the script's annotated list of all configured storages; it will not create a VM. Storages without VM-image support, active status, sufficient space, or accessible listing are marked unusable. Confirm write permission before selecting a storage; a read-only listing alone cannot prove allocation permission.
-3. After selecting eligible storage, update `DISK_STORAGE` in the Git-ignored `recovery/.env` on your PC/laptop **before creating the template**. Keep `export TF_VAR_cloud_init_datastore_id="$DISK_STORAGE"` in that file; it passes the same storage ID to Terraform later on VM 200. On the current Scaleway host, set `DISK_STORAGE='vmdata'`. Its `local` storage is small and reserved for Proxmox, and `local-lvm` is absent. On a replacement host, use the ID shown by its own preflight. The template script creates a 32 GiB disk by default.
-4. With ID 9013 free, run `DISK_STORAGE=vmdata bash scripts/proxmox/create-debian13-template.sh` on the current Proxmox host. On another host, replace `vmdata` with **the same ID recorded in `recovery/.env`**. The script downloads the Debian 13 cloud image and creates the template only after the storage preflight passes.
-5. Verify `qm config 9013`: template flag, Debian cloud disk, Cloud-Init drive, and NIC on `vnet77`. Keep the template free of administrator private keys. Supply each clone's SSH **public** key through Cloud-Init.
+## Check VM ID 9013
 
-## Observed preflight output
+- [ ] Complete [the private VNet](01-create-private-vnet.md).
+- [ ] Run `qm status 9013` and `qm config 9013` to check whether the ID is already in use.
 
-These outputs were recorded on the current Proxmox host in separate starting states. When template 9013 already exists, the script exits before the storage check:
+### If template 9013 already exists
+
+> [!NOTE]
+> The script exits without changes. Inspect the existing template with `qm config 9013` before continuing.
 
 ```sh
 # bash create-debian13-template.sh
 Template 9013 already exists. No changes made. Verify its Debian 13 image and storage with: qm config 9013
 ```
 
-When ID 9013 is free and `DISK_STORAGE` is unset, the script lists configured storages and exits without creating a VM:
+### If ID 9013 belongs to a regular VM
+
+> [!WARNING]
+> The script stops without modifying the VM. Resolve the ID conflict before creating the template.
+
+## Select VM disk storage
+
+- [ ] On Proxmox, run `pvesm status` and `pvesm status --content images`. Check VM-image support and free space.
+- [ ] With ID 9013 free, run `bash scripts/proxmox/create-debian13-template.sh` without `DISK_STORAGE`. It lists configured storages and does not create a VM. Confirm write permission before selecting a storage; a read-only listing cannot prove allocation permission.
+
+### If `DISK_STORAGE` is unset
+
+> [!NOTE]
+> The script lists available storage and marks inactive, inaccessible, undersized, or non-image storage as unusable. This output was recorded on the current Proxmox host:
 
 ```sh
 # bash create-debian13-template.sh
@@ -27,5 +40,12 @@ Storage                Type         Status       Free             VM disk use
 vmdata                 zfspool      active       5225.2 GiB       eligible (verify write permission)
 local                  dir          active       27.9 GiB         cannot use: VM images not enabled
 ```
+
+- [ ] Record the selected ID as `DISK_STORAGE` in the Git-ignored `recovery/.env` on your PC/laptop **before creating the template**. Keep `export TF_VAR_cloud_init_datastore_id="$DISK_STORAGE"` there for Terraform on VM 200. The current Scaleway host uses `vmdata`; `local` is small and `local-lvm` is absent. On a replacement host, use its own storage preflight.
+
+## Create and verify the template
+
+- [ ] With ID 9013 free, run `DISK_STORAGE=vmdata bash scripts/proxmox/create-debian13-template.sh` on the current host. On another host, replace `vmdata` with the ID recorded in `recovery/.env`. The script creates a 32 GiB disk by default.
+- [ ] Check `qm config 9013` for the template flag, Debian cloud disk, Cloud-Init drive, and NIC on `vnet77`. Keep administrator private keys out of the template; supply each clone's SSH **public** key through Cloud-Init.
 
 **Done when:** VM 9013 is a usable Debian 13 Cloud-Init template on the selected VM storage and `vnet77`. This step does not create a running management VM.

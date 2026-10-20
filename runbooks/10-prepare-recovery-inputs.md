@@ -2,10 +2,20 @@
 
 **Where:** Trusted administrator machine, before changing the replacement host.
 
-1. Record the replacement Proxmox host's **current public IPv4 address**, provider gateway, and public interface. Use the replacement IP as a deployment input, not a literal embedded in scripts or runbooks.
-2. Locate the existing administrator SSH private/public key pair, the repository revision or offline copy, Terraform state and its backups, and the cluster/application backups. For an etcd snapshot restore, keep the original K3s server token for each cluster with its snapshot. Preserve original copies.
-3. Verify which backup and state correspond to each cluster: dev/stage (`201–203`) and prod (`211–213`). Record recovery points and the chosen state reconciliation strategy before creating VMs.
-4. Confirm that the new Proxmox host is reachable through its provider console. Use the **new** public IP for SSH access from your PC/laptop. On VM 200, keep the Proxmox API endpoint at `https://192.168.77.1:8006/` in `recovery/.env`.
-5. Search the chosen repository revision and local operator configuration for the previous public IP before applying network, Terraform, DNS, or monitoring settings. Update only the components that actually use that endpoint; do not import unrelated test rules or services into the recovered design.
+## Record the replacement host
+
+- [ ] Record the **current public IPv4 address**, provider gateway, and public interface. Use the replacement IP as a deployment input, not a literal embedded in scripts or runbooks.
+- [ ] Confirm access through the provider console. Use the new public IP for SSH from your PC/laptop. On VM 200, keep the private Proxmox API endpoint `https://192.168.77.1:8006/` in `recovery/.env`.
+
+## Collect and match recovery artifacts
+
+- [ ] Locate the existing administrator SSH key pair, intended repository revision or offline copy, Terraform state and its backups, and cluster and application backups. Preserve original copies.
+- [ ] Match each backup and state to dev/stage (`201–203`) or prod (`211–213`). Record recovery points and the state reconciliation strategy before creating VMs.
+- [ ] Search the chosen revision and local operator configuration for the old public IP. Update only components that use it before applying network, Terraform, DNS, or monitoring settings. Do not import unrelated test rules or services.
+
+### If restoring an etcd snapshot
+
+> [!IMPORTANT]
+> Keep each cluster's original K3s server token with its matching snapshot. A fresh token cannot decrypt that snapshot.
 
 **Done when:** The operator has a verified recovery input list and a single recorded current public IP. No backup or Terraform state has been overwritten.
