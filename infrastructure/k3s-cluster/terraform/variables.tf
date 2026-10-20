@@ -70,8 +70,15 @@ variable "cpu_cores" {
 }
 
 variable "memory_mb" {
-  type    = number
-  default = 4096
+  description = "Maximum K3s VM memory in MiB."
+  type        = number
+  default     = 8192
+}
+
+variable "memory_min_mb" {
+  description = "Minimum K3s VM memory in MiB with Proxmox ballooning."
+  type        = number
+  default     = 2048
 }
 
 variable "qemu_agent_enabled" {

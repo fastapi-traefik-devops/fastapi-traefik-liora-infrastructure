@@ -11,6 +11,11 @@ the [Ansible playbooks](../ansible/README.md) install K3s afterward.
 | dev/stage | 201–203 | `k3s-1-01`–`k3s-1-03` | `192.168.77.201`–`203` |
 | prod | 211–213 | `k3s-2-01`–`k3s-2-03` | `192.168.77.211`–`213` |
 
+Each K3s VM uses Proxmox memory ballooning with a 2 GiB minimum
+(`memory_min_mb`) and an 8 GiB maximum (`memory_mb`). If a local
+`terraform.tfvars` sets `memory_mb = 4096`, update it to `8192` before
+planning; explicit local values override the module defaults.
+
 ## Inputs and state
 
 The module uses the same `TF_VAR_pm_*` credentials, Proxmox node, and

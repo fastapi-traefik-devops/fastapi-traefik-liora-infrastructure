@@ -32,6 +32,7 @@ resource "proxmox_virtual_environment_vm" "k3s" {
 
   memory {
     dedicated = var.memory_mb
+    floating  = var.memory_min_mb
   }
 
   network_device {

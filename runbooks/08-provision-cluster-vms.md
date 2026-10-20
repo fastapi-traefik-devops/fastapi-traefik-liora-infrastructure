@@ -14,6 +14,7 @@ Proxmox to inspect existing VMs and storage.
 
 - [ ] Confirm template `9013`, `vnet77`, gateway `192.168.77.1`, and VM disk storage from [the template runbook](03-create-debian13-template.md).
 - [ ] Check that `recovery/.env` contains the current Proxmox API endpoint, node, token, and `DISK_STORAGE`. Confirm that `recovery/LIORA-id_ed25519.pub` is the intended public key for every node.
+- [ ] Check any local `infrastructure/k3s-cluster/terraform/terraform.tfvars` overrides. Set `memory_mb = 8192` (maximum) and `memory_min_mb = 2048` (minimum) if those values are present; local values override the defaults.
 - [ ] Inspect VMs `201`–`203` and `211`–`213` in Proxmox before planning. VM `200` is reserved for management and is not part of either cluster.
 
 ## Initialize Terraform and reconcile state
@@ -49,7 +50,7 @@ The provider's [VM import format](https://github.com/bpg/terraform-provider-prox
 
 ## Review and apply the plan
 
-- [ ] Create and inspect the plan. On an empty host and state it should propose **six additions** with IDs `201`–`203` and `211`–`213`, template `9013`, bridge `vnet77`, selected Cloud-Init storage, matching static IPs, `root-admin`, and the recovery public key. Inspect every update or replacement of imported VMs.
+- [ ] Create and inspect the plan. On an empty host and state it should propose **six additions** with IDs `201`–`203` and `211`–`213`, template `9013`, bridge `vnet77`, selected Cloud-Init storage, matching static IPs, `root-admin`, the recovery public key, and ballooned memory with a 2 GiB minimum and 8 GiB maximum. Inspect every update or replacement of imported VMs.
 
    ```sh
    terraform plan -out=k3s.tfplan
