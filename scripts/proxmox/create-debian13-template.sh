@@ -4,17 +4,109 @@ set -euo pipefail
 # Run on the Proxmox host as root.
 #
 # Change these values if your Proxmox environment differs.
-TEMPLATE_ID="${TEMPLATE_ID:-9000}"
+TEMPLATE_ID="${TEMPLATE_ID:-9013}"
 TEMPLATE_NAME="${TEMPLATE_NAME:-debian-13-cloud}"
 BRIDGE="${BRIDGE:-vnet77}"
-DISK_STORAGE="${DISK_STORAGE:-local-lvm}"
+DISK_STORAGE="${DISK_STORAGE:-}"
 IMAGE_DIR="${IMAGE_DIR:-/var/lib/vz/template/iso}"
 IMAGE_URL="${IMAGE_URL:-https://cloud.debian.org/images/cloud/trixie/latest/debian-13-generic-amd64.qcow2}"
 IMAGE_FILE="${IMAGE_FILE:-${IMAGE_DIR}/debian-13-generic-amd64.qcow2}"
 DISK_SIZE_GB="${DISK_SIZE_GB:-32}"
 
+if (( EUID != 0 )); then
+  echo "Run this script as root on the Proxmox host." >&2
+  exit 1
+fi
+
+for command_name in qm pvesm; do
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    echo "Missing required Proxmox command: ${command_name}" >&2
+    exit 1
+  fi
+done
+
 if qm status "$TEMPLATE_ID" >/dev/null 2>&1; then
-  echo "VM/template ID ${TEMPLATE_ID} already exists. Refusing to overwrite."
+  if qm config "$TEMPLATE_ID" | grep -Eq '^template:[[:space:]]*1([[:space:]]|$)'; then
+    echo "Template ${TEMPLATE_ID} already exists. No changes made. Verify its Debian 13 image and storage with: qm config ${TEMPLATE_ID}"
+    exit 0
+  fi
+  echo "ID ${TEMPLATE_ID} is occupied by a VM that is not a template. No changes made." >&2
+  exit 1
+fi
+
+if ! [[ "$DISK_SIZE_GB" =~ ^[1-9][0-9]*$ ]]; then
+  echo "DISK_SIZE_GB must be a positive integer." >&2
+  exit 1
+fi
+
+SELECTED_STORAGE_OK=0
+
+show_storage_options() {
+  local all_status image_status storage_id row type state available free_gib reason
+  local -a storage_ids
+
+  if [[ ! -r /etc/pve/storage.cfg ]]; then
+    echo "Cannot read /etc/pve/storage.cfg to list all configured storages." >&2
+    return 1
+  fi
+  mapfile -t storage_ids < <(awk '/^[^[:space:]#][^:]*:[[:space:]]+/ {print $2}' /etc/pve/storage.cfg)
+  if ((${#storage_ids[@]} == 0)); then
+    echo "No configured Proxmox storages were found." >&2
+    return 1
+  fi
+  if ! all_status="$(pvesm status)"; then
+    echo "Cannot read Proxmox storage status." >&2
+    return 1
+  fi
+  if ! image_status="$(pvesm status --content images)"; then
+    echo "Cannot determine which storages support VM images." >&2
+    return 1
+  fi
+
+  printf 'Configured storage (required VM disk: %s GiB):\n' "$DISK_SIZE_GB"
+  printf '%-22s %-12s %-12s %-16s %s\n' 'Storage' 'Type' 'Status' 'Free' 'VM disk use'
+  for storage_id in "${storage_ids[@]}"; do
+    row="$(awk -v id="$storage_id" 'NR > 1 && $1 == id {print $2, $3, $6}' <<<"$all_status")"
+    if [[ -z "$row" ]]; then
+      type='unknown'
+      state='unavailable'
+      free_gib='unknown'
+      reason='cannot use: no status or access'
+    else
+      read -r type state available <<<"$row"
+      if [[ "$available" =~ ^[0-9]+$ ]]; then
+        free_gib="$(awk -v kib="$available" 'BEGIN {printf "%.1f GiB", kib / 1048576}')"
+      else
+        free_gib='unknown'
+      fi
+      if ! awk -v id="$storage_id" 'NR > 1 && $1 == id {found=1} END {exit !found}' <<<"$image_status"; then
+        reason='cannot use: VM images not enabled'
+      elif [[ "$state" != active ]]; then
+        reason='cannot use: inactive or disabled'
+      elif ! pvesm list "$storage_id" --content images >/dev/null 2>&1; then
+        reason='cannot use: access check failed'
+      elif [[ ! "$available" =~ ^[0-9]+$ ]] || (( available < DISK_SIZE_GB * 1048576 )); then
+        reason='cannot use: insufficient free space'
+      else
+        reason='eligible (verify write permission)'
+        if [[ "$storage_id" == "$DISK_STORAGE" ]]; then
+          SELECTED_STORAGE_OK=1
+        fi
+      fi
+    fi
+    printf '%-22s %-12s %-12s %-16s %s\n' "$storage_id" "$type" "$state" "$free_gib" "$reason"
+  done
+}
+
+if [[ -z "$DISK_STORAGE" ]]; then
+  echo "DISK_STORAGE is required. Inspect the options below, then rerun with DISK_STORAGE=<storage-id>." >&2
+  show_storage_options
+  exit 2
+fi
+
+show_storage_options
+if (( ! SELECTED_STORAGE_OK )); then
+  echo "DISK_STORAGE=${DISK_STORAGE} is not an eligible VM disk storage. No changes made." >&2
   exit 1
 fi
 
