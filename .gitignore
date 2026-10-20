@@ -15,3 +15,9 @@ kubeconfig
 .idea/
 .vscode/
 .DS_Store
+
+# Local plaintext recovery inputs
+recovery/recovery.yaml
+recovery/.env
+# Administrator SSH identity remains local during recovery.
+recovery/LIORA-id_ed25519*
