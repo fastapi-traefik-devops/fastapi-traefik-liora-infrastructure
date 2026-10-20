@@ -1,0 +1,96 @@
+---
+- name: Configure Debian 13 Tailscale subnet router
+  hosts: ts_router
+  become: true
+  gather_facts: true
+  vars:
+    advertise_route: 192.168.77.0/24
+    tailscale_hostname: ts-router
+  tasks:
+    - name: Require Debian 13
+      ansible.builtin.assert:
+        that:
+          - ansible_distribution == 'Debian'
+          - ansible_distribution_major_version == '13'
+        fail_msg: This playbook expects the Debian 13 template 9013.
+
+    - name: Install the official Tailscale apt signing key
+      ansible.builtin.get_url:
+        url: https://pkgs.tailscale.com/stable/debian/trixie.noarmor.gpg
+        dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+        mode: '0644'
+
+    - name: Configure the official Debian 13 Tailscale repository
+      ansible.builtin.get_url:
+        url: https://pkgs.tailscale.com/stable/debian/trixie.tailscale-keyring.list
+        dest: /etc/apt/sources.list.d/tailscale.list
+        mode: '0644'
+
+    - name: Install Tailscale
+      ansible.builtin.apt:
+        name: tailscale
+        update_cache: true
+        state: present
+
+    - name: Enable IPv4 and IPv6 forwarding
+      ansible.builtin.copy:
+        dest: /etc/sysctl.d/99-tailscale.conf
+        content: |
+          net.ipv4.ip_forward = 1
+          net.ipv6.conf.all.forwarding = 1
+        mode: '0644'
+      notify: Apply Tailscale forwarding settings
+
+    - name: Apply forwarding settings before router registration
+      ansible.builtin.meta: flush_handlers
+
+    - name: Enable and start tailscaled
+      ansible.builtin.service:
+        name: tailscaled
+        enabled: true
+        state: started
+
+    - name: Read Tailscale status
+      ansible.builtin.command: tailscale status --json
+      register: tailscale_status
+      changed_when: false
+      failed_when: false
+
+    - name: Require a one-use auth key for first registration
+      ansible.builtin.assert:
+        that:
+          - lookup('ansible.builtin.env', 'TAILSCALE_AUTH_KEY') | length > 0
+        fail_msg: Export TAILSCALE_AUTH_KEY from terraform output before the first run.
+        quiet: true
+      when: tailscale_status.rc != 0 or (tailscale_status.stdout | default('{}', true) | from_json).BackendState | default('') != 'Running'
+      no_log: true
+
+    - name: Register the subnet router on first login
+      ansible.builtin.command:
+        argv:
+          - tailscale
+          - up
+          - "--auth-key={{ lookup('ansible.builtin.env', 'TAILSCALE_AUTH_KEY') }}"
+          - "--advertise-routes={{ advertise_route }}"
+          - --accept-dns=false
+          - "--hostname={{ tailscale_hostname }}"
+      when: tailscale_status.rc != 0 or (tailscale_status.stdout | default('{}', true) | from_json).BackendState | default('') != 'Running'
+      no_log: true
+
+    - name: Read current Tailscale preferences
+      ansible.builtin.command: tailscale debug prefs
+      register: tailscale_prefs
+      changed_when: false
+
+    - name: Advertise the private route and disable Tailscale DNS
+      ansible.builtin.command:
+        argv:
+          - tailscale
+          - set
+          - "--advertise-routes={{ advertise_route }}"
+          - --accept-dns=false
+      when: advertise_route not in ((tailscale_prefs.stdout | from_json).AdvertiseRoutes | default([])) or ((tailscale_prefs.stdout | from_json).CorpDNS | default(true)) | bool
+
+  handlers:
+    - name: Apply Tailscale forwarding settings
+      ansible.builtin.command: sysctl -p /etc/sysctl.d/99-tailscale.conf
