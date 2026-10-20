@@ -3,6 +3,8 @@
 This repository provisions the private `192.168.77.0/24` network on Proxmox VE 9,
 a management VM, a Tailscale subnet router, and two three-node K3s clusters.
 
+## Infrastructure at a glance
+
 | Component | VM IDs | Addresses |
 | --- | --- | --- |
 | Proxmox gateway | — | `192.168.77.1` |
@@ -31,6 +33,8 @@ runbooks/                      Operator instructions
 recovery/                      Credential examples and local, ignored secrets
 scripts/proxmox/               Proxmox host scripts
 ```
+
+## Keep credentials and state outside Git
 
 Real credentials, SSH private keys, Terraform state, and recovery archives must
 remain outside Git. The local `recovery/` directory holds ignored copies needed
