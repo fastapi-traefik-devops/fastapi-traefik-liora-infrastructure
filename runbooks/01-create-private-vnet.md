@@ -1,6 +1,6 @@
 # Create the private `vnet77` network
 
-**Where:** Proxmox VE 9 web UI and host shell. **Status:** Draft compiled for this project's network; verify the provider-facing interface and current SDN state before applying changes to an existing host.
+**Where:** Proxmox VE 9 web UI and host shell.
 
 1. Keep the provider console open. In **Datacenter → SDN → Zones**, inspect existing zones. On a new host without a suitable zone, create a **Simple** zone (the existing notes use `private`). Do not replace a working zone merely to match that example name.
 2. In **Datacenter → SDN → VNets**, inspect existing VNets. Create `vnet77` in the selected Simple zone only if it does not already exist. The supplied template screenshot and the checked-in template script use `vnet77`; the spoken name `venet77` must not be silently substituted in commands.

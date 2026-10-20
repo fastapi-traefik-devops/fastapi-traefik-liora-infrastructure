@@ -1,8 +1,8 @@
 # Create and verify a Proxmox API token
 
-**Where:** Connect from management VM 200 to the Proxmox host over SSH; test the API from VM 200. **Status:** Commands checked against Proxmox and provider documentation; token creation and permission scope still require a live test.
+**Where:** Connect from management VM 200 to the Proxmox host over SSH; test the API from VM 200.
 
-The Tailscale Terraform module reads `TF_VAR_pm_endpoint`, `TF_VAR_pm_node`, and `TF_VAR_pm_api_token` from the local, Git-ignored `recovery/.env`. Its token must be able to read template **9013**, clone/configure VM **250**, allocate VM disk space on the selected storage, and use `vnet77`.
+The Tailscale and K3s Terraform modules read `TF_VAR_pm_endpoint`, `TF_VAR_pm_node`, and `TF_VAR_pm_api_token` from the local, Git-ignored `recovery/.env`. The token must be able to read template **9013**, clone/configure VMs **250**, **201–203**, and **211–213**, allocate VM disk space on the selected storage, and use `vnet77`.
 
 ## 1. Connect to Proxmox
 

@@ -16,5 +16,3 @@ Starting point: a provider-supplied bare-metal server with preconfigured Proxmox
 7. **Move work to VM 200.** Connect over SSH, clone this repository, and continue infrastructure work there. [Bootstrap the management checkout](runbooks/06-bootstrap-management-checkout.md) · [Install management tools](runbooks/11-install-management-tools.md) · [Prepare Proxmox API access](runbooks/12-create-proxmox-api-token.md).
 8. **Provide private VPN access.** Provision VM 250 and advertise the private subnet after the management path works. [Tailscale access stage](runbooks/07-tailscale-private-access.md).
 9. **Build the two Kubernetes clusters.** Prepare dev/stage VMs **201–203** and prod VMs **211–213**, then install K3s. [Cluster VM provisioning](runbooks/08-provision-cluster-vms.md) · [K3s installation](runbooks/09-install-k3s-clusters.md).
-
-The runbooks distinguish established steps from automation that still needs testing. Do not treat an untested Terraform plan as a verified deployment.

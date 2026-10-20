@@ -1,8 +1,6 @@
 # Install the two K3s clusters
 
 **Where:** Run every command on management VM 200, from the repository root.
-The K3s bootstrap sequence and prod kubeconfig retrieval were tested on VM 200.
-Tests confirmed the resulting kubeconfig works after correcting ownership.
 
 | Cluster | VM IDs | Node IPs | API VIP | Inventory |
 | --- | --- | --- | --- | --- |
@@ -58,12 +56,7 @@ Tests confirmed the resulting kubeconfig works after correcting ownership.
      infrastructure/k3s-cluster/ansible/40_fetch_kubeconfig.yml
    ```
 
-   The previous `fetch` task failed to write on VM 200 even in a newly created
-   private temporary directory. This play no longer uses the `fetch` action
-   or the former `ansible/artifacts/` directory. Do not make either directory
-   world-writable to work around that error.
-
-   If an earlier run created a root-owned kubeconfig, repair only the affected
+   If a prior run created a root-owned kubeconfig, repair only the affected
    directory and file on VM 200, then rerun the kubeconfig play:
 
    ```sh
@@ -93,8 +86,7 @@ Tests confirmed the resulting kubeconfig works after correcting ownership.
    `admin-prod`, and default context `dev-stage`. Specify `--context` for
    commands that target a particular cluster.
 
-**Disaster recovery:** Rebuilding fresh clusters may use new tokens, but a
-fresh K3s install does not restore application data. An etcd snapshot restore
-requires the original server token and a separate restore procedure. Do not
-run this fresh-install workflow as a substitute for restoring a snapshot; see
+**Disaster recovery:** A fresh cluster build generates or reuses the local
+tokens and does not restore application data. To restore an etcd snapshot,
+use its original server token and the K3s restore procedure. See
 the [K3s backup and restore requirements](https://docs.k3s.io/datastore/backup-restore).

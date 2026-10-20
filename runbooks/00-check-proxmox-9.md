@@ -1,6 +1,6 @@
 # Check Proxmox VE 9
 
-**Where:** Provider console or an existing administrator session on the Proxmox host. **Status:** Documentation draft; no host changes performed by this repository.
+**Where:** Provider console or an administrator session on the Proxmox host.
 
 1. Keep the provider console available while checking the host. Run `pveversion` and confirm the major release is **9**.
 2. If the host is on Proxmox VE **8**, complete the [official 8-to-9 upgrade procedure](https://pve.proxmox.com/wiki/Upgrade_from_8_to_9) before using the following runbooks. Recheck `pveversion` after the upgrade. This runbook does not replace the upgrade procedure.

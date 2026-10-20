@@ -1,6 +1,6 @@
 # Configure persistent SSH DNAT to VM 200
 
-**Where:** Proxmox VE 9 host. **Purpose:** Public TCP `22200` → `192.168.77.200:22`. **Status:** This exact forwarding rule is present in the supplied live `/etc/nftables.d/custom77-nat.nft`; the service that reloads that file has not yet been inspected.
+**Where:** Proxmox VE 9 host. **Purpose:** Public TCP `22200` → `192.168.77.200:22`.
 
 1. Keep provider console access open. Confirm that VM 200 runs SSH on port 22 and that `nft --version` succeeds. Identify the actual public-facing interface; the supplied live rule uses `vmbr0`.
 2. Inspect `/etc/nftables.d/custom77-nat.nft` and `nft list table ip custom77_nat`. If the VM 200 rule already exists, keep it; do not add a duplicate. **Do not replace the live file with the minimal [nftables example](../edge/nftables/custom77-nat.nft.example):** it may contain other working rules.

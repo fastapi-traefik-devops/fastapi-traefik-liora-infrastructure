@@ -1,6 +1,6 @@
 # Prepare the administrator SSH identity
 
-**Where:** Trusted administrator PC/laptop. **Status:** Recovery key pair checked locally; new-install generation has not been replayed.
+**Where:** Trusted administrator PC/laptop.
 
 1. For a new installation, create one Ed25519 key pair in the local `recovery/` directory, only if neither file exists:
 

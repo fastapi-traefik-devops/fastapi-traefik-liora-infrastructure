@@ -1,6 +1,6 @@
 # Install Ansible and Terraform on VM 200
 
-**Where:** Management VM 200, Debian 13. **Status:** Installation commands are documented; they have not been replayed on a replacement VM.
+**Where:** Management VM 200, Debian 13.
 
 Terraform is the default command used by the remaining runbooks. OpenTofu is an alternative: install one of them, then replace `terraform` with `tofu` in later commands if you choose OpenTofu.
 
@@ -16,9 +16,10 @@ ansible --version
 Install the tools required by the HashiCorp APT repository, then install Terraform:
 
 >[!warning] don't forget `umask 022`
-> if you prefiously did `umask 077` switch back to `umask 022` or installation will break
+> if you prefiously did `umask 077` - switch back to `umask 022` or installation will break.
 
 ```sh
+umask 022
 sudo apt-get update
 sudo apt-get install -y wget gnupg lsb-release ca-certificates curl
 wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null

@@ -1,10 +1,10 @@
 # Provision the Tailscale subnet router
 
-**Where:** Management VM 200, from the repository checkout. Client installation and the final VPN connectivity test run on your PC/laptop. **Status:** The router was provisioned and Tailscale connectivity was confirmed by the operator. The earlier storage and expired-key failures are documented below.
+**Where:** Management VM 200, from the repository checkout. Install the client and test VPN connectivity on your PC/laptop.
 
 This phase clones Debian 13 template **9013** into VM **250** (`192.168.77.250/24`) on `vnet77`, then advertises `192.168.77.0/24` through Tailscale. Step 7 already placed the local, Git-ignored credentials in `recovery/` and [installed Ansible and Terraform](11-install-management-tools.md) on VM 200. Terraform reads the public key from that directory; Ansible uses its matching private key. The private key is never installed on VM 250.
 
-## 1. Use the prepared recovery inputs
+## 1. Load infrastructure inputs
 
 From the repository root on VM 200, load the prepared environment:
 
@@ -12,7 +12,7 @@ From the repository root on VM 200, load the prepared environment:
 source recovery/.env
 ```
 
-If you copied an example file or are unsure whether the local bundle is complete, optionally run `bash recovery/check_credentials.sh --tailscale`. It also makes a read-only Proxmox API request to verify that the token can read template 9013. Use `--offline` to skip that request before VM 200 has private API access. [Create or replace the token](12-create-proxmox-api-token.md) if needed. Run it without an argument to also check GHCR credentials and the Kubernetes recovery YAML. Keep the current Proxmox API endpoint and node name in `recovery/.env` so a replacement host needs only this one local update.
+After restoring credentials from an archive or filling an example file, run `bash recovery/check_credentials.sh --tailscale`. It also makes a read-only Proxmox API request to check that the token can read template 9013. Use `--offline` before VM 200 has private API access. [Create or replace the token](12-create-proxmox-api-token.md) if needed. Run the script without an argument to also check GHCR credentials and the Kubernetes recovery YAML. Keep the current Proxmox API endpoint and node name in `recovery/.env` so a replacement host needs only this one local update.
 
 Before applying Terraform, confirm that VM ID **250** and `192.168.77.250` are free, or recover/reconcile the existing Terraform state if this is disaster recovery. Keep Terraform state in a restricted location.
 
@@ -50,10 +50,11 @@ unset TAILSCALE_AUTH_KEY
 ```
 
 The auth key is passed to Ansible only for the router's first login. Terraform state contains the sensitive key, so protect and back it up with the other recovery state. If the one-use key expires before first login, review a replacement plan with `terraform plan -replace=tailscale_tailnet_key.router` and apply it before rerunning Ansible.
-### Possible Problems
-#### Resume after the `local-lvm` apply failure
+### Troubleshooting
 
-If you failed with the error below, it means that `DISK_STORAGE='vmdata'` is wrong in `recovery/.env`. Probably you've missed the step in [03-create-debian13-template](03-create-debian13-template.md)
+#### Resume after a `local-lvm` apply failure
+
+This error means Terraform tried to create the Cloud-Init drive on `local-lvm`, which does not exist on the current host. Set `DISK_STORAGE` in `recovery/.env` to the storage selected in [the template runbook](03-create-debian13-template.md), then reload the environment before planning again.
 
 ```sh
 │ Error: All attempts fail:  
@@ -84,7 +85,7 @@ terraform apply router.tfplan
 
 Do not reuse the earlier saved plan: Terraform state changed when the auth key was created. Review the new plan before applying, then continue with the auth key export and Ansible commands above. If VM 250 **does** exist, inspect its configuration and reconcile it with Terraform state before applying another plan; do not blindly create or delete it.
 
-After successfule terraform run - go to **Ansible part**.
+After Terraform succeeds, continue with the Ansible commands above.
 ```sh
 $ terraform apply router.tfplan  
 proxmox_virtual_environment_vm.ts_router: Destroying... [id=250]  
@@ -109,7 +110,7 @@ ts_authkey = <sensitive>
 ts_router_ip = "192.168.77.250"
 ```
 
-#### if Ansible fails
+#### Router registration fails in Ansible
 
 ```sh
 $ ansible-playbook -i edge/tailscale/ansible/inventory.ini 
@@ -131,7 +132,7 @@ fatal: [ts-router]: FAILED! => {"censored": "the output has been hidden due to t
 PLAY RECAP **************************************************
 ts-router                  : ok=10   changed=5    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0
 ```
-**an expired key is the most likely cause**. The first Terraform apply created a one-use key with a one-hour lifetime. The second apply replaced only VM 250, so it reused that earlier key. Ansible confirmed `TAILSCALE_AUTH_KEY` was nonempty, but `no_log: true` hides Tailscale’s exact error.
+The `no_log: true` setting hides Tailscale's exact error. The one-use key expires one hour after Terraform creates it. If that hour has passed, replace the key before rerunning Ansible. A VM-only replacement reuses the previous key.
 
 From `edge/tailscale/terraform` on VM 200, generate a fresh key:
 ```sh

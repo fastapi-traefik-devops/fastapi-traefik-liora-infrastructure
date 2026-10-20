@@ -1,119 +1,37 @@
-# Proxmox + HA K3s lab
+# Proxmox and K3s infrastructure
 
-A production-shaped, learning-oriented K3s cluster on Proxmox.
+This repository provisions the private `192.168.77.0/24` network on Proxmox VE 9,
+a management VM, a Tailscale subnet router, and two three-node K3s clusters.
 
-## Target lab
+| Component | VM IDs | Addresses |
+| --- | --- | --- |
+| Proxmox gateway | — | `192.168.77.1` |
+| Management | 200 | `192.168.77.200` |
+| Tailscale router | 250 | `192.168.77.250` |
+| Dev/stage K3s | 201–203 | `192.168.77.201–203`; API VIP `192.168.77.11` |
+| Prod K3s | 211–213 | `192.168.77.211–213`; API VIP `192.168.77.12` |
 
-```text
-Public IP: 151.115.96.5
-LAN:       192.168.77.0/24
-Proxmox:   192.168.77.1
-
-K3s:
-  k3s-01   192.168.77.201
-  k3s-02   192.168.77.202
-  k3s-03   192.168.77.203
-
-Kubernetes API VIP:
-  192.168.77.10   (kube-vip, ARP)
-
-Optional MetalLB pool:
-  192.168.77.50-192.168.77.59
-
-Application domain:
-  liora-fastapi.aprt.info
-```
-
-All three K3s nodes are `server` nodes. They run the control plane, embedded etcd,
-and normal workloads.
-
-## Primary design
-
-```text
-Internet
-  |
-  | 151.115.96.5:80/443
-  v
-Proxmox nftables DNAT                  LAB edge
-  |
-  | -> 192.168.77.201:80/443
-  v
-K3s ServiceLB
-  |
-  v
-Traefik
-  |
-  +--> Gateway API (primary)
-  |       |
-  |       v
-  |     HTTPRoute
-  |
-  +--> Ingress (comparison)
-          |
-          v
-      ClusterIP Service
-          |
-          v
-       Pods :8080
-```
-
-Control plane:
-
-```text
-kubectl / joining nodes
-        |
-        v
-192.168.77.10:6443
-     kube-vip
-        |
-   +----+----+
-   |    |    |
- .201 .202 .203
-   \    |    /
-    embedded etcd
-```
-
-## Important architectural choice
-
-The primary scenario intentionally keeps **K3s ServiceLB**. MetalLB is supplied as
-a later migration scenario so the difference between the two mechanisms can be
-observed directly.
+Each K3s cluster has three server nodes with embedded etcd. The Debian 13
+Cloud-Init template is VM `9013`.
 
 ## Start here
 
-Read `FINAL_MANUAL.md`.
+- [New installation](00-Installation_from-0.md)
+- [Infrastructure disaster recovery](01-Disaster_recovery.md)
 
-The exact commands and file order for every scenario are in:
-
-- `FINAL_MANUAL.md`
-- `docs/SCENARIOS.md`
+Both navigators link to the step-specific instructions in `runbooks/`.
 
 ## Repository layout
 
 ```text
-.
-├── infrastructure/
-│   └── opentofu/             # Proxmox VM IaC
-├── ansible/                  # automated node preparation + HA K3s
-├── kubernetes/
-│   ├── kube-vip/
-│   ├── traefik/
-│   ├── apps/
-│   ├── gateway/
-│   ├── ingress/
-│   ├── tls/
-│   ├── metallb-optional/
-│   └── gitops/
-├── edge/
-│   ├── nftables/             # primary lab edge
-│   └── haproxy/              # production-shaped edge
-├── scripts/
-│   ├── proxmox/
-│   └── manual/
-└── docs/
+edge/tailscale/                 Tailscale VM and router configuration
+edge/nftables/                 Proxmox host DNAT examples
+infrastructure/k3s-cluster/    Terraform VMs and Ansible K3s installation
+runbooks/                      Operator instructions
+recovery/                      Credential examples and local, ignored secrets
+scripts/proxmox/               Proxmox host scripts
 ```
 
-## Security
-
-No real API token, K3s token, Cloudflare token, password, or private key is stored
-in this repository. Files containing real secrets are intentionally ignored by Git.
+Real credentials, SSH private keys, Terraform state, and recovery archives must
+remain outside Git. The local `recovery/` directory holds ignored copies needed
+by the operator; review `git status` before every commit.
