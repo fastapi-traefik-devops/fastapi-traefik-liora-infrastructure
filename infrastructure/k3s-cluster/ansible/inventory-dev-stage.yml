@@ -2,13 +2,13 @@ all:
   children:
     k3s_servers:
       hosts:
-        k3s-01:
+        k3s-1-01:
           ansible_host: 192.168.77.201
           node_ip: 192.168.77.201
-        k3s-02:
+        k3s-1-02:
           ansible_host: 192.168.77.202
           node_ip: 192.168.77.202
-        k3s-03:
+        k3s-1-03:
           ansible_host: 192.168.77.203
           node_ip: 192.168.77.203
 
