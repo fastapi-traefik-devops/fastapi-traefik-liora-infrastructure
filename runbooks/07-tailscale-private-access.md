@@ -1,6 +1,6 @@
 # Provision the Tailscale subnet router
 
-**Where:** Management VM 200, from the repository checkout. The final VPN connectivity test runs on your PC/laptop. **Status:** The first live Terraform apply failed because the Cloud-Init datastore defaulted to unavailable `local-lvm`; the datastore correction awaits a live retest.
+**Where:** Management VM 200, from the repository checkout. Client installation and the final VPN connectivity test run on your PC/laptop. **Status:** The router was provisioned and Tailscale connectivity was confirmed by the operator. The earlier storage and expired-key failures are documented below.
 
 This phase clones Debian 13 template **9013** into VM **250** (`192.168.77.250/24`) on `vnet77`, then advertises `192.168.77.0/24` through Tailscale. Step 7 already placed the local, Git-ignored credentials in `recovery/` and [installed Ansible and Terraform](11-install-management-tools.md) on VM 200. Terraform reads the public key from that directory; Ansible uses its matching private key. The private key is never installed on VM 250.
 
@@ -145,27 +145,51 @@ terraform apply renew-key.tfplan
 ```
 Then go again to the **Ansible** part.
 
-## 3. Approve and verify private access
+## 3. Approve the advertised subnet route
 
-In the Tailscale admin console, approve `ts-router`'s advertised `192.168.77.0/24` route unless your existing policy auto-approves it. Confirm tailnet grants permit the intended administrators to use the route. This Terraform module does not manage tailnet policy.
+In the Tailscale admin console, open **Machines** and find `ts-router`. Its **Subnets** badge indicates that it is advertising a route. If your tailnet policy does not auto-approve routes, open the machine's **⋯** menu, choose **Edit route settings**, select `192.168.77.0/24`, and click **Save**. Confirm tailnet grants permit the intended administrators to use that subnet. This Terraform module does not manage tailnet policy. [Tailscale subnet router guide](https://tailscale.com/docs/features/subnet-routers).
 
-![](<_resources/Pasted image 20261020173351.png>)
+![The ts-router machine advertising a subnet](<_resources/Pasted image 20261020173351.png>)
 
-![](<_resources/Pasted image 20261020173856.png>)
+![Open Edit route settings for ts-router](<_resources/Pasted image 20261020173856.png>)
 
-![](<_resources/Pasted image 20261020173930.png>)
+![Approve the advertised 192.168.77.0/24 route and save](<_resources/Pasted image 20261020173930.png>)
+
+## 4. Install a Tailscale client and verify private access
+
+On your **PC/laptop**, install the client and connect it to the same tailnet as `ts-router`.
+
+### Linux client
+
+```bash
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
+```
+
+On first login, `tailscale up` prints an authorization URL. Open it in a browser, sign in to the intended tailnet, and click **Connect** for this device. The screenshot shows this browser confirmation step. Linux does not accept subnet routes by default, so enable them after login:
+
+![Authorize the PC or laptop in the same tailnet](<_resources/Pasted image 20261020173634.png>)
+
+```bash
+sudo tailscale set --accept-routes
+tailscale status
+```
+
+[Linux installation instructions](https://tailscale.com/docs/install/linux).
+
+### macOS client
+
+Download and install the app from [Tailscale for macOS](https://tailscale.com/download/mac). Open it, complete the VPN setup prompts, and sign in to the same tailnet. macOS accepts approved subnet routes by default; no Linux `--accept-routes` command is needed. [macOS installation instructions](https://tailscale.com/docs/install/mac).
+
+### Final tests
 
 On VM 200, verify that Tailscale is running and IP forwarding is enabled on VM 250:
 
 ```bash
-###cd ../../../
 ssh -i recovery/LIORA-id_ed25519 root-admin@192.168.77.250 'sudo systemctl is-active tailscaled; sudo sysctl net.ipv4.ip_forward net.ipv6.conf.all.forwarding; sudo tailscale status'
 ```
 
-On your **PC/laptop**, connect to the same tailnet.
-![](<_resources/Pasted image 20261020173634.png>)
-
-A Linux client must enable subnet route acceptance with `sudo tailscale set --accept-routes`. Test access through the VPN:
+From the repository root on your **PC/laptop**, test access through the VPN:
 
 ```bash
 ssh -i recovery/LIORA-id_ed25519 root-admin@192.168.77.200
@@ -173,4 +197,4 @@ ssh -i recovery/LIORA-id_ed25519 root@192.168.77.1
 ssh -i recovery/LIORA-id_ed25519 root-admin@192.168.77.250
 ```
 
-If your PC already has a direct route to `192.168.77.0/24`, inspect the selected route before treating SSH success as VPN proof. Record the live test result before marking this phase verified.
+If your PC already has a direct route to `192.168.77.0/24`, inspect the selected route before treating SSH success as VPN proof.
