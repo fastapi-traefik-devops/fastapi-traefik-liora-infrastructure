@@ -24,25 +24,47 @@
 
    Preserve these ignored token files with future datastore backups.
 
-3. Install the playbook dependency and inspect each target list. VM 200's
-   existing SSH identity is used; no `--private-key` argument is required.
+3. Install the playbook dependency and inspect each target list. Use the
+   administrator private key restored to `recovery/LIORA-id_ed25519` on VM 200.
 
    ```sh
    ansible-galaxy collection install -r infrastructure/k3s-cluster/ansible/requirements.yml
    ansible-inventory -i infrastructure/k3s-cluster/ansible/inventory-dev-stage.yml --graph
    ansible-inventory -i infrastructure/k3s-cluster/ansible/inventory-prod.yml --graph
-   ansible k3s_servers -i infrastructure/k3s-cluster/ansible/inventory-dev-stage.yml -m ping
-   ansible k3s_servers -i infrastructure/k3s-cluster/ansible/inventory-prod.yml -m ping
    ```
+
+   If these VMs replace earlier machines at the same IPs, confirm the VM-to-IP
+   mapping in Proxmox and remove their old SSH host keys from VM 200. This
+   command covers a rebuild of all six nodes; for a partial rebuild, list only
+   the affected IPs:
+
+   ```sh
+   for ip in 192.168.77.{201..203} 192.168.77.{211..213}; do
+     ssh-keygen -R "$ip"
+   done
+   ```
+
+   Check access to both inventories with the restored private key:
+
+   ```sh
+   ansible k3s_servers -i infrastructure/k3s-cluster/ansible/inventory-dev-stage.yml -m ping --private-key recovery/LIORA-id_ed25519
+   ansible k3s_servers -i infrastructure/k3s-cluster/ansible/inventory-prod.yml -m ping --private-key recovery/LIORA-id_ed25519
+   ```
+
+   If SSH still reports `Permission denied (publickey)`, check that the
+   matching public key is authorized for `root-admin` on the VM. This is an
+   authentication failure, not a `known_hosts` failure.
 
 4. Install dev/stage, then prod. Each invocation uses only its own inventory,
    VIP and saved token. Do not combine the two inventories in one run.
 
    ```sh
    ansible-playbook -i infrastructure/k3s-cluster/ansible/inventory-dev-stage.yml \
+     --private-key recovery/LIORA-id_ed25519 \
      infrastructure/k3s-cluster/ansible/site.yml
 
    ansible-playbook -i infrastructure/k3s-cluster/ansible/inventory-prod.yml \
+     --private-key recovery/LIORA-id_ed25519 \
      infrastructure/k3s-cluster/ansible/site.yml
    ```
 
@@ -53,6 +75,7 @@
 
    ```sh
    ansible-playbook -i infrastructure/k3s-cluster/ansible/inventory-prod.yml \
+     --private-key recovery/LIORA-id_ed25519 \
      infrastructure/k3s-cluster/ansible/40_fetch_kubeconfig.yml
    ```
 
