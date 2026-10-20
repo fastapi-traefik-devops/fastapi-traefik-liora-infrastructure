@@ -1,0 +1,13 @@
+# Proxmox VE 9 example for a new host. Adapt the public-facing interface.
+# This reloads only custom77_nat. Preserve any other rules already in that table
+# before using this file on an existing host.
+destroy table ip custom77_nat
+
+table ip custom77_nat {
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+
+        # Public TCP 22200 reaches SSH on management VM 200.
+        iifname "vmbr0" tcp dport 22200 dnat to 192.168.77.200:22 comment "SSH to VM 200"
+    }
+}

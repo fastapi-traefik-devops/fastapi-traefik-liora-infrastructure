@@ -8,4 +8,4 @@
 4. Apply the SDN configuration in **Datacenter → SDN**. If Proxmox reports a missing SDN include, check whether `/etc/network/interfaces` contains `source /etc/network/interfaces.d/sdn`; adapt only after inspecting the host's current network configuration.
 5. On the host, verify `ip -br address show vnet77` includes `192.168.77.1/24` and `ip route` contains `192.168.77.0/24` on `vnet77`. After VM 200 exists, verify its gateway, DNS, and outbound connectivity from inside the VM.
 
-**Done when:** `vnet77` exists, the gateway and route are present, and a VM on that VNet can reach its gateway and the internet. This network step does not publish any VM service to the public IP.
+**Done when:** `vnet77` exists, the gateway and route are present, and a VM on that VNet can reach its gateway and the internet. This network step does not publish any VM service to the public IP; the separate [nftables examples](../edge/nftables/README.md) cover the later VM 200 SSH DNAT step.

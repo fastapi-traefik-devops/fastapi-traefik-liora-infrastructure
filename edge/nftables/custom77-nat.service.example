@@ -1,0 +1,14 @@
+[Unit]
+Description=Load custom77 nftables DNAT rules
+After=network-online.target
+Wants=network-online.target
+Before=pve-guests.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/nft -f /etc/nftables.d/custom77-nat.nft
+ExecReload=/usr/sbin/nft -f /etc/nftables.d/custom77-nat.nft
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
