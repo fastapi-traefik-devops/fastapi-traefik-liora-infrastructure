@@ -78,6 +78,20 @@ Run each cluster with its own inventory, VIP, and token. Do not combine the inve
      infrastructure/k3s-cluster/ansible/site.yml
    ```
 
+The playbook installs K3s without starting it, then starts the service and checks each node's local API readiness up to 60 times, 10 seconds apart. Each API request has a 10-second timeout. A failed first systemd start can recover through systemd's automatic restart without failing the Ansible run.
+
+### If K3s does not become ready after the retries
+
+> [!WARNING]
+> Inspect the affected node's K3s journal before rerunning the playbook. Do not recreate the VM or rotate the cluster token solely because startup timed out.
+
+- [ ] From VM 200, replace `<node-ip>` with the affected node's address and inspect its service status and recent logs:
+
+   ```sh
+   ssh -i recovery/LIORA-id_ed25519 root-admin@<node-ip> \
+     'sudo systemctl status k3s --no-pager -l; sudo journalctl -u k3s -b -n 100 --no-pager'
+   ```
+
 ### If only kubeconfig retrieval fails
 
 > [!NOTE]

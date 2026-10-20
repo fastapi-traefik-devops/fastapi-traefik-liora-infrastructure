@@ -23,23 +23,34 @@
           write-kubeconfig-mode: "0640"
       no_log: true
 
-    - name: Install pinned K3s first server
+    - name: Install pinned K3s first server without starting it
       ansible.builtin.shell: |
         set -o pipefail
         curl -sfL https://get.k3s.io | \
-          INSTALL_K3S_VERSION="{{ k3s_version }}" sh -s - server
+          INSTALL_K3S_VERSION="{{ k3s_version }}" \
+          INSTALL_K3S_SKIP_START=true sh -s - server
       args:
         executable: /bin/bash
-        creates: /usr/local/bin/k3s
+        creates: /etc/systemd/system/k3s.service
 
-    - name: Ensure K3s is running
-      ansible.builtin.systemd:
+    - name: Start K3s without waiting for the first start attempt
+      ansible.builtin.systemd_service:
         name: k3s
         enabled: true
         state: started
+        no_block: true
 
-    - name: Wait for local API
-      ansible.builtin.wait_for:
-        host: "{{ node_ip }}"
-        port: 6443
-        timeout: 180
+    - name: Wait for the local K3s API to become ready
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/k3s
+          - kubectl
+          - --kubeconfig=/etc/rancher/k3s/k3s.yaml
+          - --request-timeout=10s
+          - get
+          - --raw=/readyz
+      register: k3s_ready
+      until: k3s_ready.rc == 0
+      retries: 60
+      delay: 10
+      changed_when: false
