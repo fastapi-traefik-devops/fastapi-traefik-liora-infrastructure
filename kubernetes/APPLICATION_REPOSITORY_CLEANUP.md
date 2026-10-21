@@ -1,11 +1,14 @@
 # Application repository cleanup candidates
 
 Source reviewed: `fastapi-traefik-devops/fastapi-traefik-liora-application`
-at `1a5b24f096dd1a6234fa101f8648e40db88b52c7`.
+at upstream `b98a22e48527c256193ed65c10307eb574b27ab6`
+(initial local review: `1a5b24f096dd1a6234fa101f8648e40db88b52c7`).
 
 This is a future ownership checklist, not deletion authorization. No application
-files have been changed or imported. Remove a path only after its replacement
-has been migrated, tested, reviewed, and all consumers have been updated.
+files have been changed. The selected deployment history is imported on the
+isolated migration branch, but K3s acceptance and promotion migration are still
+pending. Remove a path only after its replacement has been migrated, tested,
+reviewed, and all consumers have been updated.
 
 | Application path | Earliest condition for removal or ownership review |
 | --- | --- |

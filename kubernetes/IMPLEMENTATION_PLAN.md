@@ -49,9 +49,10 @@ kubernetes/
 ```
 
 The Phase 0 baseline report and migration instructions accompany this plan.
-Application manifests have not been imported. Add deployment files as their
-phases are implemented and checked. Never commit live credentials, controller
-private keys, or state.
+The application base and overlays have been imported with selected history;
+see [Phase 1 report](PHASE1_REPORT.md). Local rendering is verified, but PROD
+image selection and live application deployment remain pending. Never commit
+live credentials, controller private keys, or state.
 
 ### Target ownership and source files
 
@@ -98,7 +99,9 @@ this repository's `examples/kubernetes/` are references, not deployment sources.
 
 ## Phase 0 — Establish the baseline
 
-Status on 2026-10-21: **incomplete; awaiting operator decisions**. See
+Status on 2026-10-21: **baseline reviewed; PROD selection and live storage
+provisioning remain open**. The operator authorized independent Phase 1 work
+after reviewing the report; no cluster mutation was authorized. See
 [Phase 0 baseline report](PHASE0_BASELINE.md) for evidence, exact source images,
 credential gaps, and the proposed Phase 1 scope. No cluster changes were made.
 
@@ -116,7 +119,8 @@ Verified: both contexts and all six Ready nodes; all source overlays render;
 DEV/STAGE digest references recorded. Default local-path provisioners are
 Running and reported capacity is sufficient, but no PVC provisioning test was
 performed. PROD images have not been selected. Authenticated GHCR manifest reads
-succeeded for all DEV/STAGE digests. Fresh, separate backend/database credentials
+succeeded for all DEV/STAGE digests, including the current upstream STAGE
+promotion. Fresh, separate backend/database credentials
 were generated with operator approval in ignored `recovery/recovery.yaml`, under
 `application_credentials`; registry credentials remain in ignored `recovery/.env`.
 No Secrets were applied. Image selection and storage verification remain open.
@@ -125,16 +129,30 @@ No Secrets were applied. Image selection and storage verification remain open.
 
 ## Phase 1 — Copy the current application deployment
 
-- [ ] Copy **all** of `deploy/base/` to `kubernetes/apps/liora/base/`, including
+Status on 2026-10-21: **independent work complete; phase incomplete pending
+approved PROD digests**. See [Phase 1 report](PHASE1_REPORT.md). Work is isolated
+on `migration/liora-phase0` at `/home/root-admin/liora-infrastructure-migration`.
+The deployment source is upstream `b98a22e48527c256193ed65c10307eb574b27ab6`;
+its newer STAGE promotion matches kind. The selected history was scanned and
+imported, and the new runbook and navigator links are present. No live application deployment was attempted.
+
+- [x] Copy **all** of `deploy/base/` to `kubernetes/apps/liora/base/`, including
       PostgreSQL, its PVC and Service, Adminer, the prestart Job, backend,
       frontend, Ingress, and the existing `kustomization.yaml`.
-- [ ] Copy `deploy/overlays/{dev,stage,prod}/` to matching directories in
+- [x] Copy `deploy/overlays/{dev,stage,prod}/` to matching directories in
       `kubernetes/apps/liora/overlays/`. The Kustomize files are required;
       DEV/STAGE `promotion.json` files are records, not deployment inputs.
-- [ ] Render all three overlays with `kubectl kustomize`; inspect namespaces,
-      images, replicas, Secret references, and Ingress hosts.
+- [x] Render all three overlays with explicit-kubeconfig `kubectl kustomize`;
+      inspect namespaces, images, replicas, Secret references, and Ingress hosts.
 - [ ] Replace PROD's `sha-000000...` placeholders with **existing, selected**
-      backend and frontend digests. Limit other edits to K3s compatibility.
+      backend and frontend digests. Limit other edits to K3s compatibility
+      and the operator-requested domain/administrator configuration.
+
+Operator-requested configuration is now `dev.liora.aprt.info`,
+`stage.liora.aprt.info`, and `liora.aprt.info`, with initial administrator
+`admin007@liora.aprt.info`. The ignored recovery file uses the same identity.
+DEV retains HTTP and its source `ENVIRONMENT: staging`; STAGE/PROD retain
+HTTPS and the `app-tls` dependency. No DNS, TLS or public ingress was set up.
 
 **Pass:** three overlays render with real images and the active base retains
 the current working stack. Do not copy Argo CD, monitoring, Jenkins, or the
