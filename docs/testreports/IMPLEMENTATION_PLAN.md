@@ -268,9 +268,18 @@ clusters. Public routing and real domains come later.
 
 ## Phase 6 — Install separate Argo CD instances
 
-- [ ] Install one Argo CD in dev/stage and another in prod; check both admin
+Status on 2026-10-21: **in progress**. Both independent Argo CD v3.5.6
+installations are Ready and both private UI logins passed. Child Applications
+were manually adopted against the published application revision with pruning
+disabled; DEV, STAGE and PROD report Synced/Healthy. Projects restrict each
+instance to its own local application namespaces. Root definitions, installation
+provenance and the operator runbook are prepared on `migration/liora-phase6`.
+Root reconciliation and automation checks require publishing those GitOps files;
+permission to push is pending. See [Phase 6 report](PHASE6_REPORT.md).
+
+- [x] Install one Argo CD in dev/stage and another in prod; check both admin
       UIs through private access.
-- [ ] Adapt application-repository `argocd/app-dev.yaml`,
+- [x] Adapt application-repository `argocd/app-dev.yaml`,
       `app-stage.yaml`, and `project.yaml` into
       `kubernetes/gitops/argocd/nonprod/`. Create the PROD Application and
       project in `kubernetes/gitops/argocd/prod/`. Source this repository.
