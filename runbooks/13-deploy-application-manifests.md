@@ -5,6 +5,9 @@
 **Status:** Phase 1 has imported and rendered these manifests locally. No
 application deployment or acceptance on the new K3s clusters has been verified.
 PROD is pinned to the operator-approved STAGE image pair `sha-c375967...`.
+Phase 2 namespace/Secret preparation and temporary storage checks are verified
+for all three environments; see the [Phase 2 report](../kubernetes/PHASE2_REPORT.md).
+Application deployment begins separately in Phase 3.
 These commands are the procedure for later authorized phases; importing the
 files does not authorize running them.
 
@@ -215,6 +218,54 @@ STAGE/PROD additionally reference `app-tls`. Restore an appropriate certificate
 and private key as a namespace-local TLS Secret through a separately authorized
 procedure before trusted HTTPS acceptance. Do not mistake Traefik's fallback
 certificate for verification. Private HTTP ingress checks below do not verify TLS.
+
+### Verify PVC provisioning before application deployment
+
+After Secret bootstrap, test the default StorageClass in each target namespace
+using the [temporary storage probe manifest](_resources/application-storage-check.yaml).
+The manifest has a 1Gi RWO claim with no explicit StorageClass, matching the
+application's request, and a short-lived Pod that writes and reads a namespace
+marker. It uses `postgres:16.6` to run a shell command; it does not start a
+database or read application Secrets. The consumer Pod allows the
+`WaitForFirstConsumer` claim to bind.
+
+Run the following separately with the DEV, STAGE and PROD selection from step 1.
+The first command must show no existing resources; stop if either name already
+exists. Do not replace an unrelated probe or delete any application PVC.
+
+```sh
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" get pod,pvc liora-storage-check --ignore-not-found
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" create -f runbooks/_resources/application-storage-check.yaml
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" wait --for=jsonpath='{.status.phase}'=Bound pvc/liora-storage-check --timeout=300s
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" wait --for=jsonpath='{.status.phase}'=Succeeded pod/liora-storage-check --timeout=300s
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" logs liora-storage-check
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" get pvc liora-storage-check -o wide
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" get pod liora-storage-check -o wide
+probe_pv=$(kubectl --kubeconfig="$kubeconfig" -n "$namespace" get pvc liora-storage-check -o jsonpath='{.spec.volumeName}')
+kubectl --kubeconfig="$kubeconfig" get pv "$probe_pv" -o wide
+```
+
+Require `local-path`, claim status Bound, Pod status Succeeded, and the expected
+namespace marker in the logs. DEV/STAGE must use a `k3s-1-` node; PROD must use a
+`k3s-2-` node. Record the actual PV and node. This verifies provisioning and
+basic file I/O, not backup restoration, node failure recovery, database behavior
+or storage redundancy.
+
+After recording a successful check, remove only these temporary resources and
+wait for their dynamically provisioned PV to be reclaimed:
+
+```sh
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" delete pod/liora-storage-check pvc/liora-storage-check --wait=true
+kubectl --kubeconfig="$kubeconfig" wait --for=delete "pv/$probe_pv" --timeout=180s
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" get pods,pvc
+```
+
+If the check fails, inspect its events and Pod status before cleanup and report
+the failure. Investigate the cause, then repeat the probe; record any transient
+runtime interruption and retry. Do not move on until a fresh check passes;
+recurring failures need resolution before deployment.
+The application `postgres-vol` PVC is created separately during its deployment
+phase; a successful probe does not pre-create it.
 
 ## 3. Bring up PostgreSQL, then prestart — Phases 3, 4 or 5
 

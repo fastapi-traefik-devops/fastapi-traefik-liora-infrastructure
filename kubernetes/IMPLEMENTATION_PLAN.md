@@ -99,32 +99,35 @@ this repository's `examples/kubernetes/` are references, not deployment sources.
 
 ## Phase 0 — Establish the baseline
 
-Status on 2026-10-21: **baseline reviewed; live storage provisioning remains
-unverified**. PROD image selection is complete. The operator authorized
-independent Phase 1 work after reviewing the report; no cluster mutation was authorized. See
-[Phase 0 baseline report](PHASE0_BASELINE.md) for evidence, exact source images,
-credential gaps, and the proposed Phase 1 scope. No cluster changes were made.
+Status on 2026-10-21: **complete, including the storage verification subsequently
+performed in Phase 2**. Phase 0 itself was read-only. The operator authorized
+Phase 1 before live storage checks, then explicitly authorized Phase 2.
+See the [Phase 0 baseline](PHASE0_BASELINE.md) for the original observations and
+[Phase 2 report](PHASE2_REPORT.md) for completed namespace, Secret and storage
+verification.
 
 - [x] Confirm both K3s contexts work from management VM 200 and all six nodes
       are Ready. Keep the dev/stage and prod contexts distinct.
 - [x] Record the source commit, DEV/STAGE image digests, and image digests
       selected for the first PROD deployment.
-- [ ] Confirm each cluster has a working StorageClass and enough capacity for
+- [x] Confirm each cluster has a working StorageClass and enough capacity for
       the existing PostgreSQL PVCs and application replicas.
 - [x] Locate the credentials needed for `ghcr-pull-secret`, `backend-secrets`,
       and `db-secrets` in each application namespace. Keep live values in the
       external recovery archive, not Git.
 
 Verified: both contexts and all six Ready nodes; all source overlays render;
-DEV/STAGE digest references recorded. Default local-path provisioners are
-Running and reported capacity is sufficient, but no PVC provisioning test was
-performed. PROD now uses the approved current STAGE image pair. Authenticated
-GHCR manifest reads succeeded for all DEV/STAGE digests, including the current upstream STAGE
-promotion. Fresh, separate backend/database credentials
-were generated with operator approval in ignored `recovery/recovery.yaml`, under
-`application_credentials`; registry credentials remain in ignored `recovery/.env`.
-No Secrets were applied. Actual PVC provisioning remains unverified until a
-later authorized cluster phase.
+source/image references and approved PROD digests recorded. Both default
+local-path provisioners are Running and reported capacity is sufficient.
+Phase 2 created a temporary 1Gi RWO PVC and consumer Pod in each target namespace;
+all bound to local-path and passed write/read checks. Probe resources and PVs
+were removed. A STAGE runtime interruption passed on retry and is documented
+in the Phase 2 report.
+
+Fresh, separate backend/database credentials reside in ignored
+`recovery/recovery.yaml`, with registry credentials in ignored `recovery/.env`.
+Phase 2 created and verified the corresponding live Secrets in each namespace.
+No credential values were committed. Application workloads are not deployed.
 
 **Pass:** both clusters, storage, image versions, and credentials are ready.
 
@@ -167,11 +170,17 @@ historical `k8s/` tree in this phase.
 
 ## Phase 2 — Prepare namespaces and credentials
 
-- [ ] Create `app-dev` and `app-stage` on the dev/stage cluster and `app-prod`
+Status on 2026-10-21: **complete**. See [Phase 2 report](PHASE2_REPORT.md).
+Namespaces are Active, all nine required Secrets match local recovery material,
+and temporary default-StorageClass PVC probes passed in every namespace. The
+probe Pods, PVCs and dynamically provisioned PVs were removed. All six nodes
+are Ready. Phase 3 has not started.
+
+- [x] Create `app-dev` and `app-stage` on the dev/stage cluster and `app-prod`
       on the prod cluster.
-- [ ] Restore or create `ghcr-pull-secret`, `backend-secrets`, and `db-secrets`
+- [x] Restore or create `ghcr-pull-secret`, `backend-secrets`, and `db-secrets`
       in each namespace; ensure backend and database credentials agree.
-- [ ] Confirm PVC provisioning uses the intended K3s StorageClass.
+- [x] Confirm PVC provisioning uses the intended K3s StorageClass.
 
 **Pass:** every target namespace has the required Secret names and can
 provision its own PVC. Do not print Secret values into logs.

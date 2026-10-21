@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: liora-storage-check
+  labels:
+    app.kubernetes.io/name: liora-storage-check
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: liora-storage-check
+  labels:
+    app.kubernetes.io/name: liora-storage-check
+spec:
+  restartPolicy: Never
+  activeDeadlineSeconds: 300
+  automountServiceAccountToken: false
+  containers:
+    - name: storage-check
+      image: postgres:16.6
+      command:
+        - sh
+        - -ec
+        - |
+          printf '%s\n' "$POD_NAMESPACE" > /check/namespace
+          sync
+          test "$(cat /check/namespace)" = "$POD_NAMESPACE"
+          echo "PVC read/write check passed for $POD_NAMESPACE"
+      env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+      volumeMounts:
+        - name: check
+          mountPath: /check
+  volumes:
+    - name: check
+      persistentVolumeClaim:
+        claimName: liora-storage-check

@@ -25,7 +25,8 @@ Both navigators link to the step-specific instructions in `runbooks/`.
 The [application deployment runbook](runbooks/13-deploy-application-manifests.md)
 describes the later manual deployment gates. Manifests have been rendered locally;
 K3s application deployment is not yet verified. PROD uses the approved STAGE
-image digests.
+image digests. Phase 2 prepared all three namespaces and their application
+Secrets; temporary PVC write/read checks passed and were cleaned up.
 
 For the implemented topology and component boundaries, see
 [Current architecture](docs/ARCHITECTURE.md).
