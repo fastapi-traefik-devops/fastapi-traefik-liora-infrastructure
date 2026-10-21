@@ -1,6 +1,19 @@
-# Current infrastructure architecture
+# Infrastructure architecture
+
+Updated **2026-10-21**. This document describes the implemented infrastructure
+and the agreed target architecture. Sections explicitly distinguish
+**Implemented**, **Agreed, not deployed**, and **In development**. Agreement on
+a design does not establish its operational readiness or tested availability.
+
+The implemented application, GitOps and public HTTPS topology is documented in
+the Phase 0–7 reports. Permanent Admin VIP access, separate cluster monitoring
+and the K3s Jenkins foundation have been agreed but are not deployed. Detailed
+steps and phase acceptance remain in the
+[implementation plan](testreports/IMPLEMENTATION_PLAN.md).
 
 ## Host and private network
+
+**Status: Implemented.**
 
 One Proxmox VE 9 host provides `vnet77` (`192.168.77.0/24`), gateway
 `192.168.77.1`, and outbound NAT. Its public IPv4 address is a recovery input,
@@ -18,6 +31,8 @@ current host before creating the template.
 
 ## Access and cluster control
 
+**Status: Implemented, with the kubeconfig observation noted below.**
+
 - Proxmox host nftables forwards public TCP `22200` to VM 200 port `22` for
   initial SSH access. Tailscale VM 250 advertises `192.168.77.0/24` for private
   administration after its route is approved in the tailnet.
@@ -32,8 +47,24 @@ current host before creating the template.
 - The K3s VM Terraform defaults are two vCPUs and Proxmox memory ballooning
   from 2 GiB to 8 GiB. Ansible prepares the guest OS and installs the pinned
   K3s version from each inventory.
-- VM 200 stores individual kubeconfigs for `dev-stage` and `prod`, then merges
-  them into `~/.kube/config` with distinct contexts.
+- VM 200 stores the separate kubeconfigs `~/.kube/config-dev-stage` and
+  `~/.kube/config-prod`, with contexts `dev-stage` and `prod`. The Ansible
+  playbooks include a merge step, but the default `~/.kube/config` on VM 200
+  had no contexts during the documentation review on 2026-10-21. Use the
+  explicit cluster kubeconfig for every operation; do not assume the default
+  configuration selects either target cluster.
+
+### Address roles
+
+| Purpose | DEV/STAGE | PROD | Status |
+| --- | --- | --- | --- |
+| Kubernetes API | `192.168.77.11:6443` | `192.168.77.12:6443` | Implemented; API kube-vip |
+| Public application ingress | `.201`–`.203:80/443` | `.211`–`.213:80/443` | Implemented; Traefik/ServiceLB behind HAProxy |
+| Private administrative Services | `192.168.77.16` | `192.168.77.17` | Agreed, not deployed; separate services-only kube-vip |
+
+The operator confirms `.16` and `.17` are free and allocated to private
+administration. They are distinct from both API VIPs and public ingress
+addresses. Their reservation is not a claim that either Admin VIP is active.
 
 ## Repository boundaries
 
@@ -42,21 +73,62 @@ current host before creating the template.
 | `scripts/proxmox/` | Debian template creation |
 | `edge/nftables/` | Proxmox SSH DNAT examples |
 | `edge/tailscale/` | Subnet router VM and Tailscale configuration |
+| `edge/haproxy/` | Implemented application edge, routing and certificate distribution configuration |
 | `infrastructure/k3s-cluster/terraform/` | Six K3s server VMs |
 | `infrastructure/k3s-cluster/ansible/` | Guest preparation, two K3s clusters, kubeconfigs |
 | `kubernetes/apps/liora/` | Current application manifests, environment overlays, and imported deployment history; DEV/STAGE/PROD deployed and privately verified |
+| `kubernetes/gitops/argocd/` | Implemented independent Argo CD installations and cluster-specific GitOps definitions |
+| `kubernetes/platform/nonprod/` | Planned nonprod administrative access, monitoring and Jenkins foundation |
+| `kubernetes/platform/prod/` | Planned independent PROD administrative access and monitoring |
+| `scripts/kubernetes/` | Reusable deployment, certificate and verification helpers |
 | `recovery/` | Local recovery inputs and examples; live credentials stay out of Git |
 | `runbooks/` | Operator steps for installation and recovery |
+| `docs/testreports/` | Implementation plans, provenance and phase reports |
+| `.local-work/` | Existing ignored operator tools, browser dependencies and generated output |
+
+The platform paths above describe the agreed target layout; those components
+have not been installed. Work uses the original infrastructure checkout and
+its ignored local workspace, without an additional migration worktree. See
+the [local workspace guide](LOCAL_WORKSPACE.md) for tool and archive locations.
+
+The application repository owns application code, tests, image builds and
+release pipeline source. The infrastructure repository owns deployed image
+references, Kubernetes/GitOps resources and the target Jenkins platform
+configuration. Jenkins deployment sources currently remain in the application
+repository's `infra/jenkins-host/` proof of concept until their staged import.
+Promotion changes targeting infrastructure overlays are planned for Phase 9;
+they are not described here as already implemented.
 
 Start with the [installation](../00-Installation_from-0.md) or
 [disaster recovery](../01-Disaster_recovery.md) navigator. The documented
 infrastructure flow continues with the
 [application deployment procedure](../runbooks/13-deploy-application-manifests.md).
+
+## Application environments and storage
+
+**Status: Implemented; database replacement and backup/restore are later work.**
+
 DEV and STAGE run in `app-dev` and `app-stage` on the dev/stage cluster. PROD
 runs in `app-prod` on its separate cluster, with two backend and two frontend
 replicas. Each environment retains PostgreSQL, its separate 1Gi local-path PVC,
 Adminer, prestart, backend and frontend from the imported stack. All backend
 Pods use one worker; PROD required the same explicit command as DEV/STAGE.
+
+| Environment | Cluster / namespace | Public application URL | Backend / frontend replicas |
+| --- | --- | --- | --- |
+| DEV | DEV/STAGE / `app-dev` | `https://dev.liora.aprt.info` | 1 / 1 |
+| STAGE | DEV/STAGE / `app-stage` | `https://stage.liora.aprt.info` | 1 / 1 |
+| PROD | PROD / `app-prod` | `https://liora.aprt.info` | 2 / 2 |
+
+Each namespace has its own frontend, backend, PostgreSQL and Adminer Services.
+Prestart is a migration Job, not a browser service. PostgreSQL and other
+application internals remain on the cluster service network. The agreed
+administrative endpoints expose Adminer, not PostgreSQL directly.
+
+Current `local-path` volumes are node-local; they do not replicate data across
+the three cluster nodes. A three-server control plane or movable VIP does not
+make these volumes or database instances highly available. Data restore and
+storage failover have not been established by the functional application checks.
 
 Database readiness, migrations, private UI login and item persistence are
 verified in the [Phase 3](testreports/PHASE3_REPORT.md),
@@ -67,6 +139,8 @@ restoration and target platform replacements remain later work. Public HTTPS
 routing is now verified in Phase 7 below.
 
 ## GitOps ownership
+
+**Status: Implemented for the current application deployments.**
 
 Independent Argo CD v3.5.6 installations in each cluster's `argocd` namespace
 source this infrastructure repository. Nonprod manages app-dev/app-stage; PROD
@@ -86,13 +160,31 @@ ConfigMap drift correction passed in the [Phase 6 report](testreports/PHASE6_REP
 Use [runbook 14](../runbooks/14-install-argocd.md) for bootstrap and adoption,
 including the manual-policy render required before enabling a fresh deployment.
 
+Administrative exposure must retain a single declarative owner for each
+Service. The exact resources and ownership for the new platform are **in
+development**; the current application reconciliation must not undo, or compete
+with, a separately managed copy of the same Service.
+
 ## Public application ingress and certificates
+
+**Status: Implemented for DNS-only public-origin HTTPS access.**
 
 All three application hostnames resolve directly to the current Proxmox public
 origin (`151.115.96.5` at acceptance), using Cloudflare DNS-only records. Proxmox
 forwards public TCP 80/443 to dedicated HAProxy VM 240. Existing SSH and unrelated
 forwarding rules remain intact. HAProxy allows the three application Host/SNI
 names and rejects unknown/admin names; Argo CD and Adminer gain no public route.
+
+```mermaid
+flowchart LR
+  Browser[Public browser] --> Origin[Proxmox public TCP 80/443]
+  DNS[Cloudflare DNS-only] -. resolves application names .-> Origin
+  Origin --> Edge[HAProxy VM 240]
+  Edge --> Nonprod[Traefik on .201-.203]
+  Edge --> Prod[Traefik on .211-.213]
+  Nonprod --> Apps[DEV and STAGE application Services]
+  Prod --> App[PROD application Services]
+```
 
 TLS passes through to Traefik over disjoint ServiceLB node endpoint pools:
 nonprod `.201`–`.203`, PROD `.211`–`.213`. API VIPs `.11`/`.12` are not ingress
@@ -102,13 +194,167 @@ This is a single-edge deployment without a tested failover/reboot guarantee.
 Certbot HTTP-01 on the edge issues separate trusted certificates for DEV, STAGE
 and PROD. The management VM's daily certificate-sync service privately fetches
 and validates each pair and updates only that environment's `app-tls` Secret.
-Certbot renewal simulations and a service execution passed; a later scheduled
-renewal/distribution cycle has not yet occurred. Certificate state and Terraform
-state remain external operator data. DEV's HTTPS origin/CORS is active in its
-restarted backend; STAGE/PROD retain their existing HTTPS settings.
+Certbot renewal simulations and a service execution passed; the reports do not
+establish a later unattended real renewal/distribution cycle. Certificate state
+and Terraform state remain external operator data. DEV's HTTPS origin/CORS is
+active in its restarted backend; STAGE/PROD retain their existing HTTPS settings.
 
 The operator confirmed external warning-free loads of all three URLs. Canonical
 HTTPS UI persistence, health, redirects and mutual database/token isolation
 passed. See [Phase 7](testreports/PHASE7_REPORT.md) and
 [runbook 15](../runbooks/15-publish-application.md). Cloudflare's proxy/Full (strict)
 path remains optional follow-up and was not part of this DNS-only acceptance.
+
+## Permanent private administrative access
+
+**Status: Agreed, not deployed.**
+
+Trusted administrators use the existing Tailscale route to
+`192.168.77.0/24`. The agreed browser path is Tailscale → Admin VIP →
+Kubernetes Service → Pod. It requires no private ingress, DNS configuration,
+additional reverse proxy, SSH tunnel or manually started port-forward.
+
+```mermaid
+flowchart LR
+  Browser[Administrator browser] --> Tailscale[Tailscale subnet router .250]
+  Tailscale --> Nonprod[Admin VIP 192.168.77.16]
+  Tailscale --> Prod[Admin VIP 192.168.77.17]
+  Nonprod --> NonprodServices[Nonprod administrative Services]
+  Prod --> ProdServices[PROD administrative Services]
+  NonprodServices --> NonprodPods[Pods in DEV/STAGE K3s]
+  ProdServices --> ProdPods[Pods in PROD K3s]
+```
+
+All endpoints in the following table are **agreed target addresses**, not
+currently available VIP endpoints. Argo CD and Adminer already run internally;
+Grafana, Prometheus, Alertmanager and the K3s Jenkins controller are planned.
+
+| Interface | DEV/STAGE | PROD |
+| --- | --- | --- |
+| Argo CD | `https://192.168.77.16:8080` | `https://192.168.77.17:8080` |
+| Grafana | `http://192.168.77.16:3000` | `http://192.168.77.17:3000` |
+| Prometheus | `http://192.168.77.16:9090` | `http://192.168.77.17:9090` |
+| Alertmanager | `http://192.168.77.16:9093` | `http://192.168.77.17:9093` |
+| Adminer DEV | `http://192.168.77.16:8081` | — |
+| Adminer STAGE | `http://192.168.77.16:8082` | — |
+| Adminer PROD | — | `http://192.168.77.17:8081` |
+| Jenkins | `http://192.168.77.16:8085` | — |
+
+Use each service's native HTTP/HTTPS and authentication. Argo CD currently
+provides HTTPS with its bootstrap self-signed certificate; the agreed IP URL
+does not imply a trusted, warning-free certificate. Grafana and Jenkins use
+their native logins; Adminer uses database credentials. No additional TLS
+termination, certificate issuance, SSO or authentication proxy is agreed.
+Prometheus and Alertmanager rely on their native access model within the
+trusted private subnet. Native base URLs and redirects must match the final
+external IP and port.
+
+The agreed access policy gives trusted administrators subnet access through
+Tailscale. Additional Tailscale ACL/grants restrictions and firewall hardening
+are outside this increment. Admin VIP Services must not receive public NAT or
+public HAProxy routes. Proxmox administration and management SSH retain their
+own addresses; they are not routed through these Kubernetes Admin VIPs.
+
+### Services-only kube-vip
+
+**Status: Architecture agreed; detailed configuration in development.**
+
+Each cluster will have a separate services-only kube-vip v1.2.3 DaemonSet.
+Every administrative LoadBalancer Service will explicitly select its cluster's
+Admin VIP and use a distinct port on that VIP. One common leader per cluster
+will own the shared administrative address, independently of the API VIP's
+leader and lease.
+
+Exact v1.2.3 election/lease settings, LoadBalancer class handling, RBAC and
+resource ownership remain in development. Distinct DaemonSet names,
+labels/selectors and hostNetwork listener ports must avoid conflicts with the
+API DaemonSet; its existing metrics listener uses port `2112`. Administrative
+Services must be excluded from K3s ServiceLB processing, and the new kube-vip
+must not claim public Traefik. Any NodePort allocation must be documented;
+the agreed VIP path is not a claim of further private-network isolation.
+
+API VIPs, their DaemonSets and public ingress remain unchanged. VIP failover,
+reboot and outage-duration tests are deferred. A common VIP leader does not
+establish availability of the services, their storage or the single Proxmox host.
+
+## Cluster monitoring
+
+**Status: Agreed, not deployed in the target K3s clusters. Details in development.**
+
+Each cluster will have its own monitoring namespace, Grafana, Prometheus and
+Alertmanager. The agreed stack includes Prometheus Operator, kube-state-metrics,
+Node Exporter, Argo CD/Traefik monitoring, dashboards and alert rules adapted
+from the application repository's existing `monitoring/` configuration.
+DEV/STAGE and PROD have separate data, credentials and environment-specific
+monitoring configuration. Exporter and operator endpoints remain internal.
+
+Retention periods, PVC sizes, resource limits, final chart/image references
+and exact deployment/GitOps ownership are **in development**. These settings
+are not fixed by this document. An existing Slack destination is configured in the
+legacy kind deployment, but the destination for new-cluster notifications
+has not been agreed. Alert delivery configuration is **in development**;
+notification receipt is not yet verified.
+
+## Jenkins and CI
+
+**Current state: Implemented proof of concept on VM 100. K3s migration agreed.**
+
+The existing Jenkins runs in Docker on VM 100 and uses private address
+`192.168.77.100:8085`. Its source configuration is in the application repository
+under `infra/jenkins-host/`. It has a controller with zero executors, a CI
+agent, a separate trusted registry publisher and an isolated Docker-in-Docker
+build daemon. This proof of concept is the migration source.
+
+The agreed target is one Jenkins controller in the DEV/STAGE cluster's
+`jenkins` namespace, with its own persistent `JENKINS_HOME` volume and native
+HTTP/login at `192.168.77.16:8085`. No PROD Jenkins controller is planned.
+Migration is staged:
+
+- Phase 8 installs the controller, storage and private access. Working jobs,
+  polling, schedules, publication and promotion are not activated there.
+- Phase 9 moves working CI and its private state. Preserve as much as possible
+  from the existing image/plugin/tool locks, Dockerfiles, JCasC, Job DSL,
+  pipelines, users, credential IDs/scopes, history and artifacts. Keep CI and
+  trusted publication separate. Adapt promotion to reviewed infrastructure
+  repository changes while application code/build pipelines remain owned by
+  the application repository.
+
+Exact Kubernetes deployment resources, image publication, storage sizing,
+agent/build-daemon configuration and the state-transfer/cutover procedure
+are **in development**. Live Jenkins credentials, encryption keys and home
+archives remain private operator data outside Git.
+
+VM 100 retirement and legacy public NAT cleanup are operator work outside
+this implementation's scope. Phase 8 does not complete the working CI
+migration required before the operator retires the old environment.
+
+## Later platform components
+
+### Database platform and backup/restore
+
+**Status: Target agreed; section in development.**
+
+CloudNativePG is the target database platform, introduced one environment at
+a time after backup/restore verification. Current PostgreSQL Deployments and
+PVCs remain in service. Backup destination, retention, database migration
+procedure and storage/availability design are in development. Adminer remains
+until an alternative operational path is available and its removal is agreed.
+
+### Cluster-specific Secret encryption
+
+**Status: Target agreed; section in development.**
+
+Separate Sealed Secrets controllers and recovery keys are planned for the two
+K3s clusters. They have not been deployed there. Existing application and
+registry Secrets were provisioned from private recovery inputs. Controller
+deployment, key recovery and the migration procedure are in development.
+
+### Future ingress and resilience changes
+
+**Status: Section in development.**
+
+Dedicated floating public-ingress addresses and further platform changes
+appear in the later implementation plan. Their detailed design is not
+settled. The agreed Admin VIPs do not implement public ingress failover,
+replicated storage or host redundancy. Existing public certificate automation
+remains as described above; no additional mechanism is selected here.
