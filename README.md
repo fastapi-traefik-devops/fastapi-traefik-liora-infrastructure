@@ -38,6 +38,7 @@ edge/tailscale/                 Tailscale VM and router configuration
 edge/nftables/                 Proxmox host DNAT examples
 infrastructure/k3s-cluster/    Terraform VMs and Ansible K3s installation
 kubernetes/apps/liora/         Application base, overlays, and source history
+docs/testreports/              Implementation plans and phase reports
 runbooks/                      Operator instructions
 recovery/                      Credential examples and local, ignored secrets
 scripts/proxmox/               Proxmox host scripts

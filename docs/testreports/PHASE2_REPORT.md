@@ -101,8 +101,8 @@ three required Secrets; the application `postgres-vol` claims do not exist yet.
 | runbooks/_resources/application-storage-check.yaml | Reusable temporary 1Gi PVC and shell-only consumer Pod |
 | runbooks/13-deploy-application-manifests.md | Link the probe manifest and document creation, success checks and precise cleanup; record Phase 2 status |
 | README.md | Reflect completed preparation without claiming application deployment |
-| kubernetes/IMPLEMENTATION_PLAN.md | Mark Phase 2 and the deferred baseline storage item complete; keep Phase 3 and later unchecked |
-| kubernetes/PHASE2_REPORT.md | This evidence, observed interruption, cleanup record and scope boundary |
+| docs/testreports/IMPLEMENTATION_PLAN.md | Mark Phase 2 and the deferred baseline storage item complete; keep Phase 3 and later unchecked |
+| docs/testreports/PHASE2_REPORT.md | This evidence, observed interruption, cleanup record and scope boundary |
 
 The inline Python scripts and standalone script copies remain unchanged and
 identical. The new storage procedure consists of individual kubectl commands

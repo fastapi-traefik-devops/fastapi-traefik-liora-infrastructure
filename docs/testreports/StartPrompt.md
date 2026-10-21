@@ -1,8 +1,12 @@
+Current document location: `docs/testreports/`. Keep all new plans and reports
+here. The original increment prompt below is extended only by subsequent
+explicit user authorizations for each phase.
+
 You are working in the infrastructure repository
 fastapi-traefik-liora-infrastructure. You have its committed contents and
-kubernetes/IMPLEMENTATION_PLAN.md. Do not assume that any other uncommitted
+docs/testreports/IMPLEMENTATION_PLAN.md. Do not assume that any other uncommitted
 files from earlier work are available. Ensure the supplied
-kubernetes/IMPLEMENTATION_PLAN.md is available in your isolated worktree;
+docs/testreports/IMPLEMENTATION_PLAN.md is available in your isolated worktree;
 uncommitted files do not carry over to a new worktree automatically.
 
 Context:
@@ -43,7 +47,7 @@ Cluster access on management VM 200 as `root-admin`:
 
 Read first:
 1. README.md and docs/ARCHITECTURE.md in this repository.
-2. The entire kubernetes/IMPLEMENTATION_PLAN.md, including both the target
+2. The entire docs/testreports/IMPLEMENTATION_PLAN.md, including both the target
    architecture and implementation order.
 3. The relevant cluster runbooks, especially VM provisioning and K3s
    installation.
@@ -73,7 +77,7 @@ later:
   complete until approved real digests are in place.
 
 At the end of each phase:
-- Update `kubernetes/IMPLEMENTATION_PLAN.md` to reflect what was actually
+- Update `docs/testreports/IMPLEMENTATION_PLAN.md` to reflect what was actually
   completed and what remains; do not mark unverified work as complete.
 - Give me a short report covering:
   - Exact files added or changed and why.
@@ -88,7 +92,7 @@ Do not create namespaces, restore Secrets, apply manifests, or change a live
 cluster. Do not merge into the current branch or push. We will verify this
 small increment before proceeding.
 Do not modify the application repository. Create
-kubernetes/APPLICATION_REPOSITORY_CLEANUP.md in the infrastructure repository
+docs/testreports/APPLICATION_REPOSITORY_CLEANUP.md in the infrastructure repository
 to list application-repository paths that may be removed after the migration
 has been fully tested. Do not delete those paths now. The goal is to separate
 the application and infrastructure repositories.

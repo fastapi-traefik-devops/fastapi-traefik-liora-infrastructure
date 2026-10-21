@@ -63,16 +63,16 @@ those exact tags and digests; the remainder of its configuration is preserved.
 
 | Other file | Purpose |
 | --- | --- |
-| `kubernetes/apps/liora/MIGRATION.md` | Source provenance, scan procedure, metadata preservation and history inspection examples |
+| `docs/testreports/MIGRATION.md` | Source provenance, scan procedure, metadata preservation and history inspection examples |
 | `kubernetes/apps/liora/SOURCE_HISTORY.tsv` | Eight original-to-filtered commit mappings |
 | `runbooks/13-deploy-application-manifests.md` | Actual staged deployment procedure, Secret prerequisites, PostgreSQL/prestart gates, environment acceptance and recovery boundaries |
 | `00-Installation_from-0.md` | Add step 10 linking the new application runbook after K3s installation |
 | `01-Disaster_recovery.md` | Add the corresponding recovery step 10; database restore remains separate |
 | `README.md` | Add application path and deployment runbook with current verification status |
 | `docs/ARCHITECTURE.md` | Record manifest ownership and distinguish local import from live deployment |
-| `kubernetes/IMPLEMENTATION_PLAN.md` | Mark verified Phase 1 items, record requested configuration, keep PROD and live checks open |
-| `kubernetes/APPLICATION_REPOSITORY_CLEANUP.md` | Update migration status; no application deletion is authorized |
-| `kubernetes/PHASE1_REPORT.md` | This review record |
+| `docs/testreports/IMPLEMENTATION_PLAN.md` | Mark verified Phase 1 items, record requested configuration, keep PROD and live checks open |
+| `docs/testreports/APPLICATION_REPOSITORY_CLEANUP.md` | Update migration status; no application deletion is authorized |
+| `docs/testreports/PHASE1_REPORT.md` | This review record |
 
 Local-only change outside this branch: the ignored original checkout's
 `recovery/recovery.yaml` now uses `admin007@liora.aprt.info` for all three

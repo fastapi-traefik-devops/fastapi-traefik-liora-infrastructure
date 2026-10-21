@@ -33,8 +33,8 @@ host; its eventual placement is a separate CI decision.
 ### Target repository layout
 
 ```text
+docs/testreports/           Plans and phase reports
 kubernetes/
-  IMPLEMENTATION_PLAN.md
   apps/liora/
     base/
     overlays/dev/
@@ -85,6 +85,8 @@ remains pending. Never commit live credentials, controller private keys, or stat
   separately from the Kubernetes manifests.
 
 ## Implementation order
+
+Write all new implementation plans and phase reports in `docs/testreports/`.
 
 First run the application's **current deployment** on the new clusters with the
 fewest necessary changes. Verify DEV, STAGE, and PROD independently. Add GitOps,

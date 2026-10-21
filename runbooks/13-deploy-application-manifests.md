@@ -6,7 +6,7 @@
 application deployment or acceptance on the new K3s clusters has been verified.
 PROD is pinned to the operator-approved STAGE image pair `sha-c375967...`.
 Phase 2 namespace/Secret preparation and temporary storage checks are verified
-for all three environments; see the [Phase 2 report](../kubernetes/PHASE2_REPORT.md).
+for all three environments; see the [Phase 2 report](../docs/testreports/PHASE2_REPORT.md).
 Application deployment begins separately in Phase 3.
 These commands are the procedure for later authorized phases; importing the
 files does not authorize running them.

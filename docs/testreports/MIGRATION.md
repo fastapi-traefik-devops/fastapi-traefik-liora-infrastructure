@@ -29,7 +29,7 @@ commit's author and committer identity, timestamp, message, and selected tree
 were compared with the original. All selected blob IDs are identical, and all
 eight commits' blobs were covered by the pre-import scan. Commit hashes changed
 because the parent histories and trees changed. The original-to-imported map
-is in [SOURCE_HISTORY.tsv](SOURCE_HISTORY.tsv).
+is in [SOURCE_HISTORY.tsv](../../kubernetes/apps/liora/SOURCE_HISTORY.tsv).
 
 Historical paths are still `deploy/...` in the imported parent history.
 After the Git move, inspect history with, for example:
@@ -49,6 +49,6 @@ administrator identity; image changes require explicit release selection.
 
 This is a manual deployment baseline. PostgreSQL, its PVC, Adminer, prestart,
 resource requests, probes, replicas, and Argo annotations remain in place.
-See [the deployment runbook](../../../runbooks/13-deploy-application-manifests.md)
+See [the deployment runbook](../../runbooks/13-deploy-application-manifests.md)
 for the later application order and acceptance checks. Import and local render
 validation do not establish that anything has been deployed on K3s.
