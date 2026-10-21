@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  annotations:
+    argocd.argoproj.io/sync-wave: '-2'
+data:
+  DOMAIN: localhost
+  FRONTEND_HOST: http://localhost:5173
+  ENVIRONMENT: local
+  PROJECT_NAME: Full Stack FastAPI Project
+  BACKEND_CORS_ORIGINS: http://localhost,http://localhost:5173,https://localhost,https://localhost:5173
+  FIRST_SUPERUSER: admin@example.com
+  EMAILS_FROM_EMAIL: info@example.com
+  SMTP_HOST: ''
+  SMTP_USER: ''
+  SMTP_TLS: 'True'
+  SMTP_SSL: 'False'
+  SMTP_PORT: '587'
+  POSTGRES_SERVER: db
+  POSTGRES_PORT: '5432'
+  POSTGRES_DB: app
+  POSTGRES_USER: postgres
+  SENTRY_DSN: ''

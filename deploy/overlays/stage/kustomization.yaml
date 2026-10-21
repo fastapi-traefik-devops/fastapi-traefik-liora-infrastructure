@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: app-stage
+resources:
+- ../../base
+images:
+- name: backend
+  newName: ghcr.io/fastapi-traefik-devops/fastapi-backend
+  newTag: sha-3a610ebb14f265fcdeb5a1d4d59da9fa543648c5
+  digest: sha256:a46062cca28e9b0618777adda1fd500832a086552766c573b290478b3afb82ee
+- name: frontend
+  newName: ghcr.io/fastapi-traefik-devops/fastapi-frontend
+  newTag: sha-3a610ebb14f265fcdeb5a1d4d59da9fa543648c5
+  digest: sha256:7d1ac191287e0498434049d4e569aa8f8a8ed2dbd19921e20bc566c95b2a4c91
+replicas:
+- name: backend
+  count: 1
+- name: frontend
+  count: 1
+patches:
+- target:
+    kind: ConfigMap
+    name: backend-config
+  patch: "apiVersion: v1\ndata:\n  BACKEND_CORS_ORIGINS: https://stage.example.com\n\
+    \  DOMAIN: stage.example.com\n  ENVIRONMENT: staging\n  FRONTEND_HOST: https://stage.example.com\n\
+    kind: ConfigMap\nmetadata:\n  name: backend-config\n"
+- target:
+    kind: Ingress
+    name: app-ingress
+  patch: "- op: replace\n  path: /spec/rules/0/host\n  value: stage.example.com\n\
+    - op: replace\n  path: /spec/tls/0/hosts/0\n  value: stage.example.com\n"
+- target:
+    kind: Deployment
+    name: backend
+  patch: |
+    - op: add
+      path: /spec/template/spec/containers/0/command
+      value: ["fastapi", "run", "--workers", "1", "app/main.py"]

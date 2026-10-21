@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+  labels:
+    app: postgres
+  annotations:
+    argocd.argoproj.io/sync-wave: '-2'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16.6
+        ports:
+        - containerPort: 5432
+        envFrom:
+        - configMapRef:
+            name: db-config
+        - secretRef:
+            name: db-secrets
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgres-vol
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: '1'
+            memory: 1Gi
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+          periodSeconds: 5
+        livenessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 30
+          periodSeconds: 20
+      volumes:
+      - name: postgres-vol
+        persistentVolumeClaim:
+          claimName: postgres-vol
+      automountServiceAccountToken: false
+  strategy:
+    type: Recreate

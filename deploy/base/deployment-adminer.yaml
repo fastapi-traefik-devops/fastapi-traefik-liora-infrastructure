@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: adminer
+  labels:
+    app: adminer
+  annotations:
+    argocd.argoproj.io/sync-wave: '-2'
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: adminer
+  template:
+    metadata:
+      labels:
+        app: adminer
+    spec:
+      containers:
+      - name: adminer
+        image: adminer:4.8.1
+        ports:
+        - containerPort: 8080
+        env:
+        - name: ADMINER_DESIGN
+          value: pepa-linha-dark
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+      automountServiceAccountToken: false

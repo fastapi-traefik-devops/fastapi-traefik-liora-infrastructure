@@ -1,0 +1,8 @@
+{
+  "sha": "3a610ebb14f265fcdeb5a1d4d59da9fa543648c5",
+  "digests": {
+    "backend": "sha256:a46062cca28e9b0618777adda1fd500832a086552766c573b290478b3afb82ee",
+    "frontend": "sha256:7d1ac191287e0498434049d4e569aa8f8a8ed2dbd19921e20bc566c95b2a4c91"
+  },
+  "release": ""
+}
