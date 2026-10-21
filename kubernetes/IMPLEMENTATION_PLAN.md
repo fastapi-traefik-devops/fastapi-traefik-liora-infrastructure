@@ -50,9 +50,9 @@ kubernetes/
 
 The Phase 0 baseline report and migration instructions accompany this plan.
 The application base and overlays have been imported with selected history;
-see [Phase 1 report](PHASE1_REPORT.md). Local rendering is verified, but PROD
-image selection and live application deployment remain pending. Never commit
-live credentials, controller private keys, or state.
+see [Phase 1 report](PHASE1_REPORT.md). All three overlays render with real,
+pinned images, including the approved PROD pair. Live application deployment
+remains pending. Never commit live credentials, controller private keys, or state.
 
 ### Target ownership and source files
 
@@ -99,15 +99,15 @@ this repository's `examples/kubernetes/` are references, not deployment sources.
 
 ## Phase 0 — Establish the baseline
 
-Status on 2026-10-21: **baseline reviewed; PROD selection and live storage
-provisioning remain open**. The operator authorized independent Phase 1 work
-after reviewing the report; no cluster mutation was authorized. See
+Status on 2026-10-21: **baseline reviewed; live storage provisioning remains
+unverified**. PROD image selection is complete. The operator authorized
+independent Phase 1 work after reviewing the report; no cluster mutation was authorized. See
 [Phase 0 baseline report](PHASE0_BASELINE.md) for evidence, exact source images,
 credential gaps, and the proposed Phase 1 scope. No cluster changes were made.
 
 - [x] Confirm both K3s contexts work from management VM 200 and all six nodes
       are Ready. Keep the dev/stage and prod contexts distinct.
-- [ ] Record the source commit, DEV/STAGE image digests, and image digests
+- [x] Record the source commit, DEV/STAGE image digests, and image digests
       selected for the first PROD deployment.
 - [ ] Confirm each cluster has a working StorageClass and enough capacity for
       the existing PostgreSQL PVCs and application replicas.
@@ -118,19 +118,21 @@ credential gaps, and the proposed Phase 1 scope. No cluster changes were made.
 Verified: both contexts and all six Ready nodes; all source overlays render;
 DEV/STAGE digest references recorded. Default local-path provisioners are
 Running and reported capacity is sufficient, but no PVC provisioning test was
-performed. PROD images have not been selected. Authenticated GHCR manifest reads
-succeeded for all DEV/STAGE digests, including the current upstream STAGE
+performed. PROD now uses the approved current STAGE image pair. Authenticated
+GHCR manifest reads succeeded for all DEV/STAGE digests, including the current upstream STAGE
 promotion. Fresh, separate backend/database credentials
 were generated with operator approval in ignored `recovery/recovery.yaml`, under
 `application_credentials`; registry credentials remain in ignored `recovery/.env`.
-No Secrets were applied. Image selection and storage verification remain open.
+No Secrets were applied. Actual PVC provisioning remains unverified until a
+later authorized cluster phase.
 
 **Pass:** both clusters, storage, image versions, and credentials are ready.
 
 ## Phase 1 — Copy the current application deployment
 
-Status on 2026-10-21: **independent work complete; phase incomplete pending
-approved PROD digests**. See [Phase 1 report](PHASE1_REPORT.md). Work is isolated
+Status on 2026-10-21: **complete for local import and rendering**. The operator
+approved the current STAGE pair for PROD; both images are pinned by digest.
+See [Phase 1 report](PHASE1_REPORT.md). Work is isolated
 on `migration/liora-phase0` at `/home/root-admin/liora-infrastructure-migration`.
 The deployment source is upstream `b98a22e48527c256193ed65c10307eb574b27ab6`;
 its newer STAGE promotion matches kind. The selected history was scanned and
@@ -144,7 +146,7 @@ imported, and the new runbook and navigator links are present. No live applicati
       DEV/STAGE `promotion.json` files are records, not deployment inputs.
 - [x] Render all three overlays with explicit-kubeconfig `kubectl kustomize`;
       inspect namespaces, images, replicas, Secret references, and Ingress hosts.
-- [ ] Replace PROD's `sha-000000...` placeholders with **existing, selected**
+- [x] Replace PROD's `sha-000000...` placeholders with **existing, selected**
       backend and frontend digests. Limit other edits to K3s compatibility
       and the operator-requested domain/administrator configuration.
 
@@ -152,7 +154,12 @@ Operator-requested configuration is now `dev.liora.aprt.info`,
 `stage.liora.aprt.info`, and `liora.aprt.info`, with initial administrator
 `admin007@liora.aprt.info`. The ignored recovery file uses the same identity.
 DEV retains HTTP and its source `ENVIRONMENT: staging`; STAGE/PROD retain
-HTTPS and the `app-tls` dependency. No DNS, TLS or public ingress was set up.
+HTTPS and the `app-tls` dependency. PROD uses tag
+`sha-c375967ac5b3dd7a0a6867758e16b057c733bb2d`, backend digest
+`sha256:f1a896fbc915f1f19416882fee62bf4db275860f9225d9004ac59ba9a005dc5d`,
+and frontend digest
+`sha256:7d1ac191287e0498434049d4e569aa8f8a8ed2dbd19921e20bc566c95b2a4c91`.
+No DNS, TLS or public ingress was set up.
 
 **Pass:** three overlays render with real images and the active base retains
 the current working stack. Do not copy Argo CD, monitoring, Jenkins, or the

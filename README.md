@@ -24,7 +24,8 @@ Cloud-Init template is VM `9013`.
 Both navigators link to the step-specific instructions in `runbooks/`.
 The [application deployment runbook](runbooks/13-deploy-application-manifests.md)
 describes the later manual deployment gates. Manifests have been rendered locally;
-K3s application deployment is not yet verified. PROD image selection remains open.
+K3s application deployment is not yet verified. PROD uses the approved STAGE
+image digests.
 
 For the implemented topology and component boundaries, see
 [Current architecture](docs/ARCHITECTURE.md).

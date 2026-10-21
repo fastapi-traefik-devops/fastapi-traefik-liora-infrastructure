@@ -4,8 +4,9 @@
 
 **Status:** Phase 1 has imported and rendered these manifests locally. No
 application deployment or acceptance on the new K3s clusters has been verified.
-PROD image selection is still pending. These commands are the procedure for
-later authorized phases; importing the files does not authorize running them.
+PROD is pinned to the operator-approved STAGE image pair `sha-c375967...`.
+These commands are the procedure for later authorized phases; importing the
+files does not authorize running them.
 
 ## Scope and prerequisites
 
@@ -77,7 +78,8 @@ The default `local-path` StorageClass must be present and its provisioner Ready.
 Each environment needs one 1Gi RWO PVC; DEV/STAGE each have one backend and one
 frontend replica, while PROD has two of each. PostgreSQL and Adminer each have
 one replica. Inspect images, Secret references, ConfigMaps, hosts and PVCs in
-the rendered file. DEV/STAGE digests are pinned. Do not deploy PROD placeholders.
+the rendered file. All three overlays have pinned application digests. Never
+deploy placeholders introduced by a later edit.
 
 Split the render into explicit application stages, rejecting unconfigured
 images before any cluster write:

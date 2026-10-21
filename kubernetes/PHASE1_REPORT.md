@@ -1,7 +1,8 @@
 # Phase 1 report — current application deployment import
 
-Status on 2026-10-21: **independent work complete; phase incomplete pending
-approved PROD backend/frontend digests**. Phase 2 and later have not started.
+Status on 2026-10-21: **complete for local import and rendering**. The operator
+approved the current STAGE images for PROD, now pinned by digest. Phase 2 and
+later have not started.
 
 ## Source and isolated work
 
@@ -54,10 +55,11 @@ kubernetes/apps/liora/overlays/stage/promotion.json
 kubernetes/apps/liora/overlays/prod/kustomization.yaml
 ```
 
-Each Kustomization received only the requested domain substitutions. Both
+Each Kustomization received the requested domain substitutions. Both
 promotion records match current upstream and are not deployment inputs. DEV/STAGE
-image pins and all workload configuration match the current source. PROD still
-contains the source placeholders, visibly documented as an unresolved release decision.
+image pins and all workload configuration match the current source. After the
+operator approved the current STAGE pair, PROD placeholders were replaced with
+those exact tags and digests; the remainder of its configuration is preserved.
 
 | Other file | Purpose |
 | --- | --- |
@@ -107,7 +109,8 @@ All three renders used their intended explicit kubeconfigs and succeeded.
 Each yields 13 resources: two ConfigMaps, four Deployments, four Services,
 one PostgreSQL PVC, one prestart Job, and one Ingress. They create no Namespace
 or Secret objects. Parsed output was compared with the application source:
-the only differences are the requested domains and initial administrator email.
+the only differences are the requested domains, initial administrator email,
+and the approved PROD image pins.
 No K3s compatibility edit was required to render this deployment.
 
 | Environment | Namespace | Backend / frontend replicas | Ingress host | Origin / TLS |
@@ -136,16 +139,19 @@ promotion, matching kind. These references were verified against GHCR:
 | DEV | frontend | `sha256:a8d07b6be8ae8c76cc8133c885ba8ec3c095ded005db251aaf6a190e88426f82` |
 | STAGE | backend and prestart | `sha256:f1a896fbc915f1f19416882fee62bf4db275860f9225d9004ac59ba9a005dc5d` |
 | STAGE | frontend | `sha256:7d1ac191287e0498434049d4e569aa8f8a8ed2dbd19921e20bc566c95b2a4c91` |
+| PROD | backend and prestart | `sha256:f1a896fbc915f1f19416882fee62bf4db275860f9225d9004ac59ba9a005dc5d` |
+| PROD | frontend | `sha256:7d1ac191287e0498434049d4e569aa8f8a8ed2dbd19921e20bc566c95b2a4c91` |
 
 DEV tag is `sha-3303e93b753e8282dc7b461c583fb8ace43574a1`; STAGE tag is
-`sha-c375967ac5b3dd7a0a6867758e16b057c733bb2d`. PROD is renderable for structural
-review but **not deployable**: both application image entries still have
-`sha-000000...` placeholders.
+`sha-c375967ac5b3dd7a0a6867758e16b057c733bb2d`. PROD now uses that approved
+STAGE tag and digest pair. All three overlays render without placeholder or
+unconfigured application images. Live deployment remains unverified.
 
 The runbook's shell blocks and embedded Python snippets were parsed locally.
-Its offline splitting step was executed for DEV and STAGE: groups contain
+Its offline splitting step was executed for DEV, STAGE and PROD: groups contain
 3 configuration/storage, 2 database, 1 prestart and 7 application resources.
-The same step rejects PROD placeholders before any cluster writes. Local
+Before approval, the same step rejected the original PROD placeholders before
+any cluster writes; the approved PROD render now passes. Local
 recovery schema, matching administrator identities and database passwords, Git
 ignore status, relative documentation links, and whitespace checks passed.
 No live bootstrap, apply, rollout, port-forward, UI login or data checks ran.
@@ -159,16 +165,16 @@ No live bootstrap, apply, rollout, port-forward, UI login or data checks ran.
 - Complete: deployment runbook and both navigator step 10 links added.
 - Complete: requested domains and initial administrator email aligned with
   the ignored recovery file.
-- Open: explicit selection of existing PROD backend/frontend digests. The
-  current upstream/kind STAGE pair (`sha-c375967...`) is available; the earlier
-  `sha-3a610ebb...` pair also exists. Neither was silently selected for PROD.
+- Complete: the operator explicitly approved current upstream/kind STAGE
+  images (`sha-c375967...`) for PROD; backend, frontend and prestart render
+  with the approved digests.
 - Deferred to later authorized cluster phases: namespace/Secret creation,
   actual PVC provisioning, database readiness, prestart completion, image pulls,
   application acceptance, and data isolation checks.
 - Deferred: DNS, TLS certificate setup, public routing, GitOps, monitoring,
   database migration and CI ownership changes.
 
-Next small action: select the PROD image pair, verify its registry digests,
-update only the PROD image entries, and repeat the render check. Then review
-this isolated increment before authorizing Phase 2. Do not start Phase 2 or
-change either cluster merely to close the remaining checklist items.
+Next small action: review this completed local increment and confirm Phase 2
+namespace/Secret preparation. Phase 2 and all later cluster changes remain
+unexecuted. The storage provisioning and application acceptance checks belong
+to those later authorized phases, not to local Phase 1 completion.
