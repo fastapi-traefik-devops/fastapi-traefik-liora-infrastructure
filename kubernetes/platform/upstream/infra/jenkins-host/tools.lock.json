@@ -1,0 +1,90 @@
+{
+  "uv": {
+    "version": "0.13.0",
+    "url": "https://github.com/astral-sh/uv/releases/download/0.13.0/uv-x86_64-unknown-linux-musl.tar.gz",
+    "sha256": "b0828fc4cdc47d65951e94b5f0a15a5364420e8dcd88723f3b21e7a2eb30bbc3"
+  },
+  "trivy": {
+    "version": "v0.75.0",
+    "url": "https://github.com/aquasecurity/trivy/releases/download/v0.75.0/trivy_0.75.0_Linux-64bit.tar.gz",
+    "sha256": "c6e65abddb348e25f10549df887045629cf28cc72453cd1c63acb717316b3f3f",
+    "source_url": "https://codeload.github.com/aquasecurity/trivy/tar.gz/refs/tags/v0.75.0",
+    "source_sha256": "4ee2010384f90bf23d4059ae49c11129e5041816a3754d890a90ae80f678d765",
+    "go_patches": {
+      "golang.org/x/crypto": "v0.57.0",
+      "golang.org/x/net": "v0.60.0",
+      "golang.org/x/text": "v0.42.0"
+    },
+    "build_package": "./cmd/trivy"
+  },
+  "gitleaks": {
+    "version": "v8.30.1",
+    "url": "https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz",
+    "sha256": "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb",
+    "source_url": "https://codeload.github.com/gitleaks/gitleaks/tar.gz/refs/tags/v8.30.1",
+    "source_sha256": "e90fb266d75837e75894c778bf594ab8e2787f12dce5a62651f21b893eaf9abb",
+    "go_patches": {
+      "golang.org/x/crypto": "v0.57.0",
+      "golang.org/x/net": "v0.60.0",
+      "golang.org/x/text": "v0.42.0"
+    },
+    "build_package": "."
+  },
+  "crane": {
+    "version": "v0.22.1",
+    "url": "https://github.com/google/go-containerregistry/releases/download/v0.22.1/go-containerregistry_Linux_x86_64.tar.gz",
+    "sha256": "0ab7a1d6932a213aed964ce97666c3077fe691c8606413674a8b3e0b9ec4cda0",
+    "source_url": "https://codeload.github.com/google/go-containerregistry/tar.gz/refs/tags/v0.22.1",
+    "source_sha256": "a52cc7d61f8b2f043b7f0be1febecead5fceb791543c4790d699440f12d6b370",
+    "go_patches": {
+      "golang.org/x/crypto": "v0.57.0",
+      "golang.org/x/net": "v0.60.0",
+      "golang.org/x/text": "v0.42.0"
+    },
+    "build_package": "./cmd/crane"
+  },
+  "containerd-shim-runc-v2": {
+    "version": "v2.4.1",
+    "build_only": true,
+    "build_package": "./cmd/containerd-shim-runc-v2",
+    "go_patches": {
+      "golang.org/x/net": "v0.60.0"
+    },
+    "source_url": "https://codeload.github.com/containerd/containerd/tar.gz/refs/tags/v2.4.1",
+    "source_sha256": "c213c8222ec2b51f88eb541cd75e5905b35ae7d0b82d6d812f0b8121d11131a6"
+  },
+  "runc": {
+    "version": "v1.5.2",
+    "build_only": true,
+    "build_package": ".",
+    "cgo": true,
+    "go_patches": {
+      "golang.org/x/net": "v0.60.0"
+    },
+    "source_url": "https://codeload.github.com/opencontainers/runc/tar.gz/refs/tags/v1.5.2",
+    "source_sha256": "b5af44864a830c7032cf4a72efa0c6d44f701873d9507b127be31ad4d1d42ff3"
+  },
+  "kubeconform": {
+    "version": "v0.8.0",
+    "url": "https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz",
+    "sha256": "9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883",
+    "source_url": "https://codeload.github.com/yannh/kubeconform/tar.gz/refs/tags/v0.8.0",
+    "source_sha256": "c345de9c3207f2d24628c64fe3cb9bed55c4248b12c181efe81ee907d6c994f2",
+    "go_patches": {
+      "golang.org/x/text": "v0.42.0"
+    },
+    "build_package": "./cmd/kubeconform"
+  },
+  "kustomize": {
+    "version": "v5.8.2",
+    "url": "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.8.2/kustomize_v5.8.2_linux_amd64.tar.gz",
+    "sha256": "06af0a202c2b831207d0173f9c9cdb1b30abceca0747cb3fbb72792d26055c95",
+    "source_url": "https://codeload.github.com/kubernetes-sigs/kustomize/tar.gz/refs/tags/kustomize/v5.8.2",
+    "source_sha256": "b70517ccd6986c3ec19a636bb877da9687d3420216d359e26628e5e03714b758",
+    "go_patches": {
+      "golang.org/x/text": "v0.42.0"
+    },
+    "module_dir": "kustomize",
+    "build_package": "."
+  }
+}

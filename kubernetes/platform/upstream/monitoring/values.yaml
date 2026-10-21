@@ -1,0 +1,239 @@
+fullnameOverride: monitoring
+defaultRules:
+  create: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false
+crds:
+  enabled: true
+  upgradeJob:
+    enabled: false
+prometheusOperator:
+  admissionWebhooks:
+    enabled: false
+  tls:
+    enabled: false
+  resources:
+    requests:
+      cpu: 40m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  prometheusConfigReloader:
+    resources:
+      requests:
+        cpu: 5m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+prometheus:
+  ingress:
+    enabled: false
+  prometheusSpec:
+    replicas: 1
+    retention: 3d
+    retentionSize: 1500MB
+    scrapeInterval: 60s
+    evaluationInterval: 60s
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1536Mi
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector:
+      matchLabels:
+        release: monitoring
+    serviceMonitorNamespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: monitoring
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelector:
+      matchLabels:
+        release: monitoring
+    podMonitorNamespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: monitoring
+    ruleSelectorNilUsesHelmValues: false
+    ruleSelector:
+      matchLabels:
+        release: monitoring
+    ruleNamespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: monitoring
+    storageSpec:
+      volumeClaimTemplate:
+        metadata:
+          annotations:
+            argocd.argoproj.io/sync-options: Prune=false,Delete=false
+        spec:
+          storageClassName: standard
+          accessModes:
+          - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
+alertmanager:
+  ingress:
+    enabled: false
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: slack
+      # Clear the chart default Watchdog route to the removed null receiver.
+      routes: []
+      group_by:
+      - alertname
+      - namespace
+      group_wait: 1m
+      group_interval: 5m
+      repeat_interval: 12h
+    receivers:
+    - name: slack
+      slack_configs:
+      - api_url_file: /etc/alertmanager/secrets/monitoring-slack-webhook/slack-webhook
+        send_resolved: true
+        title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
+        text: |-
+          {{ range .Alerts }}
+          *[{{ .Status | toUpper }}] {{ .Labels.alertname }}*
+          {{ with .Labels.severity }}*Severity:* {{ . }}{{ "\n" }}{{ end }}
+          {{- $environment := or .Labels.environment .Labels.env }}
+          {{- if not $environment }}
+          {{- $scope := or .Labels.namespace "" }}
+          {{- if not (match "^app-(dev|stage|prod)$" $scope) }}{{ $scope = or .Labels.name "" }}{{ end }}
+          {{- if eq $scope "app-dev" }}{{ $environment = "DEV" }}
+          {{- else if eq $scope "app-stage" }}{{ $environment = "STAGE" }}
+          {{- else if eq $scope "app-prod" }}{{ $environment = "PROD" }}{{ end }}
+          {{- end }}
+          {{ with $environment }}*Environment:* {{ . | toUpper }}{{ "\n" }}{{ end -}}
+          {{ with .Labels.namespace }}*Namespace:* {{ . }}{{ "\n" }}{{ end -}}
+          {{ with .Labels.pod }}*Pod:* {{ . }}{{ "\n" }}{{ end -}}
+          {{ with .Labels.node }}*Node:* {{ . }}{{ "\n" }}{{ end -}}
+          {{ with .Labels.deployment }}*Deployment:* {{ . }}{{ "\n" }}{{ end -}}
+          {{ with .Labels.service }}*Service:* {{ . }}{{ "\n" }}{{ end -}}
+          {{ with .Labels.instance }}*Instance:* {{ . }}{{ "\n" }}{{ end -}}
+          {{ with .Labels.container }}*Container:* {{ . }}{{ "\n" }}{{ end -}}
+          {{ with .Labels.name }}*Application:* {{ . }}{{ "\n" }}{{ end -}}
+          {{ with .Annotations.summary }}*Summary:* {{ . }}{{ "\n" }}{{ end -}}
+          {{ with .Annotations.description }}*Description:* {{ . }}{{ "\n" }}{{ end -}}
+          *Started:* {{ .StartsAt.UTC.Format "2006-01-02 15:04:05 UTC" }}
+          {{ if eq .Status "resolved" }}*Resolved:* {{ .EndsAt.UTC.Format "2006-01-02 15:04:05 UTC" }}{{ "\n" }}{{ end }}
+          {{ end }}
+  alertmanagerSpec:
+    secrets:
+    - monitoring-slack-webhook
+    replicas: 1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+    storage:
+      volumeClaimTemplate:
+        metadata:
+          annotations:
+            argocd.argoproj.io/sync-options: Prune=false,Delete=false
+        spec:
+          storageClassName: standard
+          accessModes:
+          - ReadWriteOnce
+          resources:
+            requests:
+              storage: 256Mi
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 30m
+      memory: 64Mi
+    limits:
+      cpu: 150m
+      memory: 128Mi
+prometheus-node-exporter:
+  hostNetwork: false
+  service:
+    enableHostPort: false
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+grafana:
+  replicas: 1
+  defaultDashboardsEnabled: false
+  ingress:
+    enabled: false
+  service:
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 384Mi
+  persistence:
+    enabled: false
+  # Provision separately; credentials never enter Helm values or Git.
+  admin:
+    existingSecret: monitoring-grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  grafana.ini:
+    auth:
+      disable_login_form: false
+    auth.anonymous:
+      enabled: false
+    users:
+      allow_sign_up: false
+    analytics:
+      reporting_enabled: false
+      check_for_updates: false
+  sidecar:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+    datasources:
+      enabled: false
+    dashboards:
+      enabled: true
+      searchNamespace: monitoring
+      skipReload: true
+      initDashboards: false
+      provider:
+        allowUiUpdates: false
+        disableDelete: true
+        updateIntervalSeconds: 30
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+      - name: Prometheus
+        uid: prometheus
+        type: prometheus
+        url: http://monitoring-prometheus.monitoring.svc.cluster.local:9090
+        access: proxy
+        isDefault: true
+        editable: false
+  testFramework:
+    enabled: false
+coreDns:
+  enabled: false

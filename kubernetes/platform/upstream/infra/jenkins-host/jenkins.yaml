@@ -1,0 +1,53 @@
+jenkins:
+  systemMessage: "Phase 1: Docker-only CI and registry publication. No deployment access."
+  numExecutors: 0
+  mode: EXCLUSIVE
+  clouds: []
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: admin
+          password: "${jenkins-admin-password}"
+  authorizationStrategy:
+    globalMatrix:
+      entries:
+        - user:
+            name: admin
+            permissions:
+              - Overall/Administer
+  nodes:
+    - permanent:
+        name: host-ci
+        remoteFS: /home/jenkins/agent
+        labelString: host-ci
+        numExecutors: 1
+        mode: EXCLUSIVE
+        launcher:
+          inbound:
+            workDirSettings:
+              disabled: false
+              workDirPath: /home/jenkins/agent
+    - permanent:
+        name: registry-publisher
+        remoteFS: /home/jenkins/agent
+        labelString: registry-publisher
+        numExecutors: 1
+        mode: EXCLUSIVE
+        launcher:
+          inbound:
+            workDirSettings:
+              disabled: false
+              workDirPath: /home/jenkins/agent
+  remotingSecurity:
+    enabled: true
+security:
+  apiToken:
+    creationOfLegacyTokenEnabled: false
+    tokenGenerationOnCreationEnabled: false
+    usageStatisticsEnabled: true
+unclassified:
+  location:
+    url: http://liora.aprt.info:8085/
+jobs:
+  - file: /bootstrap/jobs.groovy

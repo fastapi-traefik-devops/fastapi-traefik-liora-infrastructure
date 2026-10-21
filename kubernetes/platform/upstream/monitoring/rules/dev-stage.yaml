@@ -1,0 +1,73 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: dev-stage-platform
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+  - name: dev-stage-platform
+    rules:
+    - alert: NodeMemoryPressure
+      expr: kube_node_status_condition{condition="MemoryPressure",status="true"} ==
+        1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Node has sustained Kubernetes memory pressure
+    - alert: NodeDiskPressure
+      expr: kube_node_status_condition{condition="DiskPressure",status="true"} ==
+        1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Node has sustained Kubernetes disk pressure
+    - alert: NodeHighCPU
+      expr: (1 - avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])))
+        > 0.85
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Node CPU usage sustained above 85 percent
+    - alert: NodeHighMemory
+      expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 0.90
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: Node memory usage sustained above 90 percent
+    - alert: ApplicationRestartSpike
+      expr: sum by(namespace,pod,container) (increase(kube_pod_container_status_restarts_total{namespace=~"app-dev|app-stage"}[15m]))
+        >= 3
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: DEV or STAGE container restarted at least three times in 15 minutes
+    - alert: ApplicationDeploymentUnavailable
+      expr: kube_deployment_status_replicas_available{namespace=~"app-dev|app-stage"}
+        < kube_deployment_spec_replicas{namespace=~"app-dev|app-stage"}
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: DEV or STAGE deployment has fewer available replicas than desired
+    - alert: ArgoApplicationUnhealthy
+      expr: argocd_app_info{name=~"app-dev|app-stage",health_status!="Healthy"} ==
+        1
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: DEV or STAGE Argo Application is unhealthy
+    - alert: ArgoApplicationOutOfSync
+      expr: argocd_app_info{name=~"app-dev|app-stage",sync_status!="Synced"} == 1
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: DEV or STAGE Argo Application is out of sync

@@ -1,0 +1,14 @@
+FROM golang:1.27.2-alpine3.24@sha256:f92b6ef800e499660581efdabdf25d9d817a9d124eaf900924f0504e7e27e12d AS tools
+RUN apk add --no-cache python3 git
+COPY tools.lock.json build-go-tools.py /build/
+RUN python3 /build/build-go-tools.py gitleaks crane trivy kubeconform kustomize
+
+FROM jenkins/inbound-agent:alpine-jdk21@sha256:7c0072ad331fee0395bef13b369a1638799ad43d1c3a021c88bd025107df6065
+USER root
+RUN apk upgrade --no-cache && apk add --no-cache bash python3 py3-yaml git docker-cli docker-cli-buildx docker-cli-compose \
+    && rm -f /usr/local/bin/git-lfs
+COPY tools.lock.json install-tools.py /opt/phase1-tools/
+RUN python3 /opt/phase1-tools/install-tools.py
+COPY --from=tools /out/gitleaks /out/crane /out/trivy /out/kubeconform /out/kustomize /usr/local/bin/
+USER jenkins
+ENV PYTHONDONTWRITEBYTECODE=1

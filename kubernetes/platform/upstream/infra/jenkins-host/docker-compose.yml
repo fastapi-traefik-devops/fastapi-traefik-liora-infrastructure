@@ -1,0 +1,135 @@
+name: phase1-jenkins
+services:
+  controller:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: phase1/jenkins-controller:local
+    container_name: host-jenkins
+    hostname: jenkins
+    restart: unless-stopped
+    user: '1000:1000'
+    mem_limit: 768m
+    memswap_limit: 768m
+    cpus: 1.0
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    # Loopback for SSH tunnels; the VM's private address is what the Proxmox host forwards
+    # as liora.aprt.info:8085. Plain HTTP until a TLS proxy is in front (see README).
+    ports: ['127.0.0.1:8085:8080', '192.168.77.100:8085:8080']
+    environment:
+      JAVA_OPTS: '-Xms128m -Xmx384m -XX:MaxMetaspaceSize=192m -Djenkins.install.runSetupWizard=false'
+      CASC_JENKINS_CONFIG: /bootstrap/jenkins.yaml
+    volumes:
+      - home:/var/jenkins_home
+      - .:/bootstrap:ro
+      - ../../Jenkinsfile:/opt/phase1-bootstrap/Jenkinsfile:ro
+      - ../../Jenkinsfile.promote:/opt/phase1-bootstrap/Jenkinsfile.publish:ro
+    # Feed the folder-scoped credentials in jobs.groovy; never mounted on agents.
+    secrets: [jenkins-admin-password, ghcr-write-username, ghcr-write-token,
+              github-ci-app-id, github-ci-app-key, github-gitops-app-id, github-gitops-app-key]
+    networks: [management]
+  docker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dind
+    image: phase1/jenkins-dind:local
+    container_name: host-jenkins-docker
+    restart: unless-stopped
+    # Docker-in-Docker requires this privilege. It gets no host Docker socket,
+    # kubeconfig, app secret or registry credential. See SECURITY.md in this directory.
+    privileged: true
+    cgroup: private
+    mem_limit: 2560m
+    memswap_limit: 2560m
+    cpus: 1.5
+    environment:
+      DOCKER_TLS_CERTDIR: /certs
+    command: ['--storage-driver=overlay2']
+    volumes:
+      - docker-data:/var/lib/docker
+      - client-certs:/certs/client
+      - server-certs:/certs/server
+      - work:/home/jenkins/agent
+    networks:
+      build:
+        aliases: [docker]
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    image: phase1/jenkins-agent:local
+    container_name: host-jenkins-agent
+    restart: unless-stopped
+    user: '1000:1000'
+    mem_limit: 384m
+    memswap_limit: 384m
+    cpus: 0.5
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on: [controller, docker]
+    environment:
+      DOCKER_HOST: tcp://docker:2376
+      DOCKER_TLS_VERIFY: '1'
+      DOCKER_CERT_PATH: /certs/client
+      JAVA_TOOL_OPTIONS: '-Xms32m -Xmx160m'
+    command: ['-url', 'http://controller:8080/', '-name', 'host-ci', '-secret', '@/run/secrets/agent-secret', '-webSocket', '-workDir', '/home/jenkins/agent']
+    volumes:
+      - work:/home/jenkins/agent
+      - client-certs:/certs/client:ro
+    secrets: [agent-secret]
+    networks: [management, build]
+  publisher:
+    image: phase1/jenkins-agent:local
+    container_name: host-jenkins-publisher
+    restart: unless-stopped
+    user: '1000:1000'
+    mem_limit: 512m
+    memswap_limit: 512m
+    cpus: 0.5
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on: [controller]
+    environment:
+      JAVA_TOOL_OPTIONS: '-Xms32m -Xmx160m'
+    command: ['-url', 'http://controller:8080/', '-name', 'registry-publisher', '-secret', '@/run/secrets/publisher-secret', '-webSocket', '-workDir', '/home/jenkins/agent']
+    volumes:
+      - publisher-work:/home/jenkins/agent
+      - ../../ci:/opt/phase1-ci:ro
+    secrets: [publisher-secret]
+    networks: [management]
+secrets:
+  jenkins-admin-password:
+    file: ../../.jenkins-host/secrets/jenkins-admin-password
+  ghcr-write-username:
+    file: ../../.jenkins-host/secrets/ghcr-write-username
+  ghcr-write-token:
+    file: ../../.jenkins-host/secrets/ghcr-write-token
+  github-ci-app-id:
+    file: ../../.jenkins-host/secrets/github-ci-app-id
+  github-ci-app-key:
+    file: ../../.jenkins-host/secrets/github-ci-app-key.pem
+  github-gitops-app-id:
+    file: ../../.jenkins-host/secrets/github-gitops-app-id
+  github-gitops-app-key:
+    file: ../../.jenkins-host/secrets/github-gitops-app-key.pem
+  agent-secret:
+    file: ../../.jenkins-host/secrets/agent-secret
+  publisher-secret:
+    file: ../../.jenkins-host/secrets/publisher-secret
+volumes:
+  home:
+    name: host-jenkins-home
+  work:
+    name: host-jenkins-work
+  publisher-work:
+    name: host-jenkins-publisher-work
+  docker-data:
+    name: host-jenkins-docker
+  client-certs:
+    name: host-jenkins-client-certs
+  server-certs:
+    name: host-jenkins-server-certs
+networks:
+  management: {}
+  build: {}
