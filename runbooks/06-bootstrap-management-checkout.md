@@ -32,6 +32,7 @@
 ### If credentials came from an example file
 
 > [!NOTE]
-> Run `bash recovery/check_credentials.sh --tailscale` before [the Tailscale phase](07-tailscale-private-access.md).
+> Install the dependencies described in the [recovery schema](../recovery/README.md),
+> then run `bash recovery/check_credentials.sh --tailscale` before [the Tailscale phase](07-tailscale-private-access.md).
 
 **Done when:** VM 200 has the verified checkout, current public IP, protected SSH identity, and a reachable private Proxmox API.

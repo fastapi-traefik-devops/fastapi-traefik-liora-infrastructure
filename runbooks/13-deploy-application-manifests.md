@@ -50,6 +50,11 @@ worktree:
 - `$HOME/fastapi-traefik-liora-infrastructure/recovery/.env`:
   `GHCR_REGISTRY`, `GHCR_USERNAME`, and `GHCR_TOKEN` supply registry read access.
 
+Validate all recovery inputs before deployment with `RECOVERY_DIR="$HOME/fastapi-traefik-liora-infrastructure/recovery" bash recovery/check_credentials.sh --all --offline`.
+Install the checker dependencies and review the complete field/exit-status
+contract in the [recovery schema](../recovery/README.md). Warnings preserve unknown
+fields; add `--strict-warnings` when they must fail a gate.
+
 Keep both files ignored and mode `0600`; include them in the operator's external
 recovery archive. Do not print values, use shell tracing, put credentials in
 command arguments, or commit generated Secret manifests. Old Sealed Secrets

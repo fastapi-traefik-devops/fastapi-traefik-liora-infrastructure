@@ -49,3 +49,7 @@ scripts/proxmox/               Proxmox host scripts
 Real credentials, SSH private keys, Terraform state, and recovery archives must
 remain outside Git. The local `recovery/` directory holds ignored copies needed
 by the operator; review `git status` before every commit.
+
+The [recovery schema and validator](recovery/README.md) describe every supported
+input, dependency setup, warning policy and exit code. Run the complete offline
+check before deployment and review unknown-field warnings without deleting data.
