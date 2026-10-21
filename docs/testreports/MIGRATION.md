@@ -54,5 +54,6 @@ for the later application order and acceptance checks. Import and local render
 validation do not establish that anything has been deployed on K3s.
 
 DEV live deployment and private acceptance are recorded separately in the
-[Phase 3 report](PHASE3_REPORT.md). STAGE and PROD application deployment remain
-future phases.
+[Phase 3 report](PHASE3_REPORT.md). STAGE deployment and DEV/STAGE isolation are
+recorded in the [Phase 4 report](PHASE4_REPORT.md). PROD deployment remains a
+future phase.

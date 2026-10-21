@@ -23,10 +23,11 @@ Cloud-Init template is VM `9013`.
 
 Both navigators link to the step-specific instructions in `runbooks/`.
 The [application deployment runbook](runbooks/13-deploy-application-manifests.md)
-describes the manual deployment gates. [DEV is deployed and privately verified](docs/testreports/PHASE3_REPORT.md).
-STAGE and PROD have prepared namespaces and Secrets; their application deployment
-remains pending. PROD uses the approved STAGE image digests. Public routing and
-TLS setup remain later work.
+describes the manual deployment gates. [DEV](docs/testreports/PHASE3_REPORT.md)
+and [STAGE](docs/testreports/PHASE4_REPORT.md) are deployed and privately verified,
+including mutual data isolation. PROD has its namespace and Secrets prepared;
+its application deployment remains pending. PROD uses the approved STAGE image
+digests. Public routing and TLS setup remain later work.
 
 For the implemented topology and component boundaries, see
 [Current architecture](docs/ARCHITECTURE.md).

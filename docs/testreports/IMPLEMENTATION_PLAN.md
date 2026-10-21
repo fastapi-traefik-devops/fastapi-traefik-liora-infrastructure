@@ -51,9 +51,9 @@ kubernetes/
 The Phase 0 baseline report and migration instructions accompany this plan.
 The application base and overlays have been imported with selected history;
 see [Phase 1 report](PHASE1_REPORT.md). All three overlays render with real,
-pinned images, including the approved PROD pair. DEV is deployed and privately
-verified in Phase 3; STAGE and PROD application deployment remain pending.
-Never commit live credentials, controller private keys, or state.
+pinned images, including the approved PROD pair. DEV and STAGE are deployed and
+privately verified in Phases 3 and 4, including mutual isolation; PROD deployment
+remains pending. Never commit live credentials, controller private keys, or state.
 
 ### Target ownership and source files
 
@@ -130,8 +130,8 @@ in the Phase 2 report.
 Fresh, separate backend/database credentials reside in ignored
 `recovery/recovery.yaml`, with registry credentials in ignored `recovery/.env`.
 Phase 2 created and verified the corresponding live Secrets in each namespace.
-No credential values were committed. Phase 3 subsequently deployed and verified
-DEV; STAGE and PROD application workloads remain undeployed.
+No credential values were committed. Phases 3 and 4 subsequently deployed and
+verified DEV and STAGE; PROD application workloads remain undeployed.
 
 **Pass:** both clusters, storage, image versions, and credentials are ready.
 
@@ -201,7 +201,8 @@ changed. A bootstrap length guard now prevents that error.
 
 The retained DEV marker is recorded in `/home/root-admin/liora-render/dev/acceptance.json`
 for Phase 4 isolation checks. Public routing and trusted TLS remain unverified.
-STAGE/PROD application workloads are not deployed; Phase 4 has not started.
+At Phase 3 completion STAGE/PROD application workloads were not deployed.
+STAGE was subsequently deployed and verified in Phase 4 below.
 
 - [x] Deploy the DEV overlay to `app-dev` on the dev/stage cluster. Bring up
       PostgreSQL before relying on the prestart migration Job.
@@ -216,11 +217,22 @@ prestart Job; verify database readiness and Job completion explicitly.
 
 ## Phase 4 — Deploy and verify STAGE
 
-- [ ] Deploy the STAGE overlay to `app-stage` on the dev/stage cluster, with
+Status on 2026-10-21: **complete**. See [Phase 4 report](PHASE4_REPORT.md).
+STAGE's separate 1Gi local-path PVC is Bound, all four Deployments have one
+Ready replica, and prestart completed. Private browser login, item creation,
+editing and persistence passed. Both environments return their own marker and
+404 for the other marker; direct SQL confirms one own row and zero foreign
+rows. Cross-environment tokens are rejected with HTTP 403. DEV stayed healthy
+with unchanged workloads and zero restarts. All six nodes are Ready.
+
+Keep both synthetic markers through Phase 5 to check PROD isolation. PROD has
+no application workloads; public routing and trusted TLS remain pending.
+
+- [x] Deploy the STAGE overlay to `app-stage` on the dev/stage cluster, with
       its own Secrets and PVC. Verify PostgreSQL before the prestart Job.
-- [ ] Check workloads, backend health, UI login, and a database read/write
+- [x] Check workloads, backend health, UI login, and a database read/write
       operation through private access.
-- [ ] Confirm DEV stays healthy and STAGE data remains isolated.
+- [x] Confirm DEV stays healthy and STAGE data remains isolated.
 
 **Pass:** DEV and STAGE work independently on VMs 201–203.
 

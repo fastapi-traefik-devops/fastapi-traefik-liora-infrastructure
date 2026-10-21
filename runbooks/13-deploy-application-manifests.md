@@ -2,15 +2,16 @@
 
 **Where:** Management VM 200, from the reviewed infrastructure checkout.
 
-**Status:** Phase 3 deployed DEV on K3s and verified PostgreSQL, prestart,
-backend/frontend/Adminer readiness, private UI login and item persistence; see
-the [Phase 3 report](../docs/testreports/PHASE3_REPORT.md). STAGE and PROD have
-prepared namespaces/Secrets but no application workloads. PROD is pinned to the
-approved STAGE image pair `sha-c375967...`. Phase 2 storage checks passed in all
-three namespaces and their temporary resources were cleaned up.
+**Status:** DEV and STAGE are deployed on K3s and passed private health, UI
+login and item persistence checks. Their databases and authentication tokens
+passed mutual isolation checks; see the [Phase 3 report](../docs/testreports/PHASE3_REPORT.md)
+and [Phase 4 report](../docs/testreports/PHASE4_REPORT.md). PROD has prepared
+namespace/Secrets but no application workloads, and is pinned to the approved
+STAGE image pair `sha-c375967...`. Phase 2 storage checks passed in all three
+namespaces and their temporary resources were cleaned up.
 
 Run only the steps belonging to the currently authorized phase. Public routing,
-trusted TLS, STAGE deployment and PROD deployment remain separate later work.
+trusted TLS and PROD deployment remain separate later work.
 
 ## Scope and prerequisites
 
@@ -411,9 +412,10 @@ additional markers, so retain their records or clean up those markers first.
 | STAGE / Phase 4 | app-stage runs on k3s-1 nodes; repeat every DEV check with STAGE credentials; its PVC/PV is distinct; DEV marker is absent from STAGE; STAGE marker is absent from DEV; DEV remains healthy |
 | PROD / Phase 5 | approved real digests, no placeholders; app-prod runs on k3s-2 nodes; two backend and two frontend replicas Ready; repeat all data and UI checks; its database contains neither nonprod marker; DEV/STAGE remain healthy |
 
-After checking isolation in both directions, delete only the acceptance items
-you created and confirm their removal. Check Adminer through a private Service
-forward if needed; it has no public ingress. Verify the actual Pod nodes with:
+Retain the DEV and STAGE markers through Phase 5 so PROD can be checked against
+both. After all three environments pass isolation, delete only the acceptance
+items you created and confirm their removal. Check Adminer through a private
+Service forward if needed; it has no public ingress. Verify the actual Pod nodes with:
 
 ```sh
 kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n app-dev get pods -o wide
