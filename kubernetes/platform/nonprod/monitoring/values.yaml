@@ -1,0 +1,216 @@
+# Adapted from upstream/monitoring/values.yaml; native private access only.
+fullnameOverride: monitoring
+defaultRules:
+  create: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false
+crds:
+  enabled: true
+  upgradeJob:
+    enabled: false
+prometheusOperator:
+  admissionWebhooks:
+    enabled: false
+  tls:
+    enabled: false
+  resources:
+    requests:
+      cpu: 40m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  prometheusConfigReloader:
+    resources:
+      requests:
+        cpu: 5m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+prometheus:
+  ingress:
+    enabled: false
+  prometheusSpec:
+    replicas: 1
+    retention: 3d
+    retentionSize: 1500MB
+    scrapeInterval: 60s
+    evaluationInterval: 60s
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        cpu: 500m
+        memory: 1536Mi
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector:
+      matchLabels:
+        release: monitoring
+    serviceMonitorNamespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: monitoring
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelector:
+      matchLabels:
+        release: monitoring
+    podMonitorNamespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: monitoring
+    ruleSelectorNilUsesHelmValues: false
+    ruleSelector:
+      matchLabels:
+        release: monitoring
+    ruleNamespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: monitoring
+    storageSpec:
+      volumeClaimTemplate:
+        metadata:
+          annotations:
+            argocd.argoproj.io/sync-options: Prune=false,Delete=false
+        spec:
+          storageClassName: local-path
+          accessModes:
+          - ReadWriteOnce
+          resources:
+            requests:
+              storage: 2Gi
+    externalLabels:
+      cluster: nonprod
+    externalUrl: http://192.168.77.16:9090
+alertmanager:
+  ingress:
+    enabled: false
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: pending-destination
+      routes: []
+      group_by:
+      - cluster
+      - alertname
+      - namespace
+      group_wait: 1m
+      group_interval: 5m
+      repeat_interval: 12h
+    receivers:
+    - name: pending-destination
+  alertmanagerSpec:
+    secrets: []
+    replicas: 1
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+    storage:
+      volumeClaimTemplate:
+        metadata:
+          annotations:
+            argocd.argoproj.io/sync-options: Prune=false,Delete=false
+        spec:
+          storageClassName: local-path
+          accessModes:
+          - ReadWriteOnce
+          resources:
+            requests:
+              storage: 256Mi
+    externalUrl: http://192.168.77.16:9093
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 30m
+      memory: 64Mi
+    limits:
+      cpu: 150m
+      memory: 128Mi
+prometheus-node-exporter:
+  hostNetwork: false
+  service:
+    enableHostPort: false
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+grafana:
+  replicas: 1
+  defaultDashboardsEnabled: false
+  ingress:
+    enabled: false
+  service:
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 384Mi
+  persistence:
+    enabled: false
+  admin:
+    existingSecret: monitoring-grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  grafana.ini:
+    auth:
+      disable_login_form: false
+    auth.anonymous:
+      enabled: false
+    users:
+      allow_sign_up: false
+    analytics:
+      reporting_enabled: false
+      check_for_updates: false
+    server:
+      root_url: http://192.168.77.16:3000/
+      domain: 192.168.77.16
+      enforce_domain: false
+  sidecar:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+    datasources:
+      enabled: false
+    dashboards:
+      enabled: true
+      searchNamespace: monitoring
+      skipReload: true
+      initDashboards: false
+      provider:
+        allowUiUpdates: false
+        disableDelete: true
+        updateIntervalSeconds: 30
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+      - name: Prometheus NONPROD
+        uid: prometheus
+        type: prometheus
+        url: http://monitoring-prometheus.monitoring.svc.cluster.local:9090
+        access: proxy
+        isDefault: true
+        editable: false
+  testFramework:
+    enabled: false
+coreDns:
+  enabled: false

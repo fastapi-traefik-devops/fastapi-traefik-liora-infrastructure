@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-admin
+  namespace: monitoring
+  labels:
+    liora.aprt.info/access: private-admin
+  annotations:
+    kube-vip.io/loadbalancerIPs: 192.168.77.16
+spec:
+  type: LoadBalancer
+  loadBalancerClass: liora.aprt.info/admin-vip
+  allocateLoadBalancerNodePorts: false
+  externalTrafficPolicy: Cluster
+  selector:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: monitoring
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-admin
+  namespace: monitoring
+  labels:
+    liora.aprt.info/access: private-admin
+  annotations:
+    kube-vip.io/loadbalancerIPs: 192.168.77.16
+spec:
+  type: LoadBalancer
+  loadBalancerClass: liora.aprt.info/admin-vip
+  allocateLoadBalancerNodePorts: false
+  externalTrafficPolicy: Cluster
+  selector:
+    app.kubernetes.io/name: prometheus
+    operator.prometheus.io/name: monitoring-prometheus
+  ports:
+  - name: http
+    port: 9090
+    targetPort: 9090
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alertmanager-admin
+  namespace: monitoring
+  labels:
+    liora.aprt.info/access: private-admin
+  annotations:
+    kube-vip.io/loadbalancerIPs: 192.168.77.16
+spec:
+  type: LoadBalancer
+  loadBalancerClass: liora.aprt.info/admin-vip
+  allocateLoadBalancerNodePorts: false
+  externalTrafficPolicy: Cluster
+  selector:
+    app.kubernetes.io/name: alertmanager
+    alertmanager: monitoring-alertmanager
+  ports:
+  - name: http
+    port: 9093
+    targetPort: 9093

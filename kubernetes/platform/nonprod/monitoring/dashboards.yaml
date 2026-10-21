@@ -1,0 +1,2634 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: monitoring-platform-dashboards
+  namespace: monitoring
+  labels:
+    grafana_dashboard: '1'
+data:
+  platform-nodes.json: |
+    {
+      "uid": "platform-nodes",
+      "title": "NONPROD / Platform Overview",
+      "schemaVersion": 39,
+      "version": 3,
+      "refresh": "1m",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "tags": [
+        "DEV",
+        "STAGE",
+        "GitOps"
+      ],
+      "editable": false,
+      "panels": [
+        {
+          "id": 9,
+          "title": "DEV / STAGE health now",
+          "type": "row",
+          "collapsed": false,
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 24,
+            "h": 1
+          },
+          "panels": []
+        },
+        {
+          "id": 10,
+          "title": "Argo applications Healthy",
+          "description": "Expected 2: app-dev and app-stage. Below 2 needs investigation; no telemetry is not healthy.",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 1,
+            "w": 5,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(argocd_app_info{name=~\"app-dev|app-stage\",health_status=\"Healthy\"}) or (0 * sum(argocd_app_info{name=~\"app-dev|app-stage\"}))",
+              "legendFormat": "Argo applications Healthy",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No telemetry",
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "green",
+                    "value": 2
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 11,
+          "title": "Argo applications Synced",
+          "description": "Expected 2: app-dev and app-stage. Review Argo diff when below 2; missing telemetry remains no data.",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 5,
+            "y": 1,
+            "w": 5,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(argocd_app_info{name=~\"app-dev|app-stage\",sync_status=\"Synced\"}) or (0 * sum(argocd_app_info{name=~\"app-dev|app-stage\"}))",
+              "legendFormat": "Argo applications Synced",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No telemetry",
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 1
+                  },
+                  {
+                    "color": "green",
+                    "value": 2
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 12,
+          "title": "Missing replicas",
+          "description": "DEV/STAGE desired minus available replicas, clamped per deployment. Healthy is zero. Inspect rollout, probes and scheduling if positive.",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 10,
+            "y": 1,
+            "w": 5,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(clamp_min(kube_deployment_spec_replicas{namespace=~\"app-dev|app-stage\"} - kube_deployment_status_replicas_available{namespace=~\"app-dev|app-stage\"}, 0))",
+              "legendFormat": "Missing replicas",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No telemetry",
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.01
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 13,
+          "title": "Container restarts (15m)",
+          "description": "DEV/STAGE restarts over 15 minutes. Fractional values are counter extrapolation. Inspect previous logs and termination reasons.",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 15,
+            "y": 1,
+            "w": 5,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=~\"app-dev|app-stage\"}[15m]))",
+              "legendFormat": "Container restarts (15m)",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No telemetry",
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.01
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 14,
+          "title": "Firing alerts",
+          "description": "Current firing Prometheus alerts across the monitored platform. ALERTS exists only while an alert is pending/firing. An empty set means zero only while the Prometheus self-scrape is UP; no healthy self-scrape means no telemetry. Direct Alertmanager notification tests are not Prometheus rule alerts.",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 20,
+            "y": 1,
+            "w": 4,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(ALERTS{alertstate=\"firing\"}) or (0 * max(up{job=\"monitoring-prometheus\"} == 1))",
+              "legendFormat": "Firing alerts",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No telemetry",
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.01
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 1,
+          "title": "Cluster CPU busy fraction",
+          "description": "CPU-weighted cluster busy fraction; indicates aggregate capacity. Healthy: Below 85% and no saturated individual node. Investigate: Sustained high usage or a hot node hidden by the average. Action: Use the per-node panel to locate saturation; investigate heavy pods.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 5,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "1 - sum(rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m])) / count(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"})",
+              "legendFormat": "cluster"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.85
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 2,
+          "title": "Cluster memory used fraction",
+          "description": "Capacity-weighted unavailable memory fraction; indicates aggregate headroom. Healthy: Below 90% and no pressured node. Investigate: High aggregate use or individual-node pressure. Action: Compare per-node usage with workload memory and host available RAM.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 5,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "1 - sum(node_memory_MemAvailable_bytes{job=\"node-exporter\"}) / sum(node_memory_MemTotal_bytes{job=\"node-exporter\"})",
+              "legendFormat": "cluster"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.9
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 3,
+          "title": "Node CPU busy fraction",
+          "description": "Fraction of CPU time outside idle; identifies sustained saturation. Healthy: Below 85%, with headroom for builds. Investigate: Above 85% for 15m triggers NodeHighCPU. Action: Check kubectl top pods -A; reduce competing jobs or add capacity.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 13,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "1 - avg by(instance) (rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[5m]))",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.85
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 4,
+          "title": "Node memory used fraction",
+          "description": "Memory unavailable for new allocations, allowing for reclaimable cache; tracks OOM risk. Healthy: Below 90%, with available headroom. Investigate: Above 90% for 15m triggers NodeHighMemory. Action: Check host free -h and kubectl top pods -A; reduce load and inspect leaks.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 13,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "1 - node_memory_MemAvailable_bytes{job=\"node-exporter\"} / node_memory_MemTotal_bytes{job=\"node-exporter\"}",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.9
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 5,
+          "title": "Filesystem available bytes",
+          "description": "Bytes available to ordinary users per filesystem; detects storage exhaustion. Healthy: Stable free capacity sufficient for retention and image growth. Investigate: Falling capacity or DiskPressure. Action: Check df -h and df -i on host/node; review image/log growth and PVC usage before cleanup.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 21,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "node_filesystem_avail_bytes{job=\"node-exporter\",fstype!~\"tmpfs|overlay|squashfs\"}",
+              "legendFormat": "{{instance}} {{mountpoint}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 6,
+          "title": "Node conditions",
+          "description": "Kubernetes node condition gauges; eviction and readiness signals. Healthy: Ready=1; all pressure conditions=0. Investigate: Ready=0 or any pressure condition=1. Action: Describe the node and inspect events, RAM, disk and inodes.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 21,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "kube_node_status_condition{status=\"true\",condition=~\"Ready|MemoryPressure|DiskPressure|PIDPressure\"}",
+              "legendFormat": "{{node}} {{condition}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 7,
+          "title": "Scrape target availability",
+          "description": "1 for successful scrape, 0 for failed scrape; detects missing monitoring data. Healthy: All expected targets=1. Investigate: A target=0, missing expected target, or stale samples. Action: Open Prometheus /targets; inspect lastError, selector labels, endpoints and exporter pod logs.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 29,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "up",
+              "legendFormat": "{{job}} {{instance}} {{endpoint}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 8,
+          "title": "Alertmanager instances discovered",
+          "description": "Number of discovered Alertmanager endpoints; verifies routing discovery. Healthy: 1 in this single-instance setup. Investigate: 0 or unexpected loss of discovery. Action: Inspect Prometheus /api/v1/alertmanagers and monitoring-alertmanager endpoints.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 29,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "prometheus_notifications_alertmanagers_discovered",
+              "legendFormat": "{{instance}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        }
+      ]
+    }
+  dev-stage-workloads.json: |
+    {
+      "uid": "dev-stage-workloads",
+      "title": "NONPROD / DEV / STAGE Workloads",
+      "schemaVersion": 39,
+      "version": 3,
+      "refresh": "1m",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "tags": [
+        "DEV",
+        "STAGE",
+        "GitOps"
+      ],
+      "editable": false,
+      "panels": [
+        {
+          "id": 1,
+          "title": "Namespace CPU",
+          "description": "Total DEV or STAGE workload CPU cores; supports environment capacity comparison. Healthy: Stable relative to workload and node capacity. Investigate: Unexpected growth or competition with other namespaces. Action: Compare DEV/STAGE pod CPU and recent deployments/load.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",container!=\"\",container!=\"POD\"}[5m]))",
+              "legendFormat": "namespace CPU"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "cores",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 2,
+          "title": "Namespace memory",
+          "description": "Total environment working set; shows memory footprint. Healthy: Stable with adequate node capacity. Investigate: Rising footprint or loss of headroom. Action: Identify the growing pod and inspect its memory limits and logs.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 0,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(container_memory_working_set_bytes{namespace=\"$namespace\",container!=\"\",container!=\"POD\"})",
+              "legendFormat": "namespace memory"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 3,
+          "title": "Pod CPU",
+          "description": "CPU seconds per second across real containers; 1 core=1000m, identifies expensive pods. Healthy: Stable use with headroom against limits. Investigate: Sustained limit-level use, throttling or growing latency. Action: Inspect top pods, resource requests/limits and request volume.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 8,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(namespace,pod) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",container!=\"\",container!=\"POD\"}[5m]))",
+              "legendFormat": "{{namespace}} {{pod}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "cores",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 4,
+          "title": "Pod memory",
+          "description": "Container working set summed by pod; indicates memory demand, not exact RSS. Healthy: Stable below container limits with node headroom. Investigate: Steady growth, limit proximity, OOMKilled or pressure. Action: Inspect each container, previous logs and memory limits; investigate leaks.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 8,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(namespace,pod) (container_memory_working_set_bytes{namespace=\"$namespace\",container!=\"\",container!=\"POD\"})",
+              "legendFormat": "{{namespace}} {{pod}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 5,
+          "title": "Available deployment replicas",
+          "description": "Available replicas; shows whether workloads can serve traffic. Healthy: Equals desired replicas (currently one per deployment). Investigate: Below desired replicas. Action: Describe deployment/pods and inspect rollout, probes and image/secret errors.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 16,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "kube_deployment_status_replicas_available{namespace=\"$namespace\"}",
+              "legendFormat": "{{namespace}} {{deployment}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 6,
+          "title": "Missing deployment replicas",
+          "description": "Desired minus available replicas; highlights service capacity deficits. Healthy: 0 for every deployment, including intentional scale-to-zero. Investigate: Positive for 10m triggers ApplicationDeploymentUnavailable. Action: Inspect rollout status, scheduling events and readiness probes.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 16,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "clamp_min(kube_deployment_spec_replicas{namespace=\"$namespace\"} - kube_deployment_status_replicas_available{namespace=\"$namespace\"}, 0)",
+              "legendFormat": "{{namespace}} {{deployment}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 7,
+          "title": "Container restarts in 15m",
+          "description": "Recent restart count estimated from a counter; catches crashes rather than historical totals. Healthy: 0; occasional explained rollout events. Investigate: At least 3 per container in 15m, sustained for 5m. Action: Describe pod; inspect last termination reason and logs --previous; fix crash/OOM/probe causes.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 24,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\"}[15m])",
+              "legendFormat": "{{namespace}} {{pod}} {{container}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 8,
+          "title": "Pod readiness",
+          "description": "1 when pod is Ready; detects pods unable to serve. Healthy: 1 for long-running serving pods. Investigate: 0 for a serving pod; completed prestart Jobs may legitimately be 0. Action: Check pod phase and owner first, then readiness probe and events.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 24,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "kube_pod_status_ready{namespace=\"$namespace\",condition=\"true\"}",
+              "legendFormat": "{{namespace}} {{pod}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 9,
+          "title": "CPU usage / requests",
+          "description": "Per application container; excludes empty/POD sandbox containers. Matches namespace, pod and container against observed positive requests. Missing/zero budgets produce no series, not an invented ceiling. Requests are a scheduling reservation, not a hard cap; above 100% can be normal burst.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 32,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(namespace,pod,container) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",container!=\"\",container!=\"POD\"}[5m])) / on(namespace,pod,container) (max by(namespace,pod,container) (kube_pod_container_resource_requests{namespace=\"$namespace\",resource=\"cpu\",unit=\"core\"}) > 0)",
+              "legendFormat": "{{pod}} / {{container}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.8
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 10,
+          "title": "CPU usage / limits",
+          "description": "Per application container; excludes empty/POD sandbox containers. Matches namespace, pod and container against observed positive limits. Missing/zero budgets produce no series, not an invented ceiling. Approaching 100% means CPU throttling or memory OOM risk; inspect container limits.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 32,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(namespace,pod,container) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\",container!=\"\",container!=\"POD\"}[5m])) / on(namespace,pod,container) (max by(namespace,pod,container) (kube_pod_container_resource_limits{namespace=\"$namespace\",resource=\"cpu\",unit=\"core\"}) > 0)",
+              "legendFormat": "{{pod}} / {{container}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.8
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 11,
+          "title": "MEMORY usage / requests",
+          "description": "Per application container; excludes empty/POD sandbox containers. Matches namespace, pod and container against observed positive requests. Missing/zero budgets produce no series, not an invented ceiling. Requests are a scheduling reservation, not a hard cap; above 100% can be normal burst.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 40,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(namespace,pod,container) (container_memory_working_set_bytes{namespace=\"$namespace\",container!=\"\",container!=\"POD\"}) / on(namespace,pod,container) (max by(namespace,pod,container) (kube_pod_container_resource_requests{namespace=\"$namespace\",resource=\"memory\",unit=\"byte\"}) > 0)",
+              "legendFormat": "{{pod}} / {{container}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.8
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 12,
+          "title": "MEMORY usage / limits",
+          "description": "Per application container; excludes empty/POD sandbox containers. Matches namespace, pod and container against observed positive limits. Missing/zero budgets produce no series, not an invented ceiling. Approaching 100% means CPU throttling or memory OOM risk; inspect container limits.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 40,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(namespace,pod,container) (container_memory_working_set_bytes{namespace=\"$namespace\",container!=\"\",container!=\"POD\"}) / on(namespace,pod,container) (max by(namespace,pod,container) (kube_pod_container_resource_limits{namespace=\"$namespace\",resource=\"memory\",unit=\"byte\"}) > 0)",
+              "legendFormat": "{{pod}} / {{container}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.8
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              },
+              "min": 0
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        }
+      ],
+      "templating": {
+        "list": [
+          {
+            "name": "namespace",
+            "label": "Environment",
+            "type": "custom",
+            "query": "app-dev,app-stage",
+            "multi": false,
+            "includeAll": false,
+            "current": {
+              "text": "app-dev",
+              "value": "app-dev"
+            },
+            "options": [
+              {
+                "text": "app-dev",
+                "value": "app-dev",
+                "selected": true
+              },
+              {
+                "text": "app-stage",
+                "value": "app-stage",
+                "selected": false
+              }
+            ]
+          }
+        ]
+      }
+    }
+  gitops-argocd.json: |
+    {
+      "uid": "gitops-argocd",
+      "title": "NONPROD / Argo CD",
+      "schemaVersion": 39,
+      "version": 3,
+      "refresh": "1m",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "tags": [
+        "DEV",
+        "STAGE",
+        "GitOps"
+      ],
+      "editable": false,
+      "panels": [
+        {
+          "id": 7,
+          "title": "DEV / STAGE application status",
+          "description": "Current observed health and sync status for app-dev and app-stage, independently. Missing applications have no row; use the overview expected-count Stats to detect missing applications. Inspect Argo resource health for Degraded and Git diff for OutOfSync.",
+          "type": "table",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 24,
+            "h": 5
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "max by(name,health_status,sync_status) (argocd_app_info{name=~\"app-dev|app-stage\"})",
+              "instant": true,
+              "format": "table"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "labelsToFields",
+              "options": {
+                "mode": "columns"
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Value": true
+                },
+                "indexByName": {
+                  "name": 0,
+                  "health_status": 1,
+                  "sync_status": 2
+                },
+                "renameByName": {
+                  "name": "Application",
+                  "health_status": "Health",
+                  "sync_status": "Sync"
+                }
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "cellOptions": {
+                  "type": "color-text"
+                }
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Health"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "Healthy": {
+                            "text": "Healthy",
+                            "color": "green"
+                          },
+                          "Degraded": {
+                            "text": "Degraded",
+                            "color": "red"
+                          },
+                          "Progressing": {
+                            "text": "Progressing",
+                            "color": "yellow"
+                          },
+                          "Missing": {
+                            "text": "Missing",
+                            "color": "red"
+                          },
+                          "Unknown": {
+                            "text": "Unknown",
+                            "color": "yellow"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Sync"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "Synced": {
+                            "text": "Synced",
+                            "color": "green"
+                          },
+                          "OutOfSync": {
+                            "text": "OutOfSync",
+                            "color": "red"
+                          },
+                          "Unknown": {
+                            "text": "Unknown",
+                            "color": "yellow"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          }
+        },
+        {
+          "id": 1,
+          "title": "Application state",
+          "description": "Argo application labels expose health and sync independently; value is always 1. Healthy: Labels Healthy and Synced for both apps. Investigate: Degraded/Progressing/Missing/Unknown or OutOfSync/Unknown sustained. Action: Inspect Argo application conditions, resource tree, operation and Git diff.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 5,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "argocd_app_info{name=~\"app-dev|app-stage\"}",
+              "legendFormat": "{{name}} {{health_status}} {{sync_status}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 2,
+          "title": "Application healthy",
+          "description": "Boolean health indicator preserving zero for observed unhealthy apps. Healthy: 1 for each expected app. Investigate: 0 means unhealthy; no series means missing telemetry or deleted app. Action: Inspect resource health and application conditions; check exporter if absent.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 5,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "argocd_app_info{name=~\"app-dev|app-stage\",health_status=\"Healthy\"} or on(name) (0 * argocd_app_info{name=~\"app-dev|app-stage\"})",
+              "legendFormat": "{{name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 3,
+          "title": "Application synced",
+          "description": "Boolean sync indicator; detects divergence from desired state. Healthy: 1 for each expected app. Investigate: 0 means not Synced; no series is not healthy. Action: Review Argo diff and manifest-generation errors; reconcile only intended DEV/STAGE changes.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 13,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "argocd_app_info{name=~\"app-dev|app-stage\",sync_status=\"Synced\"} or on(name) (0 * argocd_app_info{name=~\"app-dev|app-stage\"})",
+              "legendFormat": "{{name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 4,
+          "title": "Sync operation rate",
+          "description": "Sync operations per second by result; spots repeated failures/reconciliation loops. Healthy: Zero when idle; occasional successful sync. Investigate: Repeated failed sync or unexpected loops. Action: Inspect last operation, hooks, Git source and permissions.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 13,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(name,phase) (rate(argocd_app_sync_total{name=~\"app-dev|app-stage\"}[5m]))",
+              "legendFormat": "{{name}} {{phase}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 5,
+          "title": "Reconciliation p95",
+          "description": "Estimated 95th percentile Argo comparison/reconciliation time across the shared controller; this exporter has no application-name label on this histogram. Healthy: Stable near baseline; idle windows can be NaN. Investigate: Persistent increase relative to baseline. Action: Inspect controller/repo-server logs, Git connectivity and API latency.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 21,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "histogram_quantile(0.95,sum by(le,dest_server) (rate(argocd_app_reconcile_bucket[5m])))",
+              "legendFormat": "{{dest_server}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 6,
+          "title": "Git request rate",
+          "description": "Shared repo-server Git requests; helps diagnose GitOps activity. Healthy: Low steady polling and spikes during expected operations. Investigate: Repeated retries or unexplained sustained spikes. Action: Inspect repo-server errors and repository availability; correlate with sync failures.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 21,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(request_type) (rate(argocd_git_request_total[5m]))",
+              "legendFormat": "{{request_type}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        }
+      ]
+    }
+  ingress-traefik.json: |
+    {
+      "uid": "ingress-traefik",
+      "title": "NONPROD / Traefik",
+      "schemaVersion": 39,
+      "version": 3,
+      "refresh": "1m",
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "tags": [
+        "DEV",
+        "STAGE",
+        "GitOps"
+      ],
+      "editable": false,
+      "panels": [
+        {
+          "id": 8,
+          "title": "Total request rate",
+          "description": "Ingress requests/second across observed entrypoints; 5-minute rate. Uses code label; no observed matching status counters means zero only when base request counters exist. No request telemetry remains no data. Existing service panels separate DEV/STAGE using observed service names.",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 0,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(traefik_entrypoint_requests_total[5m]))",
+              "legendFormat": "Total request rate",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "noValue": "No telemetry",
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 9,
+          "title": "HTTP 2xx rate",
+          "description": "Ingress requests/second across observed entrypoints; 5-minute rate. Uses code label; no observed matching status counters means zero only when base request counters exist. No request telemetry remains no data. Existing service panels separate DEV/STAGE using observed service names.",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 6,
+            "y": 0,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(traefik_entrypoint_requests_total{code=~\"2..\"}[5m])) or (0 * sum(rate(traefik_entrypoint_requests_total[5m])))",
+              "legendFormat": "HTTP 2xx rate",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "noValue": "No telemetry",
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 10,
+          "title": "HTTP 4xx rate",
+          "description": "Ingress requests/second across observed entrypoints; 5-minute rate. Uses code label; no observed matching status counters means zero only when base request counters exist. No request telemetry remains no data. Existing service panels separate DEV/STAGE using observed service names.",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 0,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(traefik_entrypoint_requests_total{code=~\"4..\"}[5m])) or (0 * sum(rate(traefik_entrypoint_requests_total[5m])))",
+              "legendFormat": "HTTP 4xx rate",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "noValue": "No telemetry",
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 1e-06
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 11,
+          "title": "HTTP 5xx rate",
+          "description": "Ingress requests/second across observed entrypoints; 5-minute rate. Uses code label; no observed matching status counters means zero only when base request counters exist. No request telemetry remains no data. Existing service panels separate DEV/STAGE using observed service names.",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 18,
+            "y": 0,
+            "w": 6,
+            "h": 4
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(traefik_entrypoint_requests_total{code=~\"5..\"}[5m])) or (0 * sum(rate(traefik_entrypoint_requests_total[5m])))",
+              "legendFormat": "HTTP 5xx rate",
+              "instant": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "noValue": "No telemetry",
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1e-06
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "textMode": "auto"
+          }
+        },
+        {
+          "id": 1,
+          "title": "Entrypoint requests",
+          "description": "Ingress requests per second by HTTP code, including unmatched routing. Healthy: Expected request volume and mostly successful responses. Investigate: Unexpected drop, spikes, or rising 4xx/5xx. Action: Check endpoint reachability, ingress rules and service readiness.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 5,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(entrypoint,code) (rate(traefik_entrypoint_requests_total[5m]))",
+              "legendFormat": "{{entrypoint}} HTTP {{code}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 2,
+          "title": "DEV / STAGE service requests",
+          "description": "Service request rate; attributes traffic to DEV/STAGE backend/frontend. Healthy: Expected traffic with mostly 2xx. Investigate: Rising service errors or sudden traffic disappearance. Action: Use service name to select namespace; check endpoints and backend logs.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 5,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(service,code) (rate(traefik_service_requests_total{service=~\"app-(dev|stage)-.*\"}[5m]))",
+              "legendFormat": "{{service}} HTTP {{code}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 3,
+          "title": "Entrypoint 4xx fraction",
+          "description": "Fraction of requests rejected as client errors; helps detect routing/auth issues. Healthy: Near baseline, normally near 0 for test traffic. Investigate: Unexpected sustained increase; expected 401/404 may be legitimate. Action: Inspect response codes, routes and auth; correlate with deployment changes.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 13,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "(sum by(entrypoint) (rate(traefik_entrypoint_requests_total{code=~\"4..\"}[5m])) or on(entrypoint) (0 * sum by(entrypoint) (rate(traefik_entrypoint_requests_total[5m])))) / clamp_min(sum by(entrypoint) (rate(traefik_entrypoint_requests_total[5m])), 1e-9)",
+              "legendFormat": "{{entrypoint}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 4,
+          "title": "Entrypoint 5xx fraction",
+          "description": "Fraction of ingress requests failing server-side; reveals upstream outages. Healthy: 0 for successful test traffic. Investigate: Any sustained unexpected 5xx. Action: Check backend readiness/endpoints/logs and Traefik timeout/connect errors.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 13,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "(sum by(entrypoint) (rate(traefik_entrypoint_requests_total{code=~\"5..\"}[5m])) or on(entrypoint) (0 * sum by(entrypoint) (rate(traefik_entrypoint_requests_total[5m])))) / clamp_min(sum by(entrypoint) (rate(traefik_entrypoint_requests_total[5m])), 1e-9)",
+              "legendFormat": "{{entrypoint}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 5,
+          "title": "Entrypoint latency p95",
+          "description": "Estimated p95 ingress duration from histogram; detects user-facing slowness. Healthy: Stable relative to baseline under comparable traffic. Investigate: Persistent increase; NaN during idle is no observation. Action: Check request rate, service latency, backend CPU and database behavior.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 21,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "histogram_quantile(0.95,sum by(le,entrypoint) (rate(traefik_entrypoint_request_duration_seconds_bucket[5m])))",
+              "legendFormat": "{{entrypoint}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 6,
+          "title": "DEV / STAGE service latency p95",
+          "description": "Estimated upstream-service p95 duration; helps localize ingress latency. Healthy: Stable baseline under comparable requests. Investigate: Increasing service p95; NaN when idle. Action: Identify service/environment and inspect app/database performance.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 12,
+            "y": 21,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "histogram_quantile(0.95,sum by(le,service) (rate(traefik_service_request_duration_seconds_bucket{service=~\"app-(dev|stage)-.*\"}[5m])))",
+              "legendFormat": "{{service}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        },
+        {
+          "id": 7,
+          "title": "Last reload successful",
+          "description": "1 when last dynamic configuration reload succeeded; detects invalid ingress configuration. Healthy: 1. Investigate: 0 or missing series. Action: Inspect Traefik logs and recently changed ingress/service configuration.",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 29,
+            "w": 12,
+            "h": 8
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "traefik_config_last_reload_success",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No observations",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": [
+                "lastNotNull"
+              ]
+            },
+            "tooltip": {
+              "mode": "multi"
+            }
+          }
+        }
+      ]
+    }
