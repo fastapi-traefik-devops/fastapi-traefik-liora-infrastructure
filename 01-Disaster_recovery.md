@@ -42,3 +42,5 @@ Run all subsequent infrastructure recovery commands on **VM 200**. Use your PC/l
 9. **Recreate the two Kubernetes clusters.** Reconcile Terraform state, provision dev/stage VMs **201–203** and prod VMs **211–213**, then install K3s.
    - [ ] [Provision the cluster VMs](runbooks/08-provision-cluster-vms.md).
    - [ ] [Install K3s on both clusters](runbooks/09-install-k3s-clusters.md).
+10. **Deploy and verify the application manifests.** Use the assigned cluster and isolated namespace for each environment; complete this step only when its deployment phase is authorized.
+    - [ ] [Deploy the application manifests](runbooks/13-deploy-application-manifests.md).

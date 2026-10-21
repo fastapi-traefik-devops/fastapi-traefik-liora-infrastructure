@@ -22,6 +22,10 @@ Cloud-Init template is VM `9013`.
 - [Infrastructure disaster recovery](01-Disaster_recovery.md)
 
 Both navigators link to the step-specific instructions in `runbooks/`.
+The [application deployment runbook](runbooks/13-deploy-application-manifests.md)
+describes the later manual deployment gates. Manifests have been rendered locally;
+K3s application deployment is not yet verified. PROD image selection remains open.
+
 For the implemented topology and component boundaries, see
 [Current architecture](docs/ARCHITECTURE.md).
 
@@ -31,6 +35,7 @@ For the implemented topology and component boundaries, see
 edge/tailscale/                 Tailscale VM and router configuration
 edge/nftables/                 Proxmox host DNAT examples
 infrastructure/k3s-cluster/    Terraform VMs and Ansible K3s installation
+kubernetes/apps/liora/         Application base, overlays, and source history
 runbooks/                      Operator instructions
 recovery/                      Credential examples and local, ignored secrets
 scripts/proxmox/               Proxmox host scripts

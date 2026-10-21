@@ -43,9 +43,15 @@ current host before creating the template.
 | `edge/tailscale/` | Subnet router VM and Tailscale configuration |
 | `infrastructure/k3s-cluster/terraform/` | Six K3s server VMs |
 | `infrastructure/k3s-cluster/ansible/` | Guest preparation, two K3s clusters, kubeconfigs |
+| `kubernetes/apps/liora/` | Current application manifests, environment overlays, and imported deployment history; not yet deployed on K3s |
 | `recovery/` | Local recovery inputs and examples; live credentials stay out of Git |
 | `runbooks/` | Operator steps for installation and recovery |
 
 Start with the [installation](../00-Installation_from-0.md) or
 [disaster recovery](../01-Disaster_recovery.md) navigator. The documented
-infrastructure flow ends after both K3s clusters are installed.
+infrastructure flow continues with the
+[application deployment procedure](../runbooks/13-deploy-application-manifests.md).
+The application manifests have been imported and rendered locally. No K3s
+application deployment, data restoration, DNS, public routing or TLS setup has
+been verified. PostgreSQL, its PVC, Adminer and prestart remain in the initial
+stack; the target platform components are later work.
