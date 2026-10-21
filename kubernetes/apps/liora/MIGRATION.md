@@ -1,7 +1,10 @@
 # Application deployment source and history
 
 Source: `https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application`.
-Source HEAD: `1a5b24f096dd1a6234fa101f8648e40db88b52c7`.
+Source HEAD: `b98a22e48527c256193ed65c10307eb574b27ab6`.
+The read-only local checkout was initially reviewed at
+`1a5b24f096dd1a6234fa101f8648e40db88b52c7`; a read-only upstream check
+identified the newer STAGE promotion, which was imported with its history too.
 
 Only `deploy/base/` and `deploy/overlays/{dev,stage,prod}/` were selected.
 A disposable clone was filtered using git-filter-repo 2.47.0, merged with
@@ -13,18 +16,18 @@ records; Kustomize does not consume them.
 
 ## Credential review and preservation checks
 
-Before the import, all 23 unique selected historical blobs were scanned in
-five change snapshots (91 file instances) with Gitleaks 8.30.1 default rules,
+Before the import, all 25 unique selected historical blobs were scanned in
+six change snapshots (110 file instances) with Gitleaks 8.30.1 default rules,
 explicitly ignoring source allow comments and without source ignore files.
 There were no findings and no Secret or SealedSecret resources. The official
-Gitleaks release checksum was checked before execution. The filtered seven
-commits were also scanned with no findings. A scanner result is not proof that
+Gitleaks release checksum was checked before execution. The filtered eight-commit
+history was also scanned with no findings. A scanner result is not proof that
 arbitrary secrets can never be present; no live credentials were imported.
 
-The filter retained five change commits and two merge commits. Every retained
+The filter retained six change commits and two merge commits. Every retained
 commit's author and committer identity, timestamp, message, and selected tree
 were compared with the original. All selected blob IDs are identical, and all
-seven commits' blobs were covered by the pre-import scan. Commit hashes changed
+eight commits' blobs were covered by the pre-import scan. Commit hashes changed
 because the parent histories and trees changed. The original-to-imported map
 is in [SOURCE_HISTORY.tsv](SOURCE_HISTORY.tsv).
 
