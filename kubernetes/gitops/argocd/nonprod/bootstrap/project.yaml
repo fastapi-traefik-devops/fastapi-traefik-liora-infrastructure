@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: liora-bootstrap
+  namespace: argocd
+spec:
+  description: Manage reviewed local Liora Application and AppProject definitions
+  sourceRepos:
+  - https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure.git
+  destinations:
+  - server: https://kubernetes.default.svc
+    namespace: argocd
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+  - group: argoproj.io
+    kind: Application
+  - group: argoproj.io
+    kind: AppProject

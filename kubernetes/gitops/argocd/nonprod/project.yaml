@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: fastapi
+  namespace: argocd
+spec:
+  description: Liora nonprod applications on the local cluster only
+  sourceRepos:
+  - https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure.git
+  destinations:
+  - server: https://kubernetes.default.svc
+    namespace: app-dev
+  - server: https://kubernetes.default.svc
+    namespace: app-stage
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+  - group: ''
+    kind: ConfigMap
+  - group: ''
+    kind: Service
+  - group: ''
+    kind: PersistentVolumeClaim
+  - group: apps
+    kind: Deployment
+  - group: batch
+    kind: Job
+  - group: networking.k8s.io
+    kind: Ingress

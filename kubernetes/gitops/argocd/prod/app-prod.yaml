@@ -1,0 +1,30 @@
+# Enable automation only after publishing this revision and reviewing the live diff.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-prod
+  namespace: argocd
+spec:
+  project: fastapi
+  source:
+    repoURL: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure.git
+    targetRevision: main
+    path: kubernetes/apps/liora/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: app-prod
+  syncPolicy:
+    automated:
+      enabled: false
+      prune: false
+      selfHeal: true
+      allowEmpty: false
+    retry:
+      limit: 3
+      backoff:
+        duration: 15s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+    - FailOnSharedResource=true
+    - PruneLast=true
