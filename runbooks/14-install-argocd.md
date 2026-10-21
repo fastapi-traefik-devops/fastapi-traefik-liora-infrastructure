@@ -3,8 +3,11 @@
 **Where:** Reviewed infrastructure checkout on the management host.
 
 Run only during authorized Phase 6. Finish the publication and diff gates before
-syncing. Existing databases, Secrets and PVCs must survive adoption. The initial
-Application manifests deliberately disable automation and pruning.
+syncing. Existing databases, Secrets and PVCs must survive adoption. The committed policies now enable automation after verified adoption. Nonprod
+children enable pruning; PROD and both roots keep pruning disabled. For a fresh
+installation, render a local bootstrap copy with `automated.enabled: false` for
+all Applications until the publication and diff gates below pass. Do not apply
+the enabled policies to an unreviewed existing deployment.
 
 ## 1. Select one cluster and install
 
@@ -103,7 +106,8 @@ kubectl --kubeconfig="$kubeconfig" kustomize "$argocd_path"
 kubectl --kubeconfig="$kubeconfig" kustomize "$argocd_path/bootstrap"
 ```
 
-Child Application definitions may be applied with automation disabled to inspect
+For a fresh bootstrap, child Application definitions may be applied with
+automation disabled in a reviewed local render to inspect
 Argo CD's repository comparison, even before the root files are published:
 
 ```sh
@@ -163,7 +167,8 @@ it does not protect a direct operator deletion.
 Require both private Argo CD UIs, only the intended local cluster destinations,
 successful root and child reconciliations, correct image IDs, healthy replicas,
 retained database PVC/PV bindings and no unexpected deletion. Test self-healing
-with a harmless ConfigMap label drift after automation is enabled; record its
+by temporarily changing the non-secret `PROJECT_NAME` field in
+`backend-config` and checking that its Git value is restored after automation is enabled; record its
 correction without changing credentials, image tags, replica counts or data.
 Do not deliberately delete data-bearing resources to test pruning.
 

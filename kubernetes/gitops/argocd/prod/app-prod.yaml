@@ -1,4 +1,4 @@
-# Enable automation only after publishing this revision and reviewing the live diff.
+# Automation enabled after verified manual adoption; PVC retention remains in the overlay.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -15,7 +15,7 @@ spec:
     namespace: app-prod
   syncPolicy:
     automated:
-      enabled: false
+      enabled: true
       prune: false
       selfHeal: true
       allowEmpty: false
