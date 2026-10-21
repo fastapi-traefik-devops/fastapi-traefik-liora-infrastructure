@@ -43,7 +43,7 @@ current host before creating the template.
 | `edge/tailscale/` | Subnet router VM and Tailscale configuration |
 | `infrastructure/k3s-cluster/terraform/` | Six K3s server VMs |
 | `infrastructure/k3s-cluster/ansible/` | Guest preparation, two K3s clusters, kubeconfigs |
-| `kubernetes/apps/liora/` | Current application manifests, environment overlays, and imported deployment history; DEV/STAGE deployed and privately verified |
+| `kubernetes/apps/liora/` | Current application manifests, environment overlays, and imported deployment history; DEV/STAGE/PROD deployed and privately verified |
 | `recovery/` | Local recovery inputs and examples; live credentials stay out of Git |
 | `runbooks/` | Operator steps for installation and recovery |
 
@@ -51,12 +51,16 @@ Start with the [installation](../00-Installation_from-0.md) or
 [disaster recovery](../01-Disaster_recovery.md) navigator. The documented
 infrastructure flow continues with the
 [application deployment procedure](../runbooks/13-deploy-application-manifests.md).
-DEV and STAGE run in `app-dev` and `app-stage` on the dev/stage cluster. Each
-environment retains PostgreSQL, its 1Gi local-path PVC, Adminer, prestart, backend
-and frontend from the imported stack. Database
-readiness, migrations, private UI login and item persistence are verified in
-the [Phase 3 report](testreports/PHASE3_REPORT.md) and
-[Phase 4 report](testreports/PHASE4_REPORT.md). DEV/STAGE use distinct PVCs and
-passed mutual marker and authentication isolation checks. PROD has its namespace
-and Secrets, but no application workloads yet. Data restoration, DNS, public
-routing, trusted TLS and target platform components remain later work.
+DEV and STAGE run in `app-dev` and `app-stage` on the dev/stage cluster. PROD
+runs in `app-prod` on its separate cluster, with two backend and two frontend
+replicas. Each environment retains PostgreSQL, its separate 1Gi local-path PVC,
+Adminer, prestart, backend and frontend from the imported stack. All backend
+Pods use one worker; PROD required the same explicit command as DEV/STAGE.
+
+Database readiness, migrations, private UI login and item persistence are
+verified in the [Phase 3](testreports/PHASE3_REPORT.md),
+[Phase 4](testreports/PHASE4_REPORT.md), and [Phase 5](testreports/PHASE5_REPORT.md)
+reports. All three environments passed mutual database-marker and token
+isolation checks; synthetic acceptance items were removed afterward. Data
+restoration, DNS, public routing, trusted TLS and target platform components
+remain later work.

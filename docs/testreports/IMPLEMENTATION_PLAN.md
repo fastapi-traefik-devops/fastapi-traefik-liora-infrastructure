@@ -51,9 +51,11 @@ kubernetes/
 The Phase 0 baseline report and migration instructions accompany this plan.
 The application base and overlays have been imported with selected history;
 see [Phase 1 report](PHASE1_REPORT.md). All three overlays render with real,
-pinned images, including the approved PROD pair. DEV and STAGE are deployed and
-privately verified in Phases 3 and 4, including mutual isolation; PROD deployment
-remains pending. Never commit live credentials, controller private keys, or state.
+pinned images, including the approved PROD pair. DEV, STAGE and PROD are
+deployed and privately verified in Phases 3–5, including mutual isolation.
+PROD uses one backend worker per Pod with two replicas after its compatibility
+fix. The migration is integrated into the original checkout on `main`. Never
+commit live credentials, controller private keys, or state.
 
 ### Target ownership and source files
 
@@ -130,8 +132,8 @@ in the Phase 2 report.
 Fresh, separate backend/database credentials reside in ignored
 `recovery/recovery.yaml`, with registry credentials in ignored `recovery/.env`.
 Phase 2 created and verified the corresponding live Secrets in each namespace.
-No credential values were committed. Phases 3 and 4 subsequently deployed and
-verified DEV and STAGE; PROD application workloads remain undeployed.
+No credential values were committed. Phases 3–5 subsequently deployed and
+verified all three application environments.
 
 **Pass:** both clusters, storage, image versions, and credentials are ready.
 
@@ -225,8 +227,9 @@ editing and persistence passed. Both environments return their own marker and
 rows. Cross-environment tokens are rejected with HTTP 403. DEV stayed healthy
 with unchanged workloads and zero restarts. All six nodes are Ready.
 
-Keep both synthetic markers through Phase 5 to check PROD isolation. PROD has
-no application workloads; public routing and trusted TLS remain pending.
+Both synthetic markers were retained through Phase 5, then removed after all
+three environments passed mutual isolation. PROD deployment is recorded below;
+public routing and trusted TLS remain pending.
 
 - [x] Deploy the STAGE overlay to `app-stage` on the dev/stage cluster, with
       its own Secrets and PVC. Verify PostgreSQL before the prestart Job.
@@ -238,11 +241,26 @@ no application workloads; public routing and trusted TLS remain pending.
 
 ## Phase 5 — Deploy and verify PROD
 
-- [ ] Deploy the PROD overlay with real, selected image digests to `app-prod`
+Status on 2026-10-21: **complete**. See [Phase 5 report](PHASE5_REPORT.md).
+PROD's own 1Gi local-path PVC is Bound and prestart completed. PostgreSQL and
+Adminer are Ready; two backend and two frontend replicas are Ready on k3s-2
+nodes. Initial four-worker backend Pods repeatedly lost child workers, with no
+recorded cgroup OOM kills. The explicit single-worker command used by DEV/STAGE
+resolved readiness while retaining two PROD replicas and the approved digests.
+The underlying multiworker failure remains unconfirmed; this is not a load test.
+
+Private browser login and item creation/editing/persistence passed. All six
+directed marker checks and six foreign-token checks passed. SQL found only each environment's own
+marker. The three synthetic items were then removed, with API/SQL absence and
+health rechecked. DEV/STAGE workload snapshots stayed unchanged, with zero
+restarts; all six nodes are Ready. Public routing and trusted TLS remain pending.
+Phase 6 has not started.
+
+- [x] Deploy the PROD overlay with real, selected image digests to `app-prod`
       on the prod cluster, with its own Secrets and PVC.
-- [ ] Check prestart, both application replicas, backend health, UI login,
+- [x] Check prestart, both application replicas, backend health, UI login,
       and a database read/write operation through private access.
-- [ ] Confirm PROD runs on VMs 211–213 and both nonprod environments remain
+- [x] Confirm PROD runs on VMs 211–213 and both nonprod environments remain
       healthy. Record the deployed digests.
 
 **Pass:** all three environments run the current stack on their assigned

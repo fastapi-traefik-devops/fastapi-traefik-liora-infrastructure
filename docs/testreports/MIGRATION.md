@@ -55,5 +55,8 @@ validation do not establish that anything has been deployed on K3s.
 
 DEV live deployment and private acceptance are recorded separately in the
 [Phase 3 report](PHASE3_REPORT.md). STAGE deployment and DEV/STAGE isolation are
-recorded in the [Phase 4 report](PHASE4_REPORT.md). PROD deployment remains a
-future phase.
+recorded in the [Phase 4 report](PHASE4_REPORT.md). PROD deployment, its
+single-worker compatibility fix and three-environment acceptance are recorded
+in the [Phase 5 report](PHASE5_REPORT.md). The migration history is now integrated
+into the original checkout on `main`; the isolated worktree and merged branch
+were removed after verification.

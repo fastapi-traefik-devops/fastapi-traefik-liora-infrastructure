@@ -2,16 +2,17 @@
 
 **Where:** Management VM 200, from the reviewed infrastructure checkout.
 
-**Status:** DEV and STAGE are deployed on K3s and passed private health, UI
-login and item persistence checks. Their databases and authentication tokens
-passed mutual isolation checks; see the [Phase 3 report](../docs/testreports/PHASE3_REPORT.md)
-and [Phase 4 report](../docs/testreports/PHASE4_REPORT.md). PROD has prepared
-namespace/Secrets but no application workloads, and is pinned to the approved
-STAGE image pair `sha-c375967...`. Phase 2 storage checks passed in all three
-namespaces and their temporary resources were cleaned up.
+**Status:** DEV, STAGE and PROD are deployed on their assigned K3s clusters.
+Private health, browser login, item persistence and mutual database/token
+isolation passed; see the [Phase 3 report](../docs/testreports/PHASE3_REPORT.md),
+[Phase 4 report](../docs/testreports/PHASE4_REPORT.md), and
+[Phase 5 report](../docs/testreports/PHASE5_REPORT.md). PROD has two Ready backend
+and two Ready frontend replicas using the approved image pair `sha-c375967...`.
+All three synthetic acceptance markers were removed after isolation checks.
 
 Run only the steps belonging to the currently authorized phase. Public routing,
-trusted TLS and PROD deployment remain separate later work.
+trusted TLS and Argo CD installation remain separate later work. The verified
+migration is integrated into the original checkout on `main`.
 
 ## Scope and prerequisites
 
@@ -41,8 +42,7 @@ the repository copy using the command beside its link.
 The default kubeconfig points to the separate kind reference cluster; never
 rely on it for K3s.
 
-Recovery inputs currently reside in the **original checkout**, not the migration
-worktree:
+Recovery inputs reside in the original checkout:
 
 - `$HOME/fastapi-traefik-liora-infrastructure/recovery/recovery.yaml`:
   `application_credentials.<environment>` holds `first_superuser`, namespace,
