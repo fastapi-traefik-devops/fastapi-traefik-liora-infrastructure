@@ -364,6 +364,41 @@ password. Create and read back an item titled `acceptance-<environment>-<date>`;
 edit it and read it again. Retain the environment marker temporarily to check
 isolation when the next environment is deployed. Do not use real personal data.
 
+### Automated browser acceptance alternative
+
+After the ingress forward is running, you can use the standalone browser check
+instead of manually performing the login and item actions above. It uses the
+same exported `environment`, `namespace`, `recovery_dir` and `render_dir` values.
+It resolves only the selected application hostname to loopback inside Chromium,
+so system hosts files and public DNS do not need changing. This still tests the
+temporary private HTTP origin, not public routing or trusted TLS.
+
+Install the browser tooling on the machine running the check. The Chromium
+system-library installation requires the host's package-management privileges;
+operators without them can use the manual browser procedure instead.
+
+```sh
+python3 -m venv "$HOME/liora-ui-check-tools"
+ui_python="$HOME/liora-ui-check-tools/bin/python"
+"$ui_python" -m pip install playwright==1.64.0 PyYAML==6.0.3
+"$ui_python" -m playwright install --with-deps chromium
+"$ui_python" scripts/kubernetes/verify-application-ui.py
+```
+
+Standalone script: [Verify application UI and item persistence](../scripts/kubernetes/verify-application-ui.py).
+You can also copy this file to VM 200 and invoke it using the prepared Python
+environment. Keep the ingress forward running in a separate terminal.
+
+The check verifies health, signs in through the UI, creates and edits an item,
+reloads the page, and reads the persisted item through the authenticated API.
+It leaves one synthetic marker for the later cross-environment isolation check
+and writes its ID/title and pass/fail status to `$render_dir/acceptance.json`.
+Keep that record for the next phase. It does not save passwords, access tokens,
+browser authentication state or traces. A failed run reports its step and error
+type; if an item was already created, use its recorded ID to review or clean up
+only that marker before repeating the check. Repeated successful checks create
+additional markers, so retain their records or clean up those markers first.
+
 | Gate | Required checks before proceeding |
 | --- | --- |
 | DEV / Phase 3 | app-dev runs on k3s-1 nodes; PVC Bound; PostgreSQL Ready; prestart Complete; backend/frontend/Adminer Ready; health and UI login pass; DEV item write/read/update passes; record exact images |
