@@ -1,0 +1,10 @@
+all:
+  hosts:
+    liora-edge:
+      ansible_host: 192.168.77.240
+  vars:
+    ansible_user: root-admin
+    ansible_python_interpreter: /usr/bin/python3
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=accept-new'
+    # Enable only after DEV/STAGE DNS and namespace certificates are verified.
+    liora_tls_nonprod_enabled: true

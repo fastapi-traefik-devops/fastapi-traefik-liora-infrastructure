@@ -1,0 +1,70 @@
+global
+    log /dev/log local0
+    user haproxy
+    group haproxy
+    daemon
+    maxconn 2048
+    stats socket /run/haproxy/admin.sock mode 660 level admin
+
+defaults
+    log global
+    timeout connect 10s
+    timeout client 60s
+    timeout server 60s
+    timeout check 5s
+
+# HTTP is restricted to the three application hosts. Only the ACME webroot is
+# served directly; all other requests are redirected to their canonical HTTPS.
+frontend application_http
+    bind 0.0.0.0:80
+    mode http
+    acl liora_host hdr(host),lower -i liora.aprt.info dev.liora.aprt.info stage.liora.aprt.info
+    http-request deny deny_status 403 unless liora_host
+    acl acme_path path_beg /.well-known/acme-challenge/
+    http-request redirect scheme https code 308 unless acme_path
+    use_backend acme_webroot if acme_path
+
+backend acme_webroot
+    mode http
+    server webroot 127.0.0.1:8088 check
+
+# TLS passes through to the namespace-local Traefik certificate. Reject unknown
+# SNI rather than offering a route to administrative interfaces or other hosts.
+frontend application_https
+    bind 0.0.0.0:443
+    mode tcp
+    tcp-request inspect-delay 10s
+    acl tls_hello req.ssl_hello_type 1
+{% if liora_tls_nonprod_enabled | default(false) %}
+    acl nonprod_sni req.ssl_sni -i dev.liora.aprt.info stage.liora.aprt.info
+{% endif %}
+    acl prod_sni req.ssl_sni -i liora.aprt.info
+{% if liora_tls_nonprod_enabled | default(false) %}
+    tcp-request content reject if tls_hello !nonprod_sni !prod_sni
+{% else %}
+    tcp-request content reject if tls_hello !prod_sni
+{% endif %}
+    tcp-request content accept if tls_hello
+    tcp-request content reject if WAIT_END
+{% if liora_tls_nonprod_enabled | default(false) %}
+    use_backend nonprod_ingress if nonprod_sni
+{% endif %}
+    use_backend prod_ingress if prod_sni
+
+# ServiceLB already owns 443 on these private node addresses. API VIPs .11/.12
+# are never ingress targets. No new address announcer or ServiceLB replacement.
+backend nonprod_ingress
+    mode tcp
+    balance roundrobin
+    option tcp-check
+    server nonprod01 192.168.77.201:443 check inter 5s fall 3 rise 2
+    server nonprod02 192.168.77.202:443 check inter 5s fall 3 rise 2
+    server nonprod03 192.168.77.203:443 check inter 5s fall 3 rise 2
+
+backend prod_ingress
+    mode tcp
+    balance roundrobin
+    option tcp-check
+    server prod01 192.168.77.211:443 check inter 5s fall 3 rise 2
+    server prod02 192.168.77.212:443 check inter 5s fall 3 rise 2
+    server prod03 192.168.77.213:443 check inter 5s fall 3 rise 2
