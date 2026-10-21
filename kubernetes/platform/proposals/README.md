@@ -1,8 +1,12 @@
-# Pending implementation decisions
+# Admin VIP status ownership decision
 
 ## Admin VIP status ownership guard
 
-Status: **proposal only; not deployed or included in a kustomization**.
+Status: **approved by the operator for NONPROD, then PROD**. The active manifest
+is [status-ownership.yaml](../base/admin-access/status-ownership.yaml), included
+in the shared administrative-access kustomization. NONPROD admission checks
+passed; sequential rollout and functional acceptance are recorded in the
+[Phase 8 report](../../../docs/testreports/PHASE8_REPORT.md).
 
 On NONPROD K3s `v1.36.5+k3s1`, an administrative LoadBalancer class prevents
 ServiceLB DaemonSets, but ServiceLB's EndpointSlice handler still queues the
@@ -18,13 +22,14 @@ References: pinned K3s source
 The inspected master source also lacks a class guard in `updateStatus`; no
 verified fixed release was selected. Do not promise an ordinary upgrade fixes it.
 
-`admin-status-ownership.yaml` is a narrowly scoped native admission policy.
+`status-ownership.yaml` is a narrowly scoped native admission policy.
 It allows only `system:serviceaccount:kube-system:kube-vip-admin` to update
 `services/status` for class `liora.aprt.info/admin-vip`. It does not affect
 other Services, Pods, API VIP election, public ingress, network traffic or
-Tailscale permissions, and requires no new controller Pods. Server dry-run passed
-on NONPROD; behavior, controller retries and actual CEL admission enforcement
-remain untested because the policy has not been deployed.
+Tailscale permissions, and requires no new controller Pods. NONPROD checks
+confirmed a foreign status patch is rejected and a kube-vip identity patch is
+accepted (both server dry-runs). An ordinary EndpointSlice metadata update
+triggered ServiceLB retries while the VIP status and HTTP access remained intact.
 
 Trade-offs: it prevents the conflicting writes rather than fixing K3s. ServiceLB
 will still attempt/retry its invalid updates and may emit denial logs. Manual
@@ -33,7 +38,7 @@ binding to undo the guard. Initial adoption must explicitly reconcile status
 through kube-vip, verify access and watch for retries before considering PROD.
 Do not restart nodes or stop public ServiceLB as an implicit workaround.
 
-This adds an implementation mechanism beyond the reviewed class-only isolation.
-Obtain the operator's choice before applying it. Alternatives require a separate
-review of K3s/ServiceLB or public Traefik ownership; those changes are not part
-of the currently deployed increment.
+The operator explicitly approved this mechanism after reviewing class-only
+isolation's incompatibility. No K3s binary upgrade, node restart or change of
+public Traefik ownership is part of this decision. It is a compatibility guard,
+not general restricted Pod admission or a network access policy.

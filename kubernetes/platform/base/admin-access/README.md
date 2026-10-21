@@ -11,14 +11,18 @@ sets its assigned IP annotation, disables NodePort allocation and uses Cluster
 traffic policy. kube-vip rejects classless/foreign Services. K3s's cloud service
 controller does not create ServiceLB Pods for these Services.
 
-**Deployment hold:** K3s v1.36.5+k3s1's separate EndpointSlice status worker still
-ignores the class and clears VIP status. This was observed on NONPROD monitoring
-Services and breaks routing despite healthy backends. Therefore class handling
-alone does not establish controller isolation. See
-[the pending ownership proposal](../../proposals/README.md). Do not deploy this
-configuration to PROD or claim stable administrative access before resolving it.
+## Required K3s status ownership guard
 
-NONPROD has this DaemonSet and the Argo/Adminer private Services applied. Initial
-Argo browser login passed, but backend changes can trigger the same status bug.
-PROD is prepared only. No public ingress, API VIP or existing ServiceLB settings
-were changed. Failover and storage HA are not claimed.
+K3s v1.36.5+k3s1's separate EndpointSlice status worker ignores the class and
+clears foreign VIP status. `status-ownership.yaml` is the operator-approved
+compatibility guard: only this service account may update administrative-class
+Service status. Other classes, API VIPs, workload admission and network access
+are unaffected. The binding is included in this kustomization; apply it before
+creating VIP Services. See the [decision record](../../proposals/README.md).
+
+NONPROD admission and direct status/routing checks passed after enforcement.
+ServiceLB creates no administrative DaemonSets, but still retries its rejected
+status writes and may log denials. This prevents corruption rather than fixing
+K3s. Do not claim a class filter alone provides isolation, and do not disable
+public ServiceLB as a workaround. Ordinary readiness checks do not establish
+failover or storage HA.

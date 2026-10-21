@@ -1,4 +1,4 @@
-# Proposal only: NOT included in any kustomization and NOT deployed.
+# Approved for sequential NONPROD then PROD installation.
 # K3s v1.36.5+k3s1's EndpointSlice status worker ignores LoadBalancer class.
 # This guard prevents foreign status writes; it does not fix the K3s worker.
 apiVersion: admissionregistration.k8s.io/v1
