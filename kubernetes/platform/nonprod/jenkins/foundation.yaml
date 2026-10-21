@@ -1,0 +1,167 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jenkins
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jenkins-foundation
+  namespace: jenkins
+data:
+  jenkins.yaml: |
+    jenkins:
+      systemMessage: K3s controller foundation. CI agents, jobs and publication are deferred
+        to Phase 9.
+      numExecutors: 0
+      mode: EXCLUSIVE
+      clouds: []
+      securityRealm:
+        local:
+          allowsSignup: false
+          users:
+          - id: admin
+            password: ${jenkins-admin-password}
+      authorizationStrategy:
+        globalMatrix:
+          entries:
+          - user:
+              name: admin
+              permissions:
+              - Overall/Administer
+      nodes: []
+      remotingSecurity:
+        enabled: true
+      slaveAgentPort: -1
+    security:
+      apiToken:
+        creationOfLegacyTokenEnabled: false
+        tokenGenerationOnCreationEnabled: false
+        usageStatisticsEnabled: true
+    unclassified:
+      location:
+        url: http://192.168.77.16:8085/
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-home
+  namespace: jenkins
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+  namespace: jenkins
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jenkins
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: jenkins
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      imagePullSecrets:
+      - name: ghcr-pull-secret
+      containers:
+      - name: jenkins
+        image: ghcr.io/fastapi-traefik-devops/liora-jenkins-controller@sha256:7c7e8f8806b7c6aba679aee7cfaec51c0b40475cf536958be8146885e7b310ad
+        ports:
+        - name: http
+          containerPort: 8080
+        env:
+        - name: JAVA_OPTS
+          value: -Xms128m -Xmx384m -Djenkins.install.runSetupWizard=false
+        - name: CASC_JENKINS_CONFIG
+          value: /bootstrap/jenkins.yaml
+        - name: SECRETS
+          value: /run/secrets
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            cpu: '1'
+            memory: 768Mi
+        volumeMounts:
+        - name: home
+          mountPath: /var/jenkins_home
+        - name: config
+          mountPath: /bootstrap
+          readOnly: true
+        - name: login
+          mountPath: /run/secrets
+          readOnly: true
+        startupProbe:
+          httpGet:
+            path: /login
+            port: http
+          failureThreshold: 90
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /login
+            port: http
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /login
+            port: http
+          periodSeconds: 30
+          failureThreshold: 5
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+      volumes:
+      - name: home
+        persistentVolumeClaim:
+          claimName: jenkins-home
+      - name: config
+        configMap:
+          name: jenkins-foundation
+      - name: login
+        secret:
+          secretName: jenkins-foundation-login
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-admin
+  namespace: jenkins
+  annotations:
+    kube-vip.io/loadbalancerIPs: 192.168.77.16
+  labels:
+    liora.aprt.info/access: private-admin
+spec:
+  type: LoadBalancer
+  loadBalancerClass: liora.aprt.info/admin-vip
+  allocateLoadBalancerNodePorts: false
+  externalTrafficPolicy: Cluster
+  selector:
+    app.kubernetes.io/name: jenkins
+  ports:
+  - name: http
+    port: 8085
+    targetPort: http
