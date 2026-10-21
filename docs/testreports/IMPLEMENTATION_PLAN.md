@@ -2,8 +2,11 @@
 
 Planning update: **2026-10-21**. Phases 0–7 are complete within their recorded
 acceptance boundaries. The operator has agreed the private-access architecture
-and a staged Jenkins migration. Phase 8 has not been deployed; this document
-records the agreed target and proposed implementation steps for review.
+and a staged Jenkins migration. Phase 8 execution was authorized on 2026-10-21
+and has started. NONPROD
+admin access and monitoring are partially deployed; a K3s ServiceLB status
+ownership conflict blocks functional acceptance and PROD rollout. See
+[the Phase 8 progress report](PHASE8_REPORT.md).
 
 ## Target architecture
 
@@ -225,8 +228,7 @@ fewest necessary changes. Verify DEV, STAGE, and PROD independently. Add GitOps,
 public access, monitoring, and platform replacements in later, separate steps.
 Complete the check for each phase before starting the next.
 
-The current increment is planning only. Present this updated architecture and
-step sequence for operator confirmation before deploying Phase 8. Execute its
+The operator authorized execution of this plan on 2026-10-21. Execute Phase 8
 substeps in order, keep changes small and report actual readiness separately
 from deferred tests. VM 100 retirement and legacy NAT removal remain operator
 work outside these steps. Do not begin Phase 9 as part of Phase 8.
@@ -459,8 +461,8 @@ passed; both timers are enabled. Argo CD remains Synced/Healthy.
 
 Cloudflare currently supplies DNS only: proxied traffic and Full (strict) mode
 were not configured or verified. Dedicated floating ingress VIPs, edge failover,
-reboot persistence and a later unattended renewal cycle remain untested. Phase 8
-has not started.
+reboot persistence and a later unattended renewal cycle remain untested.
+Phase 8 progress is recorded below.
 
 - [x] Configure real DEV, STAGE, and PROD hostnames, DNS, ingress, and TLS.
       Replace `*.example.com`; align backend CORS and frontend settings.
@@ -475,8 +477,10 @@ other admin interfaces behind Tailscale or equivalent private access.
 
 ## Phase 8 — Add monitoring and operational access
 
-Status: **architecture agreed; implementation awaiting confirmation of this
-updated plan**. The original monitoring-only phase now includes permanent
+Status: **in progress; NONPROD partially deployed, blocked on ServiceLB status
+ownership**. See [Phase 8 report](PHASE8_REPORT.md) and the
+[proposed implementation adjustment](../../kubernetes/platform/proposals/README.md).
+The original monitoring-only phase now includes permanent
 Admin VIP access and the Jenkins controller foundation. Working CI migration
 remains a separate Phase 9.
 

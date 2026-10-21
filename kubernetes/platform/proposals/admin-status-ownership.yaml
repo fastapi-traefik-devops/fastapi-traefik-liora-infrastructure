@@ -1,0 +1,30 @@
+# Proposal only: NOT included in any kustomization and NOT deployed.
+# K3s v1.36.5+k3s1's EndpointSlice status worker ignores LoadBalancer class.
+# This guard prevents foreign status writes; it does not fix the K3s worker.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: liora-admin-vip-status-owner
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [""]
+      apiVersions: [v1]
+      operations: [UPDATE]
+      resources: [services/status]
+      scope: Namespaced
+  matchConditions:
+  - name: admin-vip-class
+    expression: "has(oldObject.spec.loadBalancerClass) && oldObject.spec.loadBalancerClass == 'liora.aprt.info/admin-vip'"
+  validations:
+  - expression: "request.userInfo.username == 'system:serviceaccount:kube-system:kube-vip-admin'"
+    message: Administrative LoadBalancer status belongs to kube-vip-admin
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: liora-admin-vip-status-owner
+spec:
+  policyName: liora-admin-vip-status-owner
+  validationActions: [Deny]

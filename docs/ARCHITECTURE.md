@@ -2,13 +2,16 @@
 
 Updated **2026-10-21**. This document describes the implemented infrastructure
 and the agreed target architecture. Sections explicitly distinguish
-**Implemented**, **Agreed, not deployed**, and **In development**. Agreement on
+**Implemented**, **In progress**, **Agreed, not deployed**, and **In development**. Agreement on
 a design does not establish its operational readiness or tested availability.
 
 The implemented application, GitOps and public HTTPS topology is documented in
 the Phase 0–7 reports. Permanent Admin VIP access, separate cluster monitoring
-and the K3s Jenkins foundation have been agreed but are not deployed. Detailed
-steps and phase acceptance remain in the
+and the K3s Jenkins foundation are being introduced in Phase 8. NONPROD admin
+access and monitoring are partially deployed; ServiceLB status ownership blocks
+acceptance and PROD rollout. The Jenkins controller is prepared, not deployed.
+See the [Phase 8 progress report](testreports/PHASE8_REPORT.md). Detailed steps
+and phase acceptance remain in the
 [implementation plan](testreports/IMPLEMENTATION_PLAN.md).
 
 ## Host and private network
@@ -60,7 +63,7 @@ current host before creating the template.
 | --- | --- | --- | --- |
 | Kubernetes API | `192.168.77.11:6443` | `192.168.77.12:6443` | Implemented; API kube-vip |
 | Public application ingress | `.201`–`.203:80/443` | `.211`–`.213:80/443` | Implemented; Traefik/ServiceLB behind HAProxy |
-| Private administrative Services | `192.168.77.16` | `192.168.77.17` | Agreed, not deployed; separate services-only kube-vip |
+| Private administrative Services | `192.168.77.16` | `192.168.77.17` | NONPROD partially deployed; PROD prepared; status conflict unresolved |
 
 The operator confirms `.16` and `.17` are free and allocated to private
 administration. They are distinct from both API VIPs and public ingress
@@ -78,16 +81,17 @@ addresses. Their reservation is not a claim that either Admin VIP is active.
 | `infrastructure/k3s-cluster/ansible/` | Guest preparation, two K3s clusters, kubeconfigs |
 | `kubernetes/apps/liora/` | Current application manifests, environment overlays, and imported deployment history; DEV/STAGE/PROD deployed and privately verified |
 | `kubernetes/gitops/argocd/` | Implemented independent Argo CD installations and cluster-specific GitOps definitions |
-| `kubernetes/platform/nonprod/` | Planned nonprod administrative access, monitoring and Jenkins foundation |
-| `kubernetes/platform/prod/` | Planned independent PROD administrative access and monitoring |
+| `kubernetes/platform/nonprod/` | NONPROD admin/monitoring partial deployment; Jenkins foundation prepared |
+| `kubernetes/platform/prod/` | Prepared independent PROD administrative access and monitoring; not deployed |
 | `scripts/kubernetes/` | Reusable deployment, certificate and verification helpers |
 | `recovery/` | Local recovery inputs and examples; live credentials stay out of Git |
 | `runbooks/` | Operator steps for installation and recovery |
 | `docs/testreports/` | Implementation plans, provenance and phase reports |
 | `.local-work/` | Existing ignored operator tools, browser dependencies and generated output |
 
-The platform paths above describe the agreed target layout; those components
-have not been installed. Work uses the original infrastructure checkout and
+The platform paths above now contain Phase 8 configuration and preserved
+upstream source history; partial deployment is recorded in its report. Work uses
+the original infrastructure checkout and
 its ignored local workspace, without an additional migration worktree. See
 the [local workspace guide](LOCAL_WORKSPACE.md) for tool and archive locations.
 
@@ -207,7 +211,12 @@ path remains optional follow-up and was not part of this DNS-only acceptance.
 
 ## Permanent private administrative access
 
-**Status: Agreed, not deployed.**
+**Status: NONPROD partially deployed; acceptance blocked. PROD not deployed.**
+
+Initial Argo login at `.16:8080` passed. The separate ServiceLB EndpointSlice
+worker nevertheless clears administrative VIP status despite the LoadBalancer
+class, so stable access is not established. The proposed status-ownership guard
+is not deployed; see the [pending decision](../kubernetes/platform/proposals/README.md).
 
 Trusted administrators use the existing Tailscale route to
 `192.168.77.0/24`. The agreed browser path is Tailscale → Admin VIP →
@@ -279,7 +288,7 @@ establish availability of the services, their storage or the single Proxmox host
 
 ## Cluster monitoring
 
-**Status: Agreed, not deployed in the target K3s clusters. Details in development.**
+**Status: NONPROD stack Ready; VIP/browser acceptance blocked. PROD prepared only.**
 
 Each cluster will have its own monitoring namespace, Grafana, Prometheus and
 Alertmanager. The agreed stack includes Prometheus Operator, kube-state-metrics,
@@ -288,9 +297,16 @@ from the application repository's existing `monitoring/` configuration.
 DEV/STAGE and PROD have separate data, credentials and environment-specific
 monitoring configuration. Exporter and operator endpoints remain internal.
 
-Retention periods, PVC sizes, resource limits, final chart/image references
-and exact deployment/GitOps ownership are **in development**. These settings
-are not fixed by this document. An existing Slack destination is configured in the
+Phase 8 pins kube-prometheus-stack 92.2.0 and retains the bounded PoC budgets:
+Prometheus retention is three days/1500MB with a 2Gi local-path PVC; Alertmanager
+uses a 256Mi local-path PVC. Grafana state is ephemeral with provisioned dashboards
+and datasource. Helm owns its release; separately applied configuration owns
+custom monitors/rules/dashboards and private Services. Internal NONPROD diagnostics
+found 26/26 targets up and eight healthy rules, independently of broken VIP routing.
+Exact resource limits are tracked in the per-cluster values and
+[runbook 16](../runbooks/16-private-platform-access.md).
+
+An existing Slack destination is configured in the
 legacy kind deployment, but the destination for new-cluster notifications
 has not been agreed. Alert delivery configuration is **in development**;
 notification receipt is not yet verified.

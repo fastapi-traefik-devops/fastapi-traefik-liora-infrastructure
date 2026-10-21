@@ -35,6 +35,11 @@ now reconcile each cluster, with verified self-healing and PROD pruning disabled
 [STAGE](https://stage.liora.aprt.info) through the dedicated HAProxy edge, with
 trusted certificates and DNS-only records. Cloudflare proxy mode remains unverified.
 
+Phase 8 is in progress; NONPROD monitoring is Ready, but a ServiceLB status
+ownership conflict blocks administrative VIP acceptance and further rollout. See
+[the progress report](docs/testreports/PHASE8_REPORT.md) and
+[private platform runbook](runbooks/16-private-platform-access.md).
+
 For the implemented topology and component boundaries, see
 [Current architecture](docs/ARCHITECTURE.md).
 
@@ -47,6 +52,7 @@ edge/nftables/                 Proxmox host DNAT examples
 infrastructure/k3s-cluster/    Terraform VMs and Ansible K3s installation
 kubernetes/apps/liora/         Application base, overlays, and source history
 kubernetes/gitops/argocd/      Independent nonprod/PROD GitOps bootstrap
+kubernetes/platform/          Cluster platform configuration and source history
 docs/testreports/              Implementation plans and phase reports
 runbooks/                      Operator instructions
 recovery/                      Credential examples and local, ignored secrets
