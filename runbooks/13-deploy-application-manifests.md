@@ -97,6 +97,12 @@ one replica. Inspect images, Secret references, ConfigMaps, hosts and PVCs in
 the rendered file. All three overlays have pinned application digests. Never
 deploy placeholders introduced by a later edit.
 
+All environments explicitly run one backend worker per Pod. The image defaults
+to four workers; PROD's initial deployment repeatedly lost child workers before
+becoming Ready, without recorded cgroup OOM kills. The single-worker command
+matches the verified DEV/STAGE configuration. PROD still runs two backend Pods;
+verify both replicas rather than relying on the worker count inside one Pod.
+
 Split the render into explicit application stages, rejecting unconfigured
 images before any cluster write:
 
