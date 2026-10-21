@@ -10,7 +10,7 @@ data:
   ENVIRONMENT: local
   PROJECT_NAME: Full Stack FastAPI Project
   BACKEND_CORS_ORIGINS: http://localhost,http://localhost:5173,https://localhost,https://localhost:5173
-  FIRST_SUPERUSER: admin@example.com
+  FIRST_SUPERUSER: admin007@liora.aprt.info
   EMAILS_FROM_EMAIL: info@example.com
   SMTP_HOST: ''
   SMTP_USER: ''

@@ -27,17 +27,17 @@ patches:
     metadata:
       name: backend-config
     data:
-      BACKEND_CORS_ORIGINS: http://dev.example.com
-      DOMAIN: dev.example.com
+      BACKEND_CORS_ORIGINS: http://dev.liora.aprt.info
+      DOMAIN: dev.liora.aprt.info
       ENVIRONMENT: staging
-      FRONTEND_HOST: http://dev.example.com
+      FRONTEND_HOST: http://dev.liora.aprt.info
 - target:
     kind: Ingress
     name: app-ingress
   patch: |
     - op: replace
       path: /spec/rules/0/host
-      value: dev.example.com
+      value: dev.liora.aprt.info
     - op: remove
       path: /spec/tls
     - op: add

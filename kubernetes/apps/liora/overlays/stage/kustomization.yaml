@@ -21,14 +21,14 @@ patches:
 - target:
     kind: ConfigMap
     name: backend-config
-  patch: "apiVersion: v1\ndata:\n  BACKEND_CORS_ORIGINS: https://stage.example.com\n\
-    \  DOMAIN: stage.example.com\n  ENVIRONMENT: staging\n  FRONTEND_HOST: https://stage.example.com\n\
+  patch: "apiVersion: v1\ndata:\n  BACKEND_CORS_ORIGINS: https://stage.liora.aprt.info\n\
+    \  DOMAIN: stage.liora.aprt.info\n  ENVIRONMENT: staging\n  FRONTEND_HOST: https://stage.liora.aprt.info\n\
     kind: ConfigMap\nmetadata:\n  name: backend-config\n"
 - target:
     kind: Ingress
     name: app-ingress
-  patch: "- op: replace\n  path: /spec/rules/0/host\n  value: stage.example.com\n\
-    - op: replace\n  path: /spec/tls/0/hosts/0\n  value: stage.example.com\n"
+  patch: "- op: replace\n  path: /spec/rules/0/host\n  value: stage.liora.aprt.info\n\
+    - op: replace\n  path: /spec/tls/0/hosts/0\n  value: stage.liora.aprt.info\n"
 - target:
     kind: Deployment
     name: backend
