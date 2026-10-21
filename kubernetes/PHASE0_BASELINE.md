@@ -204,3 +204,43 @@ for STAGE or PROD.
 Next clarification: select an existing PROD image pair and choose whether to
 generate fresh, separate lab application credentials in ignored recovery files
 or recover existing values. Phase 1 still awaits explicit confirmation.
+
+## Fresh credentials and kind reference — 2026-10-21
+
+The operator approved generating fresh application credentials for each of the
+three educational K3s environments. They are stored only in the original
+checkout's ignored `recovery/recovery.yaml`, under `application_credentials`.
+Each environment has its namespace, initial administrator email matching the
+ConfigMap (`admin@example.com`), `backend-secrets` fields, and `db-secrets`
+fields. The nine generated values (three per environment) are independent,
+cryptographically random URL-safe strings. Each environment's backend/database
+passwords agree. SMTP password remains empty because SMTP is disabled.
+
+Validation confirmed all required fields are present, values are distinct
+across environments and purposes, the file is untracked and ignored, mode is
+`0600`, and existing controller recovery material is unchanged. No generated
+values appear in Git or this report. No Kubernetes Secrets have been created.
+The isolated worktree has no copied credential material; later procedures
+must refer to the original ignored recovery files explicitly.
+
+With the operator's permission, read-only discovery used the existing kind
+cluster's explicit kubeconfig `/home/root-admin/.kube/config`. DEV matches
+the recorded source overlay images. Its STAGE Deployments instead reference:
+
+- Backend tag `sha-c375967ac5b3dd7a0a6867758e16b057c733bb2d`, digest
+  `sha256:f1a896fbc915f1f19416882fee62bf4db275860f9225d9004ac59ba9a005dc5d`.
+- Frontend tag `sha-c375967ac5b3dd7a0a6867758e16b057c733bb2d`, digest
+  `sha256:7d1ac191287e0498434049d4e569aa8f8a8ed2dbd19921e20bc566c95b2a4c91`.
+
+STAGE backend, frontend, PostgreSQL and Adminer Pods report Running and Ready.
+This is workload readiness, not an end-to-end acceptance test. The local
+application checkout remains clean at the recorded source HEAD. Do not
+silently substitute kind's live STAGE backend digest for the source overlay.
+
+Credential discovery is now complete for the planned initial deployment.
+There is enough information for Phase 1's independent history-import and
+runbook work. PROD still needs an explicitly approved existing image pair,
+and PVC provisioning remains deferred to a later authorized cluster phase.
+Phase 1 has not begun: this turn requested readiness checking and credential
+generation. Ask whether to use the repository's STAGE pair or kind's live
+STAGE pair for PROD and obtain confirmation before starting Phase 1.

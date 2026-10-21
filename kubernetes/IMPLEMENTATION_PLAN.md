@@ -108,7 +108,7 @@ credential gaps, and the proposed Phase 1 scope. No cluster changes were made.
       selected for the first PROD deployment.
 - [ ] Confirm each cluster has a working StorageClass and enough capacity for
       the existing PostgreSQL PVCs and application replicas.
-- [ ] Locate the credentials needed for `ghcr-pull-secret`, `backend-secrets`,
+- [x] Locate the credentials needed for `ghcr-pull-secret`, `backend-secrets`,
       and `db-secrets` in each application namespace. Keep live values in the
       external recovery archive, not Git.
 
@@ -116,9 +116,10 @@ Verified: both contexts and all six Ready nodes; all source overlays render;
 DEV/STAGE digest references recorded. Default local-path provisioners are
 Running and reported capacity is sufficient, but no PVC provisioning test was
 performed. PROD images have not been selected. Authenticated GHCR manifest reads
-succeeded for all DEV/STAGE digests; the application environment file contains
-placeholder backend/database credentials, not a usable recovery source.
-The remaining three checklist items stay open for those reasons.
+succeeded for all DEV/STAGE digests. Fresh, separate backend/database credentials
+were generated with operator approval in ignored `recovery/recovery.yaml`, under
+`application_credentials`; registry credentials remain in ignored `recovery/.env`.
+No Secrets were applied. Image selection and storage verification remain open.
 
 **Pass:** both clusters, storage, image versions, and credentials are ready.
 
