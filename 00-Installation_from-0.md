@@ -40,3 +40,6 @@ Run all subsequent infrastructure commands on **VM 200**. Use your PC/laptop as 
    - [ ] [Install K3s on both clusters](runbooks/09-install-k3s-clusters.md).
 10. **Deploy and verify the application manifests.** Use the assigned cluster and isolated namespace for each environment; complete this step only when its deployment phase is authorized.
     - [ ] [Deploy the application manifests](runbooks/13-deploy-application-manifests.md).
+
+11. **Install separate GitOps controllers.** After manual application acceptance, review and adopt each cluster's deployment independently.
+    - [ ] [Install Argo CD and adopt the application](runbooks/14-install-argocd.md).

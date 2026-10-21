@@ -27,7 +27,9 @@ describes the manual deployment gates. [DEV](docs/testreports/PHASE3_REPORT.md),
 [STAGE](docs/testreports/PHASE4_REPORT.md), and [PROD](docs/testreports/PHASE5_REPORT.md)
 are deployed and privately verified, including mutual database and token
 isolation. PROD runs two backend and two frontend replicas with the approved
-STAGE image digests. Public routing and trusted TLS remain later work.
+STAGE image digests. [Separate Argo CD instances](docs/testreports/PHASE6_REPORT.md)
+now reconcile each cluster, with verified self-healing and PROD pruning disabled.
+Public routing and trusted TLS remain later work.
 
 For the implemented topology and component boundaries, see
 [Current architecture](docs/ARCHITECTURE.md).
@@ -39,6 +41,7 @@ edge/tailscale/                 Tailscale VM and router configuration
 edge/nftables/                 Proxmox host DNAT examples
 infrastructure/k3s-cluster/    Terraform VMs and Ansible K3s installation
 kubernetes/apps/liora/         Application base, overlays, and source history
+kubernetes/gitops/argocd/      Independent nonprod/PROD GitOps bootstrap
 docs/testreports/              Implementation plans and phase reports
 runbooks/                      Operator instructions
 recovery/                      Credential examples and local, ignored secrets

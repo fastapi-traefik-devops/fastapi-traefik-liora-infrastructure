@@ -64,3 +64,23 @@ reports. All three environments passed mutual database-marker and token
 isolation checks; synthetic acceptance items were removed afterward. Data
 restoration, DNS, public routing, trusted TLS and target platform components
 remain later work.
+
+## GitOps ownership
+
+Independent Argo CD v3.5.6 installations in each cluster's `argocd` namespace
+source this infrastructure repository. Nonprod manages app-dev/app-stage; PROD
+manages app-prod. Each destination is the local Kubernetes API. Separate roots
+manage the cluster-specific Application and AppProject definitions; no external
+cluster credentials or shared ApplicationSet are configured.
+
+Both roots and all children have automated reconciliation and self-healing.
+Nonprod child pruning is enabled after inventory review; PROD and both roots
+keep pruning off. Database PVC retention annotations remain. Registry and
+application Secrets stay external prerequisites. The controllers have the
+upstream cluster RBAC; AppProject restrictions scope applications rather than
+providing a controller service-account boundary against cluster administrators.
+
+Private Argo CD UI access, root/child reconciliation, hook migrations and
+ConfigMap drift correction passed in the [Phase 6 report](testreports/PHASE6_REPORT.md).
+Use [runbook 14](../runbooks/14-install-argocd.md) for bootstrap and adoption,
+including the manual-policy render required before enabling a fresh deployment.

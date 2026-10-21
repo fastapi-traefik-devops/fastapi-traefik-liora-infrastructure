@@ -268,14 +268,20 @@ clusters. Public routing and real domains come later.
 
 ## Phase 6 — Install separate Argo CD instances
 
-Status on 2026-10-21: **in progress**. Both independent Argo CD v3.5.6
-installations are Ready and both private UI logins passed. Child Applications
-were manually adopted against the published application revision with pruning
-disabled; DEV, STAGE and PROD report Synced/Healthy. Projects restrict each
-instance to its own local application namespaces. Root definitions, installation
-provenance and the operator runbook are prepared on `migration/liora-phase6`.
-Root reconciliation and automation checks require publishing those GitOps files;
-permission to push is pending. See [Phase 6 report](PHASE6_REPORT.md).
+Status on 2026-10-21: **complete**. See [Phase 6 report](PHASE6_REPORT.md).
+Both independent Argo CD v3.5.6 installations and private UI logins passed.
+Manual, hook-enabled application adoption and both root reconciliations passed.
+The operator authorized integration and publication; the history-preserving
+branch was fast-forwarded into original `main` and published. The latest
+operator runbook edits were preserved.
+
+Both roots and all three children are Synced/Healthy with automation and
+self-healing enabled. Nonprod child pruning was enabled after reviewing the
+12-resource inventories with no unexpected prune candidates. PROD and both
+roots keep pruning disabled; PVC retention annotations remain. Each environment
+passed an automated ConfigMap drift correction. Original application Pod, PVC,
+Secret and Deployment identities, data bindings and schema revision remain
+unchanged; private application login/health checks passed. Phase 7 has not started.
 
 - [x] Install one Argo CD in dev/stage and another in prod; check both admin
       UIs through private access.
@@ -283,11 +289,11 @@ permission to push is pending. See [Phase 6 report](PHASE6_REPORT.md).
       `app-stage.yaml`, and `project.yaml` into
       `kubernetes/gitops/argocd/nonprod/`. Create the PROD Application and
       project in `kubernetes/gitops/argocd/prod/`. Source this repository.
-- [ ] Target each Application at its **local** cluster and correct namespace.
+- [x] Target each Application at its **local** cluster and correct namespace.
       Inspect diffs before Argo CD takes ownership of the manual deployment;
       enable automation only after correct reconciliation. Review the effects
       of pruning separately.
-- [ ] Verify correct digests, healthy workloads, and no unexpected deletion
+- [x] Verify correct digests, healthy workloads, and no unexpected deletion
       in each Argo CD instance.
 
 **Pass:** each Argo CD manages only its own cluster. Do not copy

@@ -561,3 +561,11 @@ kubectl --kubeconfig="$HOME/.kube/config-prod" -n app-prod get pods -o wide
 > Never delete a PVC, namespace, or local-path volume as an application
 > rollback step: the StorageClass has reclaim policy `Delete`. Argo CD
 > retention annotations do not protect against a direct `kubectl delete`.
+
+## Next: GitOps ownership
+
+After independent environment acceptance, continue with
+[runbook 14: separate Argo CD instances](14-install-argocd.md) during authorized
+Phase 6. The completed installation and reconciliation results are recorded in
+the [Phase 6 report](../docs/testreports/PHASE6_REPORT.md). Keep manual deployment
+and controller ownership checks distinct during fresh recovery.
