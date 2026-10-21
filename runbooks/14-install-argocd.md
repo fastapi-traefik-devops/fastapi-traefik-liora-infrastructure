@@ -74,7 +74,7 @@ logs in through the actual UI and verifies the authenticated session API. It
 reads the initial password in memory and never saves authentication state:
 
 ```sh
-"$HOME/liora-migration-tools/bin/python" scripts/kubernetes/verify-argocd-ui.py
+bash scripts/local-python.sh scripts/kubernetes/verify-argocd-ui.py
 ```
 
 Standalone script: [Verify private Argo CD UI login](../scripts/kubernetes/verify-argocd-ui.py).

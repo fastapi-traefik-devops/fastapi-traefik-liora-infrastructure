@@ -51,7 +51,11 @@ docs/testreports/              Implementation plans and phase reports
 runbooks/                      Operator instructions
 recovery/                      Credential examples and local, ignored secrets
 scripts/proxmox/               Proxmox host scripts
+.local-work/                   Ignored local tools, renders and acceptance output
 ```
+
+Use the [local workspace guide](docs/LOCAL_WORKSPACE.md) to prepare operator
+tools inside this checkout. No additional migration checkout is required.
 
 ## Keep credentials and state outside Git
 

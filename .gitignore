@@ -17,6 +17,7 @@ kubernetes/tls/cloudflare-api-token.secret.yaml
 *.pem
 
 # Generated local artifacts
+.local-work/
 kubeconfig
 *.kubeconfig
 

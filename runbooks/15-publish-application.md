@@ -190,10 +190,10 @@ private edge while preserving SNI, certificate validation and browser origin:
 ```sh
 export environment=dev namespace=app-dev
 export recovery_dir="$HOME/fastapi-traefik-liora-infrastructure/recovery"
-export render_dir="$HOME/liora-phase7-artifacts/final-acceptance/dev"
+export render_dir="$PWD/.local-work/acceptance/$environment"
 export acceptance_url=https://dev.liora.aprt.info
 export acceptance_address=192.168.77.240
-"$HOME/liora-migration-tools/bin/python" scripts/kubernetes/verify-application-ui.py
+bash scripts/local-python.sh scripts/kubernetes/verify-application-ui.py
 ```
 
 Standalone script: [Verify canonical HTTPS UI and persistence](../scripts/kubernetes/verify-application-ui.py).

@@ -104,10 +104,12 @@ case "$environment" in
 esac
 namespace="app-$environment"
 overlay="kubernetes/apps/liora/overlays/$environment"
-render_dir="$HOME/liora-render/$environment"
+render_dir="$PWD/.local-work/render/$environment"
 recovery_dir="$HOME/fastapi-traefik-liora-infrastructure/recovery"
 export environment kubeconfig namespace render_dir recovery_dir
 
+mkdir -p .local-work
+chmod 700 .local-work
 kubectl --kubeconfig="$kubeconfig" config current-context
 kubectl --kubeconfig="$kubeconfig" config view --minify -o jsonpath='{.clusters[0].cluster.server}'
 kubectl --kubeconfig="$kubeconfig" get nodes -o wide
@@ -476,12 +478,17 @@ curl --fail --silent --show-error -H "Host: $hostname" --output /dev/null http:/
       the verification script:
 
 ```sh
-python3 -m venv "$HOME/liora-ui-check-tools"
-ui_python="$HOME/liora-ui-check-tools/bin/python"
-"$ui_python" -m pip install playwright==1.64.0 PyYAML==6.0.3
-"$ui_python" -m playwright install --with-deps chromium
-"$ui_python" scripts/kubernetes/verify-application-ui.py
+mkdir -p .local-work
+chmod 700 .local-work
+python3 -m venv .local-work/venv
+.local-work/venv/bin/python -m pip install -r scripts/requirements-local-tools.txt
+bash scripts/local-python.sh -m playwright install --with-deps chromium
+bash scripts/local-python.sh scripts/kubernetes/verify-application-ui.py
 ```
+
+If the checkout's tools are already prepared, run only the last command.
+See the [local workspace guide](../docs/LOCAL_WORKSPACE.md) for paths and the
+existing lab's browser libraries.
 
 The [browser verification script](../scripts/kubernetes/verify-application-ui.py)
 can also be copied to VM 200 and run with the prepared Python environment.
