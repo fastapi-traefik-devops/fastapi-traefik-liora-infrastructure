@@ -115,8 +115,8 @@ credential gaps, and the proposed Phase 1 scope. No cluster changes were made.
 Verified: both contexts and all six Ready nodes; all source overlays render;
 DEV/STAGE digest references recorded. Default local-path provisioners are
 Running and reported capacity is sufficient, but no PVC provisioning test was
-performed. PROD images have not been selected. GHCR credential fields exist,
-but authentication is unverified; the application environment file contains
+performed. PROD images have not been selected. Authenticated GHCR manifest reads
+succeeded for all DEV/STAGE digests; the application environment file contains
 placeholder backend/database credentials, not a usable recovery source.
 The remaining three checklist items stay open for those reasons.
 

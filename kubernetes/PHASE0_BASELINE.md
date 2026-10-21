@@ -105,14 +105,15 @@ DEV tag is `sha-3303e93b753e8282dc7b461c583fb8ace43574a1`; STAGE tag is
 `sha-3a610ebb14f265fcdeb5a1d4d59da9fa543648c5`. Both renders include tag and
 digest; the digest pins the image. PROD renders with
 `sha-0000000000000000000000000000000000000000` and no digest. No release was
-invented. Registry availability, authentication and image pulls were not tested.
+invented. Registry authentication and manifest availability were verified in the follow-up
+below. Full image-layer pulls were not tested.
 
 ## Credential readiness
 
 Only key presence and obvious placeholder status were inspected; no values
 are reproduced or copied. Infrastructure `recovery/.env` has populated
-`GHCR_REGISTRY`, `GHCR_USERNAME`, and `GHCR_TOKEN` fields. Their validity,
-read-package access, and suitability for both clusters remain unverified.
+`GHCR_REGISTRY`, `GHCR_USERNAME`, and `GHCR_TOKEN` fields. Authenticated GHCR token issuance, tag listing, and manifest reads succeeded
+for both application repositories. Cluster-side image pulls remain untested.
 `recovery/recovery.yaml` identifies a nonprod Sealed Secrets controller-key
 location, not a verified backup of the required application Secrets.
 Do not import old ciphertext or controller keys in this phase.
@@ -168,10 +169,38 @@ runbook edits are deferred until the manifests exist, as instructed.
   checked; actual PVC provisioning remains unverified without a permitted
   later cluster test.
 - Partial: GHCR candidate located; usable per-environment backend/database
-  credentials and registry access remain unverified.
+  credentials remain unverified; management-host registry read access is verified.
 
 Phase 0 has not passed. Next: obtain approved existing PROD backend/frontend
 digests, identify the real external credential recovery source and environment
 mapping, and agree how to defer the storage provisioning check to the permitted
 cluster deployment phase. Then confirm whether to begin Phase 1. Do not start
 Phase 1 or execute Phase 2 and later without that confirmation.
+
+## Access and registry follow-up — 2026-10-21
+
+A temporary file was successfully written, read, and removed in the original
+infrastructure checkout outside `/tmp`. Both specified recovery files are
+readable, mode `0600`, ignored by Git, and untracked. No credential values
+were printed, committed, rewritten, or sent to unrelated services.
+
+Authenticated GHCR requests using the recovery credentials returned HTTP 200
+for token issuance, tag listing, and DEV/STAGE manifest reads by both tag and
+digest. All four registry digests exactly match the source overlays above.
+Both repositories also expose `v0.1.0`, `latest`, and additional SHA tags.
+These tag listings do not constitute approval of any first PROD release.
+Using the current STAGE pair for the first educational PROD deployment is a
+concrete available option requiring the operator's selection. Image layers
+were not downloaded and no live cluster pull was attempted.
+
+`recovery.yaml` contains two populated nonprod Sealed Secrets controller
+certificate/private-key pairs; it does not contain backend/database Secret
+values for the three target environments. Historical application DEV
+SealedSecret files exist and have relevant key names, but decryptability and
+credential suitability have not been verified. They were not imported,
+decrypted, or applied. This inventory does not establish usable credentials
+for STAGE or PROD.
+
+Next clarification: select an existing PROD image pair and choose whether to
+generate fresh, separate lab application credentials in ignored recovery files
+or recover existing values. Phase 1 still awaits explicit confirmation.
