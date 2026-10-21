@@ -9,6 +9,7 @@ provisions a Tailscale subnet router and two three-node K3s clusters.
 | --- | --- | --- |
 | Proxmox gateway | — | `192.168.77.1` |
 | Management | 200 | `192.168.77.200` |
+| Application edge | 240 | `192.168.77.240` |
 | Tailscale router | 250 | `192.168.77.250` |
 | Dev/stage K3s | 201–203 | `192.168.77.201–203`; API VIP `192.168.77.11` |
 | Prod K3s | 211–213 | `192.168.77.211–213`; API VIP `192.168.77.12` |
@@ -29,7 +30,10 @@ are deployed and privately verified, including mutual database and token
 isolation. PROD runs two backend and two frontend replicas with the approved
 STAGE image digests. [Separate Argo CD instances](docs/testreports/PHASE6_REPORT.md)
 now reconcile each cluster, with verified self-healing and PROD pruning disabled.
-Public routing and trusted TLS remain later work.
+[Public HTTPS routing](docs/testreports/PHASE7_REPORT.md) now serves
+[PROD](https://liora.aprt.info), [DEV](https://dev.liora.aprt.info), and
+[STAGE](https://stage.liora.aprt.info) through the dedicated HAProxy edge, with
+trusted certificates and DNS-only records. Cloudflare proxy mode remains unverified.
 
 For the implemented topology and component boundaries, see
 [Current architecture](docs/ARCHITECTURE.md).
@@ -38,6 +42,7 @@ For the implemented topology and component boundaries, see
 
 ```text
 edge/tailscale/                 Tailscale VM and router configuration
+edge/haproxy/                   Application edge VM, routing and TLS distribution
 edge/nftables/                 Proxmox host DNAT examples
 infrastructure/k3s-cluster/    Terraform VMs and Ansible K3s installation
 kubernetes/apps/liora/         Application base, overlays, and source history

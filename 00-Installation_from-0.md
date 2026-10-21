@@ -43,3 +43,6 @@ Run all subsequent infrastructure commands on **VM 200**. Use your PC/laptop as 
 
 11. **Install separate GitOps controllers.** After manual application acceptance, review and adopt each cluster's deployment independently.
     - [ ] [Install Argo CD and adopt the application](runbooks/14-install-argocd.md).
+
+12. **Publish the application over HTTPS.** Configure the dedicated edge, preserve host forwarding rules, and verify all three domains and certificates.
+    - [ ] [Publish application routing and TLS](runbooks/15-publish-application.md).

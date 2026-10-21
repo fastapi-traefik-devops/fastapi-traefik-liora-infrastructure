@@ -192,3 +192,6 @@ Official references: [installation](https://argo-cd.readthedocs.io/en/stable/get
 [declarative setup](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/),
 [sync policy](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/), and
 [hooks/waves](https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/).
+
+After Phase 6 acceptance, [runbook 15](15-publish-application.md) covers authorized
+public application routing and TLS. Keep Argo CD access private.

@@ -16,7 +16,8 @@ All three synthetic acceptance markers were removed after isolation checks.
 
 > [!NOTE]
 > Run only the steps belonging to the currently authorized phase. Public
-> routing, trusted TLS and Argo CD installation remain separate later work.
+> routing, trusted TLS and Argo CD use their separate procedures. Verified
+> results are in the Phase 6/7 reports; repeat their gates during fresh recovery.
 > The verified migration is integrated into the original checkout on `main`.
 
 ## Before you start
@@ -29,12 +30,14 @@ routing, DNS, or certificate automation. Preserve each environment's data.
 
 | Environment | Kubeconfig | Namespace | Configured origin |
 | --- | --- | --- | --- |
-| DEV | `$HOME/.kube/config-dev-stage` | app-dev | `http://dev.liora.aprt.info` |
+| DEV | `$HOME/.kube/config-dev-stage` | app-dev | `https://dev.liora.aprt.info` |
 | STAGE | `$HOME/.kube/config-dev-stage` | app-stage | `https://stage.liora.aprt.info` |
 | PROD | `$HOME/.kube/config-prod` | app-prod | `https://liora.aprt.info` |
 
 > [!NOTE]
-> DEV currently keeps the source's HTTP ingress and `ENVIRONMENT: staging`.
+> DEV originally kept the source's HTTP ingress and `ENVIRONMENT: staging`.
+> Phase 7 changes its origin/CORS and ingress to HTTPS while retaining that
+> environment mode. All three environments now reference namespace-local app-tls.
 > STAGE/PROD retain HTTPS settings and reference a namespace-local `app-tls`
 > Secret. Setting these hostnames does not configure DNS, certificates, or
 > public access. A trusted HTTPS check needs a matching certificate and

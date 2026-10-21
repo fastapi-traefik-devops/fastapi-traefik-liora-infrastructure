@@ -11,6 +11,7 @@ current host before creating the template.
 | Component | VM IDs | Private address or API VIP | Provisioning |
 | --- | --- | --- | --- |
 | Management | 200 | `192.168.77.200` | Proxmox clone and Cloud-Init |
+| Application edge | 240 | `192.168.77.240` | Terraform VM; Ansible HAProxy |
 | Tailscale subnet router | 250 | `192.168.77.250` | Terraform VM; Ansible guest setup |
 | Dev/stage K3s servers | 201–203 | `192.168.77.201–203`; VIP `192.168.77.11` | Terraform VMs; Ansible K3s |
 | Prod K3s servers | 211–213 | `192.168.77.211–213`; VIP `192.168.77.12` | Terraform VMs; Ansible K3s |
@@ -62,8 +63,8 @@ verified in the [Phase 3](testreports/PHASE3_REPORT.md),
 [Phase 4](testreports/PHASE4_REPORT.md), and [Phase 5](testreports/PHASE5_REPORT.md)
 reports. All three environments passed mutual database-marker and token
 isolation checks; synthetic acceptance items were removed afterward. Data
-restoration, DNS, public routing, trusted TLS and target platform components
-remain later work.
+restoration and target platform replacements remain later work. Public HTTPS
+routing is now verified in Phase 7 below.
 
 ## GitOps ownership
 
@@ -84,3 +85,30 @@ Private Argo CD UI access, root/child reconciliation, hook migrations and
 ConfigMap drift correction passed in the [Phase 6 report](testreports/PHASE6_REPORT.md).
 Use [runbook 14](../runbooks/14-install-argocd.md) for bootstrap and adoption,
 including the manual-policy render required before enabling a fresh deployment.
+
+## Public application ingress and certificates
+
+All three application hostnames resolve directly to the current Proxmox public
+origin (`151.115.96.5` at acceptance), using Cloudflare DNS-only records. Proxmox
+forwards public TCP 80/443 to dedicated HAProxy VM 240. Existing SSH and unrelated
+forwarding rules remain intact. HAProxy allows the three application Host/SNI
+names and rejects unknown/admin names; Argo CD and Adminer gain no public route.
+
+TLS passes through to Traefik over disjoint ServiceLB node endpoint pools:
+nonprod `.201`–`.203`, PROD `.211`–`.213`. API VIPs `.11`/`.12` are not ingress
+addresses. Dedicated floating ingress VIPs and a second edge are not installed.
+This is a single-edge deployment without a tested failover/reboot guarantee.
+
+Certbot HTTP-01 on the edge issues separate trusted certificates for DEV, STAGE
+and PROD. The management VM's daily certificate-sync service privately fetches
+and validates each pair and updates only that environment's `app-tls` Secret.
+Certbot renewal simulations and a service execution passed; a later scheduled
+renewal/distribution cycle has not yet occurred. Certificate state and Terraform
+state remain external operator data. DEV's HTTPS origin/CORS is active in its
+restarted backend; STAGE/PROD retain their existing HTTPS settings.
+
+The operator confirmed external warning-free loads of all three URLs. Canonical
+HTTPS UI persistence, health, redirects and mutual database/token isolation
+passed. See [Phase 7](testreports/PHASE7_REPORT.md) and
+[runbook 15](../runbooks/15-publish-application.md). Cloudflare's proxy/Full (strict)
+path remains optional follow-up and was not part of this DNS-only acceptance.
