@@ -1,0 +1,28 @@
+# Bootstrap only after the DEV overlay is on remote main and secrets are ready.
+# Apply this DEV-only Application; the existing ApplicationSet also enables PROD.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-dev
+  namespace: argocd
+spec:
+  project: fastapi
+  source:
+    repoURL: https://github.com/fastapi-traefik-devops/fastapi-traefik-datascientest-project.git
+    targetRevision: main
+    path: deploy/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: app-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+    syncOptions:
+      - PruneLast=true
