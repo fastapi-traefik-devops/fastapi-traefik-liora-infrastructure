@@ -155,11 +155,11 @@ grafana:
     type: ClusterIP
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
+      cpu: 100m
+      memory: 256Mi
     limits:
-      cpu: 300m
-      memory: 384Mi
+      cpu: 500m
+      memory: 768Mi
   persistence:
     enabled: false
   admin:
@@ -212,5 +212,11 @@ grafana:
         editable: false
   testFramework:
     enabled: false
+  startupProbe:
+    httpGet:
+      path: /api/health
+      port: grafana
+    periodSeconds: 10
+    failureThreshold: 90
 coreDns:
   enabled: false

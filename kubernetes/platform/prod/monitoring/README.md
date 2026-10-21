@@ -15,7 +15,11 @@ Services retain their actual selectors; the Traefik PodMonitor targets
 remain internal. Native external notification delivery is disabled pending an
 agreed destination; the old Slack secret is not imported.
 
-Apply chart values with Helm, and this directory with kubectl only after the
-[Admin VIP status ownership issue](../../proposals/README.md) is resolved.
-NONPROD chart installation is partial Phase 8 work, not complete browser/metrics
-acceptance. PROD has not been deployed. The phase report records actual state.
+Apply the [approved status ownership guard](../../proposals/README.md) before
+creating VIP Services, then chart values with Helm and this directory with
+kubectl. Actual sequential rollout and acceptance are in the Phase 8 report.
+
+Grafana source limits were insufficient: the first 384Mi instance was OOMKilled
+during native browser verification. Both clusters now request 100m/256Mi and
+limit 500m/768Mi, with a 15-minute startup probe allowance for cold migrations.
+Other component budgets retain the bounded source settings.

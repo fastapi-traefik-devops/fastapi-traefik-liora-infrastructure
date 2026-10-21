@@ -12,8 +12,11 @@ from urllib.request import ProxyHandler, build_opener
 
 from playwright.sync_api import expect, sync_playwright
 
+CURRENT_CHECK = 'arguments'
+
 
 def main():
+    global CURRENT_CHECK
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--cluster', required=True, choices=['nonprod', 'prod'])
     parser.add_argument('--include-jenkins', action='store_true')
@@ -39,18 +42,22 @@ def main():
             return json.load(response)
 
     prometheus = f'http://{vip}:9090'
+    CURRENT_CHECK = 'prometheus-targets'
     targets = get(prometheus + '/api/v1/targets')['data']['activeTargets']
     assert targets and all(target['health'] == 'up' for target in targets)
     families = ['node_uname_info', 'kube_node_info', 'kube_deployment_status_replicas_available',
                 'argocd_app_info', 'traefik_config_reloads_total']
     metric_counts = {}
     for family in families:
+        CURRENT_CHECK = 'metric-' + family
         result = get(prometheus + '/api/v1/query?' + urlencode({'query': family}))
         assert result['status'] == 'success' and result['data']['result']
         metric_counts[family] = len(result['data']['result'])
+    CURRENT_CHECK = 'prometheus-rules'
     rules = get(prometheus + '/api/v1/rules')['data']['groups']
     assert sum(len(group['rules']) for group in rules) == 8
     assert all(rule.get('health') == 'ok' for group in rules for rule in group['rules'])
+    CURRENT_CHECK = 'alertmanager-status'
     alertmanager = get(f'http://{vip}:9093/api/v2/status')
     assert alertmanager['cluster']['status'] in ('ready', 'disabled')
     result = {'cluster': args.cluster, 'targets_up': len(targets), 'metric_series': metric_counts,
@@ -60,18 +67,34 @@ def main():
         context = browser.new_context()
         page = context.new_page()
         page.set_default_timeout(180000)
+        for interface, port, path, title in [('prometheus', 9090, '/query', 'Prometheus'),
+                                              ('alertmanager', 9093, '/', 'Alertmanager')]:
+            CURRENT_CHECK = interface + '-browser-ui'
+            response = page.goto(f'http://{vip}:{port}{path}', timeout=180000)
+            assert response.status == 200
+            expect(page.locator('body')).to_contain_text(title, timeout=180000)
+            result[interface + '_browser_ui'] = True
         grafana = f'http://{vip}:3000'
+        CURRENT_CHECK = 'grafana-login'
         page.goto(grafana + '/login', timeout=180000)
         page.locator('input[name="user"]').fill(credential('monitoring', 'monitoring-grafana-admin', 'admin-user'))
         page.locator('input[name="password"]').fill(credential('monitoring', 'monitoring-grafana-admin', 'admin-password'))
         page.get_by_role('button', name='Log in', exact=True).click()
-        page.wait_for_url(grafana + '/**', timeout=180000)
+        # The wildcard also matches /login before the client-side redirect.
+        page.wait_for_url(lambda url: url.startswith(grafana + '/') and '/login' not in url,
+                          timeout=180000)
         page.wait_for_function("fetch('/api/user').then(r => r.ok)", timeout=180000)
+        CURRENT_CHECK = 'grafana-datasource-health'
+        datasource = page.evaluate("fetch('/api/datasources/uid/prometheus/health').then(r => r.json())")
+        assert datasource['status'] == 'OK'
+        result['grafana_datasource_healthy'] = True
+        CURRENT_CHECK = 'grafana-dashboards'
         dashboards = page.evaluate("fetch('/api/search?type=dash-db').then(r => r.json())")
         assert len(dashboards) == 4
         assert all(item['title'].startswith(args.cluster.upper() + ' / ') for item in dashboards)
         # Load each dashboard in the real browser, exercising native UI routing.
         for dashboard in dashboards:
+            CURRENT_CHECK = 'grafana-dashboard-' + dashboard['uid']
             page.goto(grafana + dashboard['url'], timeout=180000)
             expect(page.get_by_text(dashboard['title'], exact=True).first).to_be_visible(timeout=180000)
         result['grafana_login'] = True
@@ -79,6 +102,7 @@ def main():
         context.close()
         environments = [('dev', 8081), ('stage', 8082)] if args.cluster == 'nonprod' else [('prod', 8081)]
         for environment, port in environments:
+            CURRENT_CHECK = 'adminer-' + environment
             context = browser.new_context()
             page = context.new_page()
             page.set_default_timeout(180000)
@@ -93,6 +117,7 @@ def main():
             result['adminer_' + environment + '_login'] = True
             context.close()
         if args.include_jenkins:
+            CURRENT_CHECK = 'jenkins-login'
             context = browser.new_context()
             page = context.new_page()
             page.set_default_timeout(180000)
@@ -119,5 +144,6 @@ if __name__ == '__main__':
         sys.exit(main())
     except Exception as error:
         # Playwright/subprocess exceptions can contain secret-filled input values.
-        print(json.dumps({'verified': False, 'error_type': type(error).__name__}), file=sys.stderr)
+        print(json.dumps({'verified': False, 'check': CURRENT_CHECK,
+                          'error_type': type(error).__name__}), file=sys.stderr)
         sys.exit(1)
