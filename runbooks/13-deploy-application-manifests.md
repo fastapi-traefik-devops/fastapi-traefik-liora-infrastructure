@@ -136,7 +136,9 @@ From the repository root, run `python3 scripts/kubernetes/split-application-rend
 Run only after namespace/credential preparation is authorized. The render does
 not include Namespace or Secret objects. Each namespace needs independent
 `ghcr-pull-secret`, `backend-secrets`, and `db-secrets`. The backend's database
-password must agree with PostgreSQL's. Verify the initial email in
+password must agree with PostgreSQL's. The initial administrator password must
+be 8–40 characters because the application validates this limit; use 32 random
+URL-safe characters for these fresh lab accounts. Verify the initial email in
 `backend-config` matches the local recovery record.
 
 For a **fresh database only**, create the namespace:
@@ -171,6 +173,7 @@ assert entry['first_superuser'] == 'admin007@liora.aprt.info'
 assert entry['backend-secrets']['POSTGRES_PASSWORD'] == entry['db-secrets']['POSTGRES_PASSWORD']
 for key in ['SECRET_KEY', 'FIRST_SUPERUSER_PASSWORD', 'POSTGRES_PASSWORD']:
     assert entry['backend-secrets'][key], 'Missing required credential'
+assert 8 <= len(entry['backend-secrets']['FIRST_SUPERUSER_PASSWORD']) <= 40, 'Administrator password must be 8 to 40 characters'
 registry = {}
 for line in (root / '.env').read_text().splitlines():
     if not line.strip() or line.lstrip().startswith('#') or '=' not in line:
