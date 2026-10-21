@@ -3,7 +3,8 @@
 **Where:** Reviewed infrastructure checkout on the management host.
 
 Run only during authorized Phase 6. Finish the publication and diff gates before
-syncing. Existing databases, Secrets and PVCs must survive adoption. The committed policies now enable automation after verified adoption. Nonprod
+syncing. Existing databases, Secrets and PVCs must survive adoption. The
+committed policies now enable automation after verified adoption. Nonprod
 children enable pruning; PROD and both roots keep pruning disabled. For a fresh
 installation, render a local bootstrap copy with `automated.enabled: false` for
 all Applications until the publication and diff gates below pass. Do not apply
@@ -111,9 +112,18 @@ automation disabled in a reviewed local render to inspect
 Argo CD's repository comparison, even before the root files are published:
 
 ```sh
-kubectl --kubeconfig="$kubeconfig" apply -k "$argocd_path"
+kubectl --kubeconfig="$kubeconfig" kustomize "$argocd_path" |
+  python3 scripts/kubernetes/render-manual-argocd-bootstrap.py |
+  kubectl --kubeconfig="$kubeconfig" apply -f -
 kubectl --kubeconfig="$kubeconfig" -n argocd get applications
 ```
+
+Standalone script: [Render manual Argo CD bootstrap](../scripts/kubernetes/render-manual-argocd-bootstrap.py).
+This filter validates the entire rendered input before emitting manifests and
+sets `enabled: false` and `prune: false` on every Application. It only accepts
+Application/AppProject resources in `argocd`; it does not read credentials.
+Use `set -o pipefail` in Bash to propagate any rendering failure.
+
 
 In each private UI, hard-refresh each Application and review its revision,
 rendered manifests and resource diff. Require the expected namespace, digests,
@@ -144,7 +154,9 @@ Do not treat a local `kubectl apply` as Argo CD ownership verification.
 Once the GitOps directories are published, create the root on each cluster:
 
 ```sh
-kubectl --kubeconfig="$kubeconfig" apply -k "$argocd_path/bootstrap"
+kubectl --kubeconfig="$kubeconfig" kustomize "$argocd_path/bootstrap" |
+  python3 scripts/kubernetes/render-manual-argocd-bootstrap.py |
+  kubectl --kubeconfig="$kubeconfig" apply -f -
 kubectl --kubeconfig="$kubeconfig" -n argocd get applications,appprojects
 ```
 
@@ -168,8 +180,8 @@ Require both private Argo CD UIs, only the intended local cluster destinations,
 successful root and child reconciliations, correct image IDs, healthy replicas,
 retained database PVC/PV bindings and no unexpected deletion. Test self-healing
 by temporarily changing the non-secret `PROJECT_NAME` field in
-`backend-config` and checking that its Git value is restored after automation is enabled; record its
-correction without changing credentials, image tags, replica counts or data.
+`backend-config` after automation is enabled. Record its restoration by an
+automated operation without changing credentials, image tags, replica counts or data.
 Do not deliberately delete data-bearing resources to test pruning.
 
 Record all completed and pending checks in `docs/testreports/PHASE6_REPORT.md`
