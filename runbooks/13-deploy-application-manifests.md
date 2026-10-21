@@ -2,6 +2,10 @@
 
 **Where:** Management VM 200, from the reviewed infrastructure checkout.
 
+**Run order:** Complete one environment at a time: DEV → STAGE → PROD. Stop at
+each acceptance gate. Use the explicit kubeconfig selected in step 1 for every
+cluster command.
+
 **Status:** DEV, STAGE and PROD are deployed on their assigned K3s clusters.
 Private health, browser login, item persistence and mutual database/token
 isolation passed; see the [Phase 3 report](../docs/testreports/PHASE3_REPORT.md),
@@ -10,11 +14,14 @@ isolation passed; see the [Phase 3 report](../docs/testreports/PHASE3_REPORT.md)
 and two Ready frontend replicas using the approved image pair `sha-c375967...`.
 All three synthetic acceptance markers were removed after isolation checks.
 
-Run only the steps belonging to the currently authorized phase. Public routing,
-trusted TLS and Argo CD installation remain separate later work. The verified
-migration is integrated into the original checkout on `main`.
+> [!NOTE]
+> Run only the steps belonging to the currently authorized phase. Public
+> routing, trusted TLS and Argo CD installation remain separate later work.
+> The verified migration is integrated into the original checkout on `main`.
 
-## Scope and prerequisites
+## Before you start
+
+### Scope and environment map
 
 Retain PostgreSQL 16.6, its 1Gi PVC, Adminer 4.8.1, and the prestart migration
 Job. This procedure does not install Argo CD, monitoring, CloudNativePG, edge
@@ -26,11 +33,13 @@ routing, DNS, or certificate automation. Preserve each environment's data.
 | STAGE | `$HOME/.kube/config-dev-stage` | app-stage | `https://stage.liora.aprt.info` |
 | PROD | `$HOME/.kube/config-prod` | app-prod | `https://liora.aprt.info` |
 
-DEV currently keeps the source's HTTP ingress and `ENVIRONMENT: staging`.
-STAGE/PROD retain HTTPS settings and reference a namespace-local `app-tls`
-Secret. Setting these hostnames does not configure DNS, certificates, or public
-access. A trusted HTTPS check needs a matching certificate and private ingress
-path; otherwise record it as pending. API VIPs are not dedicated ingress VIPs.
+> [!NOTE]
+> DEV currently keeps the source's HTTP ingress and `ENVIRONMENT: staging`.
+> STAGE/PROD retain HTTPS settings and reference a namespace-local `app-tls`
+> Secret. Setting these hostnames does not configure DNS, certificates, or
+> public access. A trusted HTTPS check needs a matching certificate and
+> private ingress path; otherwise record it as pending. API VIPs are not
+> dedicated ingress VIPs.
 
 Require `kubectl`, Python 3 with PyYAML (`python3 -c 'import yaml'`), access to
 both explicit kubeconfigs, and the reviewed Git revision. Each Python block
@@ -51,21 +60,37 @@ Recovery inputs reside in the original checkout:
 - `$HOME/fastapi-traefik-liora-infrastructure/recovery/.env`:
   `GHCR_REGISTRY`, `GHCR_USERNAME`, and `GHCR_TOKEN` supply registry read access.
 
-Validate all recovery inputs before deployment with `RECOVERY_DIR="$HOME/fastapi-traefik-liora-infrastructure/recovery" bash recovery/check_credentials.sh --all --offline`.
-Install the checker dependencies and review the complete field/exit-status
-contract in the [recovery schema](../recovery/README.md). Warnings preserve unknown
+- [ ] Confirm `kubectl`, Python 3, and PyYAML are available:
+
+   ```sh
+   python3 -c 'import yaml'
+   ```
+
+- [ ] Validate the recovery inputs before deployment:
+
+   ```sh
+   RECOVERY_DIR="$HOME/fastapi-traefik-liora-infrastructure/recovery" bash recovery/check_credentials.sh --all --offline
+   ```
+
+Install the checker dependencies and review its field and exit-status contract
+in the [recovery schema](../recovery/README.md). Warnings preserve unknown
 fields; add `--strict-warnings` when they must fail a gate.
 
-Keep both files ignored and mode `0600`; include them in the operator's external
-recovery archive. Do not print values, use shell tracing, put credentials in
-command arguments, or commit generated Secret manifests. Old Sealed Secrets
-controller keys in the recovery YAML are not required by this manual bootstrap.
+- [ ] Confirm both recovery files are ignored, mode `0600`, and included in
+      the operator's external recovery archive.
+
+> [!IMPORTANT]
+> Do not print values, use shell tracing, put credentials in command
+> arguments, or commit generated Secret manifests. Old Sealed Secrets
+> controller keys in the recovery YAML are not required by this manual
+> bootstrap.
 
 ## 1. Select and render one environment
 
-Run DEV first, STAGE after DEV acceptance, and PROD after STAGE acceptance and
-explicit selection of existing PROD backend/frontend digests. Change only the
-first assignment when moving to the next environment:
+- [ ] Select **one** environment. Run DEV first, STAGE after DEV acceptance,
+      and PROD after STAGE acceptance and explicit selection of existing PROD
+      backend/frontend digests. Change only the first assignment when moving
+      to the next environment:
 
 ```sh
 environment=dev
@@ -88,14 +113,21 @@ mkdir -p "$render_dir"
 kubectl --kubeconfig="$kubeconfig" kustomize "$overlay" > "$render_dir/all.yaml"
 ```
 
-Expect DEV/STAGE at `192.168.77.11:6443` with `k3s-1-01`–`03`, and PROD at
-`192.168.77.12:6443` with `k3s-2-01`–`03`. Stop on a mismatch or non-Ready node.
-The default `local-path` StorageClass must be present and its provisioner Ready.
-Each environment needs one 1Gi RWO PVC; DEV/STAGE each have one backend and one
-frontend replica, while PROD has two of each. PostgreSQL and Adminer each have
-one replica. Inspect images, Secret references, ConfigMaps, hosts and PVCs in
-the rendered file. All three overlays have pinned application digests. Never
-deploy placeholders introduced by a later edit.
+- [ ] Match the API endpoint and nodes to the selected environment. DEV/STAGE
+      must use `192.168.77.11:6443` and `k3s-1-01`–`03`; PROD must use
+      `192.168.77.12:6443` and `k3s-2-01`–`03`. Confirm all nodes are Ready.
+- [ ] Confirm the default `local-path` StorageClass and provisioner are
+      Ready. Inspect images, Secret references, ConfigMaps, hosts, PVCs and
+      replica counts in `$render_dir/all.yaml`. All application images must
+      have pinned, real digests.
+
+> [!WARNING]
+> Stop on an API/node mismatch, a non-Ready node, missing storage, or an
+> unconfigured/placeholder image.
+
+Each environment needs one 1Gi RWO PVC. DEV/STAGE each have one backend and
+one frontend replica; PROD has two of each. PostgreSQL and Adminer each have
+one replica.
 
 All environments explicitly run one backend worker per Pod. The image defaults
 to four workers; PROD's initial deployment repeatedly lost child workers before
@@ -103,8 +135,8 @@ becoming Ready, without recorded cgroup OOM kills. The single-worker command
 matches the verified DEV/STAGE configuration. PROD still runs two backend Pods;
 verify both replicas rather than relying on the worker count inside one Pod.
 
-Split the render into explicit application stages, rejecting unconfigured
-images before any cluster write:
+- [ ] Split the render into explicit application stages and reject
+      unconfigured images before any cluster write:
 
 ```sh
 python3 - <<'PY'
@@ -141,32 +173,44 @@ print('Render inspected and split; no resources applied')
 PY
 ```
 
-Standalone script: [Split the rendered manifests](../scripts/kubernetes/split-application-render.py).
-From the repository root, run `python3 scripts/kubernetes/split-application-render.py`.
+> [!TIP]
+> You can run [the standalone split script](../scripts/kubernetes/split-application-render.py)
+> from the repository root with
+> `python3 scripts/kubernetes/split-application-render.py` instead of the
+> inline Python block.
+
+- [ ] Confirm the split reports `Render inspected and split; no resources
+      applied` before continuing.
 
 ## 2. Prepare the namespace and Secrets — Phase 2
 
-Run only after namespace/credential preparation is authorized. The render does
-not include Namespace or Secret objects. Each namespace needs independent
-`ghcr-pull-secret`, `backend-secrets`, and `db-secrets`. The backend's database
-password must agree with PostgreSQL's. The initial administrator password must
-be 8–40 characters because the application validates this limit; use 32 random
-URL-safe characters for these fresh lab accounts. Verify the initial email in
-`backend-config` matches the local recovery record.
+> [!IMPORTANT]
+> Run this section only after namespace and credential preparation is
+> authorized. The render does not include Namespace or Secret objects.
+> Each namespace needs independent `ghcr-pull-secret`, `backend-secrets`,
+> and `db-secrets`. The backend's database password must agree with
+> PostgreSQL's.
 
-For a **fresh database only**, create the namespace:
+- [ ] Confirm the initial email in `backend-config` matches the local
+      recovery record. The initial administrator password must be 8–40
+      characters; use 32 random URL-safe characters for fresh lab accounts.
+- [ ] For a **fresh database only**, create the namespace:
 
 ```sh
 kubectl --kubeconfig="$kubeconfig" create namespace "$namespace" --dry-run=client -o yaml |
   kubectl --kubeconfig="$kubeconfig" apply -f -
 ```
 
-The following bootstrap refuses to replace existing application Secrets or run
-when a PVC already exists. Existing deployments need their matching recovery
-values and a separate credential-rotation procedure. Changing PostgreSQL's
-Secret does not change an existing database password; prestart does not reset
-an existing administrator password. Do not use the new lab credentials to
-recover an older database without reconciling its identities and passwords.
+> [!WARNING]
+> The following bootstrap refuses to replace existing application Secrets
+> or run when a PVC already exists. Existing deployments need their matching
+> recovery values and a separate credential-rotation procedure. Changing
+> PostgreSQL's Secret does not change an existing database password; prestart
+> does not reset an existing administrator password. Do not use new lab
+> credentials to recover an older database without reconciling its identities
+> and passwords.
+
+- [ ] Bootstrap the three application Secrets:
 
 ```sh
 python3 - <<'PY'
@@ -221,21 +265,25 @@ print('Three application Secrets created; values were not logged')
 PY
 ```
 
-Standalone script: [Bootstrap the application Secrets](../scripts/kubernetes/bootstrap-application-secrets.py).
-From the repository root, run `python3 scripts/kubernetes/bootstrap-application-secrets.py`.
+> [!TIP]
+> You can run [the standalone Secret bootstrap script](../scripts/kubernetes/bootstrap-application-secrets.py)
+> from the repository root with
+> `python3 scripts/kubernetes/bootstrap-application-secrets.py` instead of the
+> inline Python block.
 
-Then check the Secret names and types:
+- [ ] Check the Secret names and types:
 
 ```sh
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" get secrets
 ```
 
-STAGE/PROD additionally reference `app-tls`. Restore an appropriate certificate
-and private key as a namespace-local TLS Secret through a separately authorized
-procedure before trusted HTTPS acceptance. Do not mistake Traefik's fallback
-certificate for verification. Private HTTP ingress checks below do not verify TLS.
+> [!NOTE]
+> STAGE/PROD additionally reference `app-tls`. Restore an appropriate
+> certificate and private key as a namespace-local TLS Secret through a
+> separately authorized procedure before trusted HTTPS acceptance. Traefik's
+> fallback certificate and the private HTTP checks below do not verify TLS.
 
-### Verify PVC provisioning before application deployment
+### Check PVC provisioning before application deployment
 
 After Secret bootstrap, test the default StorageClass in each target namespace
 using the [temporary storage probe manifest](_resources/application-storage-check.yaml).
@@ -245,12 +293,19 @@ marker. It uses `postgres:16.6` to run a shell command; it does not start a
 database or read application Secrets. The consumer Pod allows the
 `WaitForFirstConsumer` claim to bind.
 
-Run the following separately with the DEV, STAGE and PROD selection from step 1.
-The first command must show no existing resources; stop if either name already
-exists. Do not replace an unrelated probe or delete any application PVC.
+- [ ] With the environment selected in step 1, check for an existing probe.
+      The first command below must show no existing resources. Stop if either
+      name exists; do not replace an unrelated probe or delete any application
+      PVC.
 
 ```sh
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" get pod,pvc liora-storage-check --ignore-not-found
+```
+
+- [ ] Only if neither resource exists, create the probe and check PVC
+      binding, completed Pod, logs, PV and node:
+
+```sh
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" create -f runbooks/_resources/application-storage-check.yaml
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" wait --for=jsonpath='{.status.phase}'=Bound pvc/liora-storage-check --timeout=300s
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" wait --for=jsonpath='{.status.phase}'=Succeeded pod/liora-storage-check --timeout=300s
@@ -261,14 +316,17 @@ probe_pv=$(kubectl --kubeconfig="$kubeconfig" -n "$namespace" get pvc liora-stor
 kubectl --kubeconfig="$kubeconfig" get pv "$probe_pv" -o wide
 ```
 
-Require `local-path`, claim status Bound, Pod status Succeeded, and the expected
-namespace marker in the logs. DEV/STAGE must use a `k3s-1-` node; PROD must use a
-`k3s-2-` node. Record the actual PV and node. This verifies provisioning and
-basic file I/O, not backup restoration, node failure recovery, database behavior
-or storage redundancy.
+- [ ] Confirm `local-path`, PVC Bound, Pod Succeeded, and the expected
+      namespace marker in the logs. DEV/STAGE must use a `k3s-1-` node; PROD
+      must use a `k3s-2-` node. Record the actual PV and node.
 
-After recording a successful check, remove only these temporary resources and
-wait for their dynamically provisioned PV to be reclaimed:
+> [!NOTE]
+> The probe verifies provisioning and basic file I/O. It does not verify
+> backup restoration, node failure recovery, database behavior, or storage
+> redundancy.
+
+- [ ] After recording a successful check, remove **only** the temporary
+      probe resources and wait for their PV to be reclaimed:
 
 ```sh
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" delete pod/liora-storage-check pvc/liora-storage-check --wait=true
@@ -276,16 +334,19 @@ kubectl --kubeconfig="$kubeconfig" wait --for=delete "pv/$probe_pv" --timeout=18
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" get pods,pvc
 ```
 
-If the check fails, inspect its events and Pod status before cleanup and report
-the failure. Investigate the cause, then repeat the probe; record any transient
-runtime interruption and retry. Do not move on until a fresh check passes;
-recurring failures need resolution before deployment.
-The application `postgres-vol` PVC is created separately during its deployment
-phase; a successful probe does not pre-create it.
+### If the storage probe fails
+
+> [!WARNING]
+> Inspect events and Pod status before cleanup. Investigate and repeat the
+> probe; record transient interruptions. Do not proceed until a fresh check
+> passes. The application `postgres-vol` PVC is created separately during
+> deployment; the probe does not pre-create it.
 
 ## 3. Bring up PostgreSQL, then prestart — Phases 3, 4 or 5
 
-For the current authorized environment only:
+- [ ] For the current authorized environment only, apply configuration and
+      database resources. Wait for the PVC, PostgreSQL rollout, and
+      `pg_isready`:
 
 ```sh
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" apply -f "$render_dir/config-storage.yaml"
@@ -297,17 +358,23 @@ kubectl --kubeconfig="$kubeconfig" -n "$namespace" get pvc postgres-vol -o wide
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" get job prestart --ignore-not-found
 ```
 
-A Pending PVC before a database Pod exists is expected with
-`WaitForFirstConsumer`; wait for Bound only after creating the database
-Deployment. Inspect the bound PV's node affinity and actual StorageClass.
-Local-path data is node-local and is not replicated across K3s servers.
+- [ ] Inspect the bound PV's node affinity and actual StorageClass.
 
-For a fresh install, `prestart` must be absent. On a redeploy, review the old
-Job, image changes, database backup and migration behavior before deliberately
-recreating it. Do not treat an earlier Complete Job as proof that the new image's
-migrations ran; Job templates are immutable. Do not delete PVCs to retry a Job.
+> [!NOTE]
+> A Pending PVC before a database Pod exists is expected with
+> `WaitForFirstConsumer`; wait for Bound only after creating the database
+> Deployment. Local-path data is node-local and is not replicated across
+> K3s servers.
 
-After confirming PostgreSQL is Ready, apply the Job and wait:
+- [ ] Confirm `prestart` is absent for a fresh install. On a redeploy, review
+      the old Job, image changes, database backup, and migration behavior
+      before deliberately recreating it.
+
+> [!WARNING]
+> An earlier Complete Job does not prove that the new image's migrations
+> ran. Job templates are immutable. Do not delete PVCs to retry a Job.
+
+- [ ] After PostgreSQL is Ready, apply `prestart` and wait for Complete:
 
 ```sh
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" apply -f "$render_dir/prestart.yaml"
@@ -315,16 +382,22 @@ kubectl --kubeconfig="$kubeconfig" -n "$namespace" wait --for=condition=complete
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" get job prestart
 ```
 
-If it fails, stop before applying the application group. Inspect Job events and
-logs privately; logs can contain operational details and must be reviewed
-before sharing. Fix the underlying database, image or credential problem.
-Direct `kubectl apply` does **not** implement Argo CD sync-wave or hook ordering,
-cleanup, or recreation. Applying the whole overlay at once would bypass these
-explicit gates.
+### If prestart fails
+
+> [!WARNING]
+> Stop before applying the application group. Inspect Job events and logs
+> privately; review logs before sharing them. Fix the database, image, or
+> credential problem before retrying.
+
+> [!NOTE]
+> Direct `kubectl apply` does **not** implement Argo CD sync-wave or hook
+> ordering, cleanup, or recreation. Applying the whole overlay at once
+> bypasses these gates.
 
 ## 4. Start the remaining workloads
 
-Only after prestart completes:
+- [ ] Only after `prestart` completes, apply the remaining workloads and
+      wait for backend, frontend, and Adminer rollouts:
 
 ```sh
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" apply -f "$render_dir/application.yaml"
@@ -335,21 +408,24 @@ kubectl --kubeconfig="$kubeconfig" -n "$namespace" get deployments,pods,pvc,jobs
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" get deployments -o 'custom-columns=NAME:.metadata.name,IMAGES:.spec.template.spec.containers[*].image'
 ```
 
-Record the reviewed Git commit, deployment images, actual Pod image IDs, PVC/PV
-binding, namespace, cluster and acceptance results. A rollout alone is not an
-application acceptance check.
+- [ ] Record the reviewed Git commit, deployment images, actual Pod image IDs,
+      PVC/PV binding, namespace, and cluster.
+
+> [!NOTE]
+> A rollout alone is not an application acceptance check. Complete the
+> environment-specific checks in step 5.
 
 ## 5. Private acceptance, separately for every environment
 
-Use a localhost-only ingress forward on VM 200 in a separate terminal. Set the
-same environment selection variables there first. No public DNS change is
-needed for command-line checks:
+- [ ] In a separate terminal on VM 200, select the **same** environment as in
+      step 1 and start a localhost-only ingress forward:
 
 ```sh
 kubectl --kubeconfig="$kubeconfig" -n kube-system port-forward --address=127.0.0.1 service/traefik 18080:80
 ```
 
-In the original terminal:
+- [ ] In the original terminal, check the selected hostname's backend health
+      and frontend through that forward:
 
 ```sh
 case "$environment" in
@@ -361,34 +437,40 @@ curl --fail --silent --show-error -H "Host: $hostname" http://127.0.0.1:18080/ap
 curl --fail --silent --show-error -H "Host: $hostname" --output /dev/null http://127.0.0.1:18080/
 ```
 
-For browser acceptance from the trusted workstation, tunnel the management
-VM's loopback port to the workstation, map the selected hostname to
-`127.0.0.1` in the workstation's hosts file, and open
-`http://<selected-hostname>:18080`. Keep the tunnel and forward private. This is
-a temporary HTTP test path; canonical STAGE/PROD frontend URLs remain HTTPS.
-The frontend must call relative `/api` routes through this same ingress;
-forwarding the frontend Service alone does not route API calls. If the browser
-requires HTTPS for the domain, establish trusted private TLS instead and record
-browser acceptance as pending until that path is available. Do not claim public
-routing, canonical-origin CORS, or TLS acceptance from this temporary path.
+- [ ] For browser acceptance from the trusted workstation, tunnel VM 200's
+      loopback port to the workstation, map the selected hostname to
+      `127.0.0.1` in the workstation's hosts file, and open
+      `http://<selected-hostname>:18080`. Keep the tunnel and forward private.
+- [ ] Log in as `admin007@liora.aprt.info` using that environment's recovery
+      password. Create, read, edit, and read back an item titled
+      `acceptance-<environment>-<date>`. Retain this synthetic marker for
+      the next environment's isolation check. Do not use real personal data.
 
-Log in as `admin007@liora.aprt.info` using that environment's local recovery
-password. Create and read back an item titled `acceptance-<environment>-<date>`;
-edit it and read it again. Retain the environment marker temporarily to check
-isolation when the next environment is deployed. Do not use real personal data.
+> [!NOTE]
+> This is a temporary HTTP test path; canonical STAGE/PROD frontend URLs
+> remain HTTPS. The frontend must call relative `/api` routes through this
+> ingress. Forwarding the frontend Service alone does not route API calls.
+> This test does not establish public routing, canonical-origin CORS, or TLS
+> acceptance.
+
+### If the browser requires HTTPS
+
+> [!WARNING]
+> Establish trusted private TLS for that hostname and record browser
+> acceptance as pending until it is available.
 
 ### Automated browser acceptance alternative
 
-After the ingress forward is running, you can use the standalone browser check
-instead of manually performing the login and item actions above. It uses the
-same exported `environment`, `namespace`, `recovery_dir` and `render_dir` values.
-It resolves only the selected application hostname to loopback inside Chromium,
-so system hosts files and public DNS do not need changing. This still tests the
-temporary private HTTP origin, not public routing or trusted TLS.
+> [!TIP]
+> The standalone browser check is an alternative to the manual login and
+> item actions above. It uses the same exported `environment`, `namespace`,
+> `recovery_dir`, and `render_dir`. It resolves the selected hostname to
+> loopback inside Chromium; no hosts-file or public DNS change is needed.
+> It still tests the temporary private HTTP origin.
 
-Install the browser tooling on the machine running the check. The Chromium
-system-library installation requires the host's package-management privileges;
-operators without them can use the manual browser procedure instead.
+- [ ] If using the automated alternative, keep the ingress forward running.
+      Install the browser tooling on the machine running the check, then run
+      the verification script:
 
 ```sh
 python3 -m venv "$HOME/liora-ui-check-tools"
@@ -398,30 +480,51 @@ ui_python="$HOME/liora-ui-check-tools/bin/python"
 "$ui_python" scripts/kubernetes/verify-application-ui.py
 ```
 
-Standalone script: [Verify application UI and item persistence](../scripts/kubernetes/verify-application-ui.py).
-You can also copy this file to VM 200 and invoke it using the prepared Python
-environment. Keep the ingress forward running in a separate terminal.
+The [browser verification script](../scripts/kubernetes/verify-application-ui.py)
+can also be copied to VM 200 and run with the prepared Python environment.
+Installing Chromium system libraries requires package-management privileges;
+use the manual browser procedure if those are unavailable.
 
-The check verifies health, signs in through the UI, creates and edits an item,
-reloads the page, and reads the persisted item through the authenticated API.
-It leaves one synthetic marker for the later cross-environment isolation check
-and writes its ID/title and pass/fail status to `$render_dir/acceptance.json`.
-Keep that record for the next phase. It does not save passwords, access tokens,
-browser authentication state or traces. A failed run reports its step and error
-type; if an item was already created, use its recorded ID to review or clean up
-only that marker before repeating the check. Repeated successful checks create
-additional markers, so retain their records or clean up those markers first.
+> [!NOTE]
+> The script verifies health, UI login, item creation/editing, page reload,
+> and persistence through the authenticated API. It writes the marker ID,
+> title, and result to `$render_dir/acceptance.json` for the next phase.
+> It does not save passwords, tokens, browser state, or traces.
 
-| Gate | Required checks before proceeding |
-| --- | --- |
-| DEV / Phase 3 | app-dev runs on k3s-1 nodes; PVC Bound; PostgreSQL Ready; prestart Complete; backend/frontend/Adminer Ready; health and UI login pass; DEV item write/read/update passes; record exact images |
-| STAGE / Phase 4 | app-stage runs on k3s-1 nodes; repeat every DEV check with STAGE credentials; its PVC/PV is distinct; DEV marker is absent from STAGE; STAGE marker is absent from DEV; DEV remains healthy |
-| PROD / Phase 5 | approved real digests, no placeholders; app-prod runs on k3s-2 nodes; two backend and two frontend replicas Ready; repeat all data and UI checks; its database contains neither nonprod marker; DEV/STAGE remain healthy |
+### If the browser check fails or is repeated
 
-Retain the DEV and STAGE markers through Phase 5 so PROD can be checked against
-both. After all three environments pass isolation, delete only the acceptance
-items you created and confirm their removal. Check Adminer through a private
-Service forward if needed; it has no public ingress. Verify the actual Pod nodes with:
+> [!WARNING]
+> A failed run reports its step and error type. If it created an item, use
+> the recorded ID to review or remove only that marker before retrying.
+> Repeated successful checks create additional markers; retain their records
+> or clean up those markers first.
+
+### Acceptance gates
+
+#### DEV — Phase 3
+
+- [ ] `app-dev` Pods run on `k3s-1-` nodes; PVC Bound; PostgreSQL Ready;
+      `prestart` Complete; backend, frontend, and Adminer Ready.
+- [ ] Health, UI login, and DEV item create/read/update pass. Record exact
+      images and retain the DEV marker.
+
+#### STAGE — Phase 4
+
+- [ ] `app-stage` Pods run on `k3s-1-` nodes and pass every DEV workload,
+      health, UI, and data check with STAGE credentials.
+- [ ] STAGE has a distinct PVC/PV. The DEV marker is absent from STAGE, the
+      STAGE marker is absent from DEV, and DEV remains healthy.
+
+#### PROD — Phase 5
+
+- [ ] `app-prod` Pods run on `k3s-2-` nodes with approved real digests and
+      two Ready backend and two Ready frontend replicas.
+- [ ] PROD passes the workload, health, UI, and data checks. Its database
+      contains neither nonprod marker; DEV and STAGE remain healthy.
+
+### Close out each environment
+
+- [ ] Verify the actual Pod nodes:
 
 ```sh
 kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n app-dev get pods -o wide
@@ -429,23 +532,32 @@ kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n app-stage get pods -o wid
 kubectl --kubeconfig="$HOME/.kube/config-prod" -n app-prod get pods -o wide
 ```
 
-Complete each environment's report before the next deployment phase. Keep
-trusted HTTPS and canonical URL checks separate until the required certificate,
-DNS/private host resolution and routing are available.
+- [ ] Complete each environment's report before the next deployment phase.
+      Retain DEV and STAGE markers through Phase 5; after all isolation
+      checks pass, delete only your acceptance items and confirm removal.
 
-## Disaster recovery and rollback boundary
+> [!NOTE]
+> Check Adminer through a private Service forward if needed; it has no
+> public ingress. Trusted HTTPS and canonical URL checks wait for the
+> required certificate, DNS/private host resolution, and routing.
 
-Applying these manifests to a fresh recovery cluster creates an empty database;
-it **does not restore application data**. Before recovery, select and verify the
-matching database backup, restoration point, database credentials and signing
-key. Data restoration needs its own tested PostgreSQL restore procedure and
-validation before running migrations or allowing application writes. A new
-administrator password in recovery YAML does not reset an account in a restored
-database. Do not overwrite the matching recovery material with newly generated
-values.
+## If restoring data or rolling back
 
-Back up and test restoration before changing application schema. Reverting an
-image digest does not undo a prestart database migration. Never delete a PVC,
-namespace or local-path volume as an application rollback step; the StorageClass
-has reclaim policy `Delete`. Argo CD retention annotations have no protective
-effect on a direct `kubectl delete` command.
+> [!IMPORTANT]
+> Applying these manifests to a fresh recovery cluster creates an empty
+> database; it **does not restore application data**. Use the matching backup,
+> credentials, and signing key. A new administrator password in recovery YAML
+> does not reset an account in a restored database.
+
+- [ ] Before recovery, select and verify the matching database backup,
+      restoration point, database credentials, and signing key.
+- [ ] Restore and validate data using the separate tested PostgreSQL restore
+      procedure **before** migrations or application writes. Preserve the
+      matching recovery material.
+- [ ] Before changing application schema, back up and test restoration.
+
+> [!WARNING]
+> Reverting an image digest does not undo a prestart database migration.
+> Never delete a PVC, namespace, or local-path volume as an application
+> rollback step: the StorageClass has reclaim policy `Delete`. Argo CD
+> retention annotations do not protect against a direct `kubectl delete`.
