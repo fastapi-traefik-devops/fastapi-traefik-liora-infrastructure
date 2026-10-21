@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Liora namespace certificate distribution
+
+[Timer]
+OnCalendar=*-*-* 04:00:00
+RandomizedDelaySec=15m
+Persistent=true
+Unit=liora-certificate-sync.service
+
+[Install]
+WantedBy=timers.target

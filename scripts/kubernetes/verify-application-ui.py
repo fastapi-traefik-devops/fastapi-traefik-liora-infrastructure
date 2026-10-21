@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Check private ingress, UI login and item persistence without logging credentials."""
+"""Check application ingress, UI login and item persistence without logging credentials."""
 
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -22,6 +23,7 @@ def main():
     hostname = hosts[environment]
     url = os.environ.get('acceptance_url', f'http://{hostname}:18080').rstrip('/')
     parsed = urlparse(url)
+    address = str(ipaddress.IPv4Address(os.environ.get('acceptance_address', '127.0.0.1')))
     assert parsed.hostname == hostname and parsed.scheme in ['http', 'https']
     assert parsed.username is None and parsed.password is None
     assert not parsed.query and not parsed.fragment and parsed.path in ['', '/']
@@ -40,7 +42,7 @@ def main():
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True, args=[
                 '--no-proxy-server',
-                f'--host-resolver-rules=MAP {hostname} 127.0.0.1',
+                f'--host-resolver-rules=MAP {hostname} {address}',
             ])
             page = browser.new_page()
             page.set_default_timeout(60000)

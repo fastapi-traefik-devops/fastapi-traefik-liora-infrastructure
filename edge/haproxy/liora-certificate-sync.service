@@ -1,0 +1,16 @@
+[Unit]
+Description=Synchronize Liora edge certificates into Kubernetes TLS Secrets
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=root-admin
+WorkingDirectory=/home/root-admin/liora-phase7-edge/certificate-sync
+ExecStart=/usr/bin/python3 /home/root-admin/liora-phase7-edge/certificate-sync/sync-edge-certificates.py
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/root-admin
+TimeoutStartSec=300
