@@ -1,7 +1,7 @@
 # Proxmox and K3s infrastructure
 
-This repository provisions the private `192.168.77.0/24` network on Proxmox VE 9,
-a management VM, a Tailscale subnet router, and two three-node K3s clusters.
+This repository documents the Proxmox VE 9 host and management VM setup, then
+provisions a Tailscale subnet router and two three-node K3s clusters.
 
 ## Infrastructure at a glance
 
@@ -22,6 +22,8 @@ Cloud-Init template is VM `9013`.
 - [Infrastructure disaster recovery](01-Disaster_recovery.md)
 
 Both navigators link to the step-specific instructions in `runbooks/`.
+For the implemented topology and component boundaries, see
+[Current architecture](docs/ARCHITECTURE.md).
 
 ## Repository layout
 
