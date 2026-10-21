@@ -2,14 +2,15 @@
 
 **Where:** Management VM 200, from the reviewed infrastructure checkout.
 
-**Status:** Phase 1 has imported and rendered these manifests locally. No
-application deployment or acceptance on the new K3s clusters has been verified.
-PROD is pinned to the operator-approved STAGE image pair `sha-c375967...`.
-Phase 2 namespace/Secret preparation and temporary storage checks are verified
-for all three environments; see the [Phase 2 report](../docs/testreports/PHASE2_REPORT.md).
-Application deployment begins separately in Phase 3.
-These commands are the procedure for later authorized phases; importing the
-files does not authorize running them.
+**Status:** Phase 3 deployed DEV on K3s and verified PostgreSQL, prestart,
+backend/frontend/Adminer readiness, private UI login and item persistence; see
+the [Phase 3 report](../docs/testreports/PHASE3_REPORT.md). STAGE and PROD have
+prepared namespaces/Secrets but no application workloads. PROD is pinned to the
+approved STAGE image pair `sha-c375967...`. Phase 2 storage checks passed in all
+three namespaces and their temporary resources were cleaned up.
+
+Run only the steps belonging to the currently authorized phase. Public routing,
+trusted TLS, STAGE deployment and PROD deployment remain separate later work.
 
 ## Scope and prerequisites
 

@@ -51,8 +51,9 @@ kubernetes/
 The Phase 0 baseline report and migration instructions accompany this plan.
 The application base and overlays have been imported with selected history;
 see [Phase 1 report](PHASE1_REPORT.md). All three overlays render with real,
-pinned images, including the approved PROD pair. Live application deployment
-remains pending. Never commit live credentials, controller private keys, or state.
+pinned images, including the approved PROD pair. DEV is deployed and privately
+verified in Phase 3; STAGE and PROD application deployment remain pending.
+Never commit live credentials, controller private keys, or state.
 
 ### Target ownership and source files
 
@@ -129,7 +130,8 @@ in the Phase 2 report.
 Fresh, separate backend/database credentials reside in ignored
 `recovery/recovery.yaml`, with registry credentials in ignored `recovery/.env`.
 Phase 2 created and verified the corresponding live Secrets in each namespace.
-No credential values were committed. Application workloads are not deployed.
+No credential values were committed. Phase 3 subsequently deployed and verified
+DEV; STAGE and PROD application workloads remain undeployed.
 
 **Pass:** both clusters, storage, image versions, and credentials are ready.
 
@@ -176,7 +178,7 @@ Status on 2026-10-21: **complete**. See [Phase 2 report](PHASE2_REPORT.md).
 Namespaces are Active, all nine required Secrets match local recovery material,
 and temporary default-StorageClass PVC probes passed in every namespace. The
 probe Pods, PVCs and dynamically provisioned PVs were removed. All six nodes
-are Ready. Phase 3 has not started.
+are Ready. The subsequent DEV deployment is recorded in Phase 3 below.
 
 - [x] Create `app-dev` and `app-stage` on the dev/stage cluster and `app-prod`
       on the prod cluster.
@@ -189,11 +191,23 @@ provision its own PVC. Do not print Secret values into logs.
 
 ## Phase 3 — Deploy and verify DEV
 
-- [ ] Deploy the DEV overlay to `app-dev` on the dev/stage cluster. Bring up
+Status on 2026-10-21: **complete**. See [Phase 3 report](PHASE3_REPORT.md).
+DEV's application PVC is Bound, PostgreSQL and all application Deployments are
+Ready, prestart completed, and private browser login plus persisted item
+creation/read/update passed. The initially generated administrator passwords
+exceeded the application limit; they were corrected to 32 characters in ignored
+recovery and the three backend Secrets. No database passwords or signing keys
+changed. A bootstrap length guard now prevents that error.
+
+The retained DEV marker is recorded in `/home/root-admin/liora-render/dev/acceptance.json`
+for Phase 4 isolation checks. Public routing and trusted TLS remain unverified.
+STAGE/PROD application workloads are not deployed; Phase 4 has not started.
+
+- [x] Deploy the DEV overlay to `app-dev` on the dev/stage cluster. Bring up
       PostgreSQL before relying on the prestart migration Job.
-- [ ] Check PVC Bound, PostgreSQL Ready, prestart Complete, and backend,
+- [x] Check PVC Bound, PostgreSQL Ready, prestart Complete, and backend,
       frontend, and Adminer Ready.
-- [ ] Through private access, check backend health, UI login, and a basic
+- [x] Through private access, check backend health, UI login, and a basic
       read/write operation against the DEV database. Record applied digests.
 
 **Pass:** DEV works end to end without public DNS or TLS. With direct
