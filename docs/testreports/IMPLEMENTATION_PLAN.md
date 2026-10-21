@@ -1,5 +1,10 @@
 # Kubernetes implementation plan
 
+Planning update: **2026-10-21**. Phases 0–7 are complete within their recorded
+acceptance boundaries. The operator has agreed the private-access architecture
+and a staged Jenkins migration. Phase 8 has not been deployed; this document
+records the agreed target and proposed implementation steps for review.
+
 ## Target architecture
 
 The final state uses two independent K3s clusters and three application
@@ -9,26 +14,120 @@ data. PROD runs on its own cluster.
 | Component | Dev/stage cluster | Prod cluster |
 | --- | --- | --- |
 | K3s | VMs 201–203; API VIP `192.168.77.11` | VMs 211–213; API VIP `192.168.77.12` |
+| Private administration | Admin VIP `192.168.77.16`; services-only kube-vip | Admin VIP `192.168.77.17`; independent services-only kube-vip |
 | Application | `app-dev` and `app-stage` namespaces | `app-prod` namespace |
 | GitOps | Own Argo CD, AppProject, and root Application | Independent Argo CD, AppProject, and root Application |
 | Sync | Reviewed PR, then auto-sync, self-heal, and reviewed pruning | Reviewed PR, then auto-sync and self-heal; no automatic pruning |
 | Secrets | Cluster-specific Sealed Secrets key; GHCR pull credentials per namespace | Separate controller key and GHCR pull credentials |
 | Data | Separate DEV and STAGE databases | PROD database with tested backups and restore |
 | Monitoring | Cluster monitoring and administrative Grafana | Separate monitoring and controlled access to PROD metrics |
+| Jenkins | One controller in namespace `jenkins`; own persistent volume; CI migration in Phase 9 | No separate Jenkins controller; reviewed promotion and local Argo CD deploy PROD |
 
-The planned public path is Cloudflare → Proxmox TCP/443 DNAT → dedicated
-HAProxy edge VM → the selected cluster's Traefik ingress → application Service.
-Each cluster needs an ingress address distinct from its API VIP. Argo CD,
-Grafana, Prometheus, Adminer while retained, and other administrative
-interfaces are reached through Tailscale or another controlled private path.
+The existing public path is Cloudflare DNS-only → Proxmox TCP/80,443 DNAT →
+HAProxy edge VM 240 → the selected cluster's Traefik ingress → application
+Services. Public ingress uses node pools `.201`–`.203` and `.211`–`.213`,
+separate from API VIPs and the new Admin VIPs. Keep this working path unchanged
+while adding private administration.
 
 The target database platform is CloudNativePG. The initial deployment below
 deliberately retains the application's current PostgreSQL Deployment and PVC;
-database migration is a later, separately verified change. Likewise, the
-current Ansible configures kube-vip only for the API and leaves K3s ServiceLB
-enabled. The ingress design must account for that before implementing public
-routing. The application's current Phase 1 Jenkins runs on a separate Docker
-host; its eventual placement is a separate CI decision.
+database migration is a later, separately verified change. The current kube-vip
+DaemonSets serve the API only, and K3s ServiceLB serves public Traefik. Add an
+independent services-only DaemonSet to each cluster for administrative Services;
+do not repurpose the API DaemonSets or change public ingress ownership.
+
+### Agreed private access and service addresses
+
+Trusted administrators reach the whole `192.168.77.0/24` subnet through the
+existing Tailscale router. Use browser access by IP and port, with no private
+ingress, DNS records, additional reverse proxy, SSH tunnel or manual
+port-forward. The operator confirms `.16` and `.17` are available and assigns
+them to this purpose; this is an address-allocation decision, not evidence of
+a deployed or tested VIP.
+
+```mermaid
+flowchart LR
+  Browser[Administrator browser] --> Tailscale[Tailscale subnet router .250]
+  Tailscale --> Nonprod[Admin VIP 192.168.77.16]
+  Tailscale --> Prod[Admin VIP 192.168.77.17]
+  Nonprod --> NonprodServices[Argo CD / Grafana / Prometheus / Alertmanager / Adminer DEV and STAGE / Jenkins]
+  Prod --> ProdServices[Argo CD / Grafana / Prometheus / Alertmanager / Adminer PROD]
+  NonprodServices --> NonprodPods[Services and Pods on VMs 201-203]
+  ProdServices --> ProdPods[Services and Pods on VMs 211-213]
+```
+
+| Interface | DEV/STAGE endpoint | PROD endpoint | Current state / native service |
+| --- | --- | --- | --- |
+| Kubernetes API | `https://192.168.77.11:6443` | `https://192.168.77.12:6443` | Existing; API VIPs stay unchanged |
+| Argo CD | `https://192.168.77.16:8080` | `https://192.168.77.17:8080` | Existing UI/API; expose native HTTPS port 443 |
+| Grafana | `http://192.168.77.16:3000` | `http://192.168.77.17:3000` | Phase 8; native HTTP and Grafana login |
+| Prometheus | `http://192.168.77.16:9090` | `http://192.168.77.17:9090` | Phase 8; native HTTP |
+| Alertmanager | `http://192.168.77.16:9093` | `http://192.168.77.17:9093` | Phase 8; native HTTP |
+| Adminer DEV | `http://192.168.77.16:8081` | — | Existing `app-dev/adminer:80`; database login |
+| Adminer STAGE | `http://192.168.77.16:8082` | — | Existing `app-stage/adminer:80`; database login |
+| Adminer PROD | — | `http://192.168.77.17:8081` | Existing `app-prod/adminer:80`; database login |
+| Jenkins | `http://192.168.77.16:8085` | — | Phase 8 controller/UI; Phase 9 working CI migration |
+
+Use the HTTP/HTTPS and authentication supplied by each service. Do not add TLS
+termination, a private CA, new certificates, SSO or an authentication proxy for
+Admin VIP access. Argo CD currently has its bootstrap self-signed certificate;
+an IP URL is not a promise of warning-free browser TLS. Configure native base
+URLs and redirects for the chosen external IP and port where required.
+Retain native logins for Argo CD, Grafana, Jenkins and Adminer. Prometheus and
+Alertmanager retain their native access model inside the trusted subnet.
+
+No additional Tailscale grants/ACL restrictions or firewall hardening are part
+of this increment. Do not create public NAT or HAProxy routes to Admin VIPs.
+Record any NodePort allocation required by the implementation; do not describe
+VIP access as restricting other private access paths. PostgreSQL, Redis, Docker
+daemons and metrics endpoints do not receive administrative browser endpoints.
+
+### Admin VIP ownership and implementation constraints
+
+- Use kube-vip **v1.2.3**, services-only mode, with one common service leader
+  per cluster for all Services sharing its Admin VIP. Its election and lease
+  must be independent of the existing API leader and `plndr-cp-lock`.
+- Set the intended VIP explicitly on every administrative LoadBalancer
+  Service; use distinct exposed ports on each shared VIP, including the two
+  nonprod Adminer Services in their separate namespaces.
+- Check the exact v1.2.3 configuration and shared-VIP election behavior before
+  applying it. Do not assume independent per-Service leaders can safely own
+  the same address. If the agreed ownership cannot be implemented as planned,
+  report the discrepancy before changing the architecture.
+- Give the new DaemonSet distinct names, labels/selectors and appropriate
+  service-account/RBAC resources. Avoid hostNetwork listener conflicts: the
+  existing API kube-vip exposes metrics on `2112`.
+- Use explicit LoadBalancer class handling compatible with the installed
+  K3s version so ServiceLB does not process administrative Services, and the
+  services-only kube-vip does not claim public Traefik. Preserve both API
+  DaemonSets, their leases, and existing public ingress Services.
+- One shared leader is an address-ownership choice. It does not establish
+  service, storage or host high availability. Failover, reboot, outage timing,
+  load and resilience tests are deferred and are not Phase 8 acceptance gates.
+
+### Remaining infrastructure and later target components
+
+| Component | Address / placement | Target or current responsibility |
+| --- | --- | --- |
+| Public application | `dev.liora.aprt.info`, `stage.liora.aprt.info`, `liora.aprt.info` over HTTPS | Existing application-only HAProxy/Traefik path |
+| Proxmox | `192.168.77.1`; native management UI on 8006 | Existing host administration; outside Admin VIPs |
+| Management VM 200 | `192.168.77.200` | Terraform, Ansible, explicit cluster kubeconfigs and certificate distribution |
+| HAProxy / Certbot VM 240 | `192.168.77.240` | Existing public routing and ACME renewal |
+| Tailscale router VM 250 | `192.168.77.250` | Existing subnet access |
+| Application internals | Separate namespaces and PVCs | Frontend, backend, PostgreSQL, Adminer and prestart Job remain |
+| Cluster internals | Each independent K3s cluster | API/etcd, CoreDNS, Metrics Server, local-path provisioner, Traefik and ServiceLB remain |
+| Argo CD internals | Each cluster's `argocd` namespace | Independent controller, repo server, Redis, Dex, ApplicationSet and notifications components |
+| Monitoring internals | Each cluster's `monitoring` namespace | Prometheus Operator, kube-state-metrics, Node Exporter, scrape configuration, dashboards and alerts |
+| CI agents / registry publisher / build daemon | DEV/STAGE CI platform; Phase 9 | Preserve existing CI/publisher separation; no extra browser ports |
+| GitHub / GHCR | External existing services | Source, reviewed promotion changes and container registry |
+| Slack | Existing kind destination available; new-cluster destination not yet confirmed | Configure delivery only after destination agreement; no assumption of verified notification receipt |
+| Sealed Secrets | Separate controllers and keys; later platform phase | Cluster-specific encrypted Secret management |
+| CloudNativePG and backups | Later database phase | Replace PostgreSQL incrementally after backup/restore verification; backup destination remains to be selected |
+
+VM 100, its legacy kind deployment and existing public administrative NAT
+rules are outside this implementation's change scope. The operator will retire
+them after the replacement platform and CI are working. Phase 8 alone does not
+make VM 100 ready for shutdown, because working CI moves in Phase 9.
 
 ### Target repository layout
 
@@ -44,9 +143,23 @@ kubernetes/
     nonprod/                 root app, project, DEV/STAGE apps, bootstrap
     prod/                    independent root app, project, PROD app, bootstrap
   platform/
-    nonprod/                 cluster services introduced incrementally
-    prod/                    independent PROD cluster services
+    base/                    shared platform resources where appropriate
+    nonprod/
+      admin-access/          services-only kube-vip and private access resources
+      monitoring/            nonprod storage, retention, dashboards and alerts
+      jenkins/               controller, JCasC, storage and administrative Service
+    prod/
+      admin-access/          independent VIP ownership and private access resources
+      monitoring/            independent PROD monitoring configuration
+scripts/kubernetes/          reusable operator helpers
+runbooks/                    installation and recovery procedures
+.local-work/                 ignored tools, rendered output and operator evidence
 ```
+
+This is the target layout, not a list of already-created directories. Keep
+namespace-specific administrative Services with clear, single ownership:
+application namespace exposure belongs with its environment overlay; platform
+configuration must not silently compete with an existing Argo CD owner.
 
 The Phase 0 baseline report and migration instructions accompany this plan.
 The application base and overlays have been imported with selected history;
@@ -62,7 +175,9 @@ commit live credentials, controller private keys, or state.
 - The application repository retains application code, tests, image builds,
   release tags, and the Jenkins pipeline that publishes images. This
   infrastructure repository owns deployed image digests, Kustomize overlays,
-  Argo CD configuration, and cluster services.
+  Argo CD configuration, cluster services and Jenkins deployment/bootstrap
+  configuration. Work in the original infrastructure checkout with ignored
+  `.local-work/` tools; no temporary working checkout is needed.
 - The first migration copies `deploy/base/` and
   `deploy/overlays/{dev,stage,prod}/` from the application repository. The
   later CloudNativePG migration replaces `configmap-db.yaml`,
@@ -78,6 +193,20 @@ commit live credentials, controller private keys, or state.
   `dashboards/platform.yaml`, `monitors/{argocd,traefik}.yaml`, and
   `rules/dev-stage.yaml` when adding monitoring. Replace kind-specific
   storage assumptions and create distinct PROD settings.
+- Treat `infra/jenkins-host/` in the application repository as the source of
+  the working Jenkins proof of concept. Preserve as much as possible: pinned
+  controller/agent/build-daemon images, Dockerfiles and tool/plugin locks,
+  JCasC, Job DSL, pipeline definitions, credential IDs/scopes and the separation
+  between CI and trusted publication. Adapt deployment details for K3s rather
+  than replacing the working design. Record source revisions, path mappings
+  and intentional deviations; preserve selected source history when importing
+  platform files. The currently reviewed application source is
+  `b98a22e48527c256193ed65c10307eb574b27ab6`; recheck before importing.
+- Keep live Jenkins home, build history, artifacts, credentials and encryption
+  keys as private operator data. Preserve them during Phase 9 migration and
+  keep a consistent recovery copy; do not copy them into tracked manifests.
+  Phase 8 must not start migrated polling, builds or publication alongside the
+  existing jobs on VM 100.
 - Move promotion to reviewed changes in this repository. Adapt
   `ci/promote.py`, `promote-stage.sh`, `publish.sh`, `registry.py`, and
   `Jenkinsfile.promote` without executing trusted publishing code from an
@@ -95,6 +224,12 @@ First run the application's **current deployment** on the new clusters with the
 fewest necessary changes. Verify DEV, STAGE, and PROD independently. Add GitOps,
 public access, monitoring, and platform replacements in later, separate steps.
 Complete the check for each phase before starting the next.
+
+The current increment is planning only. Present this updated architecture and
+step sequence for operator confirmation before deploying Phase 8. Execute its
+substeps in order, keep changes small and report actual readiness separately
+from deferred tests. VM 100 retirement and legacy NAT removal remain operator
+work outside these steps. Do not begin Phase 9 as part of Phase 8.
 
 Copy deployment files from the
 [application repository](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application).
@@ -141,8 +276,10 @@ verified all three application environments.
 
 Status on 2026-10-21: **complete for local import and rendering**. The operator
 approved the current STAGE pair for PROD; both images are pinned by digest.
-See [Phase 1 report](PHASE1_REPORT.md). Work is isolated
-on `migration/liora-phase0` at `/home/root-admin/liora-infrastructure-migration`.
+See [Phase 1 report](PHASE1_REPORT.md). Phase 1 used the isolated branch
+`migration/liora-phase0` at `/home/root-admin/liora-infrastructure-migration`.
+It was later integrated without rewriting imported history; that temporary
+worktree and fully merged branch were removed. Work now uses the original checkout.
 The deployment source is upstream `b98a22e48527c256193ed65c10307eb574b27ab6`;
 its newer STAGE promotion matches kind. The selected history was scanned and
 imported, and the new runbook and navigator links are present. No live application deployment was attempted.
@@ -201,8 +338,11 @@ exceeded the application limit; they were corrected to 32 characters in ignored
 recovery and the three backend Secrets. No database passwords or signing keys
 changed. A bootstrap length guard now prevents that error.
 
-The retained DEV marker is recorded in `/home/root-admin/liora-render/dev/acceptance.json`
-for Phase 4 isolation checks. Public routing and trusted TLS remain unverified.
+At Phase 3 completion the DEV marker was recorded in
+`/home/root-admin/liora-render/dev/acceptance.json` for Phase 4 isolation checks.
+All synthetic markers were subsequently removed, and old evidence was archived;
+see [local workspace guidance](../LOCAL_WORKSPACE.md). Public routing and
+trusted TLS were unverified at that point and were completed in Phase 7.
 At Phase 3 completion STAGE/PROD application workloads were not deployed.
 STAGE was subsequently deployed and verified in Phase 4 below.
 
@@ -254,7 +394,7 @@ directed marker checks and six foreign-token checks passed. SQL found only each 
 marker. The three synthetic items were then removed, with API/SQL absence and
 health rechecked. DEV/STAGE workload snapshots stayed unchanged, with zero
 restarts; all six nodes are Ready. Public routing and trusted TLS remain pending.
-Phase 6 has not started.
+Phase 6 followed this acceptance and is recorded below.
 
 - [x] Deploy the PROD overlay with real, selected image digests to `app-prod`
       on the prod cluster, with its own Secrets and PVC.
@@ -281,7 +421,8 @@ self-healing enabled. Nonprod child pruning was enabled after reviewing the
 roots keep pruning disabled; PVC retention annotations remain. Each environment
 passed an automated ConfigMap drift correction. Original application Pod, PVC,
 Secret and Deployment identities, data bindings and schema revision remain
-unchanged; private application login/health checks passed. Phase 7 has not started.
+unchanged; private application login/health checks passed. Phase 7 followed this
+acceptance and is recorded below.
 
 - [x] Install one Argo CD in dev/stage and another in prod; check both admin
       UIs through private access.
@@ -334,18 +475,131 @@ other admin interfaces behind Tailscale or equivalent private access.
 
 ## Phase 8 — Add monitoring and operational access
 
-- [ ] Adapt the application repository's `monitoring/` inputs for K3s
-      storage and actual service labels; install dev/stage monitoring.
-- [ ] Install separate prod monitoring with its own retention and alerts.
-- [ ] Check Grafana, Prometheus, Argo CD, and application admin access through
-      the private path. Verify dashboards identify the right cluster and
-      environment, then send a test alert.
+Status: **architecture agreed; implementation awaiting confirmation of this
+updated plan**. The original monitoring-only phase now includes permanent
+Admin VIP access and the Jenkins controller foundation. Working CI migration
+remains a separate Phase 9.
 
-**Pass:** both clusters report useful metrics and alerts and operators can
-reach their administrative interfaces.
+### 8.1 — Prepare manifests and ownership
+
+- [ ] Record the actual source revisions and current cluster resources.
+      Adapt monitoring inputs from the application repository and import the
+      Jenkins foundation from `infra/jenkins-host/`, preserving useful source
+      configuration and history. Keep the application checkout read-only in
+      this phase.
+- [ ] Prepare independent nonprod/PROD resources for the agreed Admin VIPs.
+      Resolve v1.2.3 election/lease, selectors, RBAC, hostNetwork port separation
+      and LoadBalancer class handling before applying either DaemonSet.
+- [ ] Review Service ownership against Argo CD inventories. Use reviewed
+      environment changes for existing managed Services or separately named
+      administrative Services; do not introduce two declarative owners for
+      one resource or allow self-healing to undo the intended exposure.
+- [ ] Write the implementation and recovery runbooks alongside manifests.
+      Provide standalone files for substantive operator scripts. Keep new
+      reports/plans under `docs/testreports/` and generated data ignored.
+
+### 8.2 — Establish DEV/STAGE Admin VIP
+
+- [ ] Deploy its services-only kube-vip and explicit VIP Services. Keep the
+      existing API kube-vip and public Traefik/ServiceLB unchanged.
+- [ ] Expose Argo CD at `.16:8080`, Adminer DEV at `.16:8081` and Adminer
+      STAGE at `.16:8082` using the native service protocols and logins.
+- [ ] Check ordinary readiness, one agreed VIP owner, the separate service
+      lease, correct Service status and no ServiceLB administrative workloads.
+      Confirm browser access from a Tailscale client without a tunnel or
+      manual port-forward. This is a functional check, not a failover test.
+
+### 8.3 — Install DEV/STAGE monitoring
+
+- [ ] Adapt source `monitoring/` values, monitors, dashboards and alert rules
+      to actual K3s labels/namespaces and `local-path` storage. Pin the chart
+      and images as appropriate; size CPU/RAM, retention and PVCs for this
+      single-host lab before installation. Do not copy kind `standard` storage.
+- [ ] Install its own Prometheus, Alertmanager, Grafana, operator,
+      kube-state-metrics and Node Exporter. Provision credentials outside Git.
+- [ ] Expose only the agreed browser ports: Grafana `.16:3000`, Prometheus
+      `.16:9090`, Alertmanager `.16:9093`. Keep exporter/operator endpoints
+      internal. Configure native URLs/redirects for IP-and-port access.
+- [ ] Confirm loaded dashboards, useful node/application/Argo CD/Traefik
+      metrics and alerts identify DEV/STAGE correctly. Agree any external
+      alert destination before enabling delivery; do not treat API acceptance
+      as proof of notification receipt. Synthetic notification tests are not
+      a gate for this implementation increment.
+
+### 8.4 — Establish PROD administration and monitoring
+
+- [ ] Apply the independent services-only kube-vip and explicit `.17` Services
+      after nonprod functional readiness. Keep API VIP `.12` and public ingress
+      unchanged; do not share election or monitoring state across clusters.
+- [ ] Expose Argo CD `.17:8080`, Adminer PROD `.17:8081`, Grafana `.17:3000`,
+      Prometheus `.17:9090` and Alertmanager `.17:9093`.
+- [ ] Install separate monitoring with explicit PROD retention/storage,
+      credentials, datasource identity and PROD alert rules. Confirm no
+      DEV/STAGE application selectors were copied into PROD configuration.
+- [ ] Confirm ordinary readiness and browser access through Tailscale;
+      record that VIP failover and local-volume recovery remain untested.
+
+### 8.5 — Install the Jenkins foundation in DEV/STAGE
+
+- [ ] Deploy one controller in namespace `jenkins`, with its own persistent
+      `JENKINS_HOME` PVC, explicit resource budget and no controller executors.
+      Reuse the proof-of-concept image/plugin/JCasC configuration wherever
+      compatible. Keep existing Jenkins and its data unchanged during setup.
+- [ ] Make the controller image available to K3s using the source Dockerfile
+      and image/plugin locks; the proof of concept's host-local image tag is
+      not a pullable cluster image. Record the reviewed registry image digest
+      and required pull credentials without changing Jenkins core/plugins
+      merely as part of the deployment migration.
+- [ ] Expose native HTTP/login at `http://192.168.77.16:8085`, with the native
+      Jenkins base URL set accordingly. Do not create a PROD controller.
+- [ ] Keep build agents, trusted publisher migration, build cache and
+      operational jobs for Phase 9. Do not activate polling, scheduled jobs,
+      publication or promotion imported by JCasC/Job DSL during foundation
+      startup; make this disabled initial state explicit and reviewable.
+      Initially load only controller/login configuration and defer
+      job-generating DSL and its publishing credentials until Phase 9.
+- [ ] Confirm controller/PVC readiness and private login, and document the
+      exact reusable source, deferred components and Phase 9 migration inputs.
+
+### 8.6 — Record functional completion and boundaries
+
+- [ ] Record the actual address/port/protocol map and ordinary readiness for
+      both clusters, Adminer environments, monitoring and Jenkins foundation.
+      Confirm no new public administrative NAT/ingress routes were introduced
+      and check the new interfaces are not reachable from the public origin.
+- [ ] Record GitOps/application health after the changes; preserve existing
+      database PVCs, credentials, API VIPs and the public application path.
+- [ ] Publish the Phase 8 report with completed items and remaining limits.
+      Do not claim tested failover, recovery or notification delivery. No
+      stress, node-failure, reboot or failover tests are required in this phase.
+
+**Pass:** both clusters have their own useful monitoring and permanent
+IP-and-port administrative access through Tailscale; the nonprod Jenkins
+foundation is reachable with persistent storage. Working CI, failover tests,
+VM 100 retirement and legacy NAT removal are outside this phase.
 
 ## Phase 9 — Move promotion and CI ownership
 
+Status: **planned; starts separately after Phase 8**. Preserve the maximum
+working behavior from the application's Jenkins proof of concept while
+adapting it to the nonprod K3s foundation and repository split.
+
+- [ ] Inventory and privately back up the existing Jenkins home, jobs,
+      plugin versions, build history/artifacts, encryption keys and required
+      credential files before migration. Plan a consistent transfer/cutover
+      without losing or duplicating active work. Keep source copies intact
+      until the replacement is accepted.
+- [ ] Migrate reusable Job DSL/JCasC and required private state into the new
+      controller. Preserve credential IDs/scopes, users and permissions; adapt
+      old host paths and repository URLs deliberately. Keep all live secrets
+      and Jenkins encryption material outside Git and diagnostic output.
+- [ ] Move CI agents, isolated build daemon and separate registry publisher
+      into the nonprod CI platform with bounded resources. Preserve the
+      existing separation of build and publication credentials, verified
+      artifacts, SHA image tags and existing gates. Adapt Docker deployment
+      details for K3s without giving application builds deployment credentials
+      or using a host Docker socket. Review the build daemon's existing
+      privilege requirement explicitly before enabling it in the cluster.
 - [ ] Keep build/test and image publication in the application repository.
       Change promotion tooling to propose reviewed digest updates to this
       infrastructure repository rather than its former `deploy/overlays/`.
@@ -353,9 +607,15 @@ reach their administrative interfaces.
       Review one DEV → STAGE → PROD promotion.
 - [ ] Verify Argo CD deploys the reviewed digests and can roll back. Retire
       old GitOps source paths only after this succeeds.
+- [ ] Enable polling/schedules and trusted publication only at the reviewed
+      cutover. Demonstrate the replacement can build/publish/promote without
+      VM 100 agents, bind mounts or Docker services, and preserve a private
+      recovery copy of the migrated Jenkins state.
 
-**Pass:** promotion, release history, and rollback work across the two
-repository boundaries.
+**Pass:** working CI and reviewed promotion run from nonprod K3s, reuse the
+proof of concept, preserve required state, and respect the two repository
+boundaries. Report readiness for the operator's later VM 100/legacy NAT cleanup;
+do not perform that cleanup as part of this implementation.
 
 ## Phase 10 — Replace temporary components incrementally
 
