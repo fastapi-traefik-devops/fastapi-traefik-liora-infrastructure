@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: app-dev
 resources:
 - ../../base
+- service-adminer-private.yaml
 images:
 - name: backend
   newName: ghcr.io/fastapi-traefik-devops/fastapi-backend

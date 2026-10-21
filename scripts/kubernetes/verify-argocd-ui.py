@@ -26,10 +26,12 @@ def main():
     assert result.returncode == 0
     password = base64.b64decode(json.loads(result.stdout)['data']['password']).decode()
     assert password
-    url = f'https://127.0.0.1:{port}'
+    url = os.environ.get('argocd_url', f'https://127.0.0.1:{port}')
+    vip = '192.168.77.16' if cluster == 'nonprod' else '192.168.77.17'
+    assert url in (f'https://127.0.0.1:{port}', f'https://{vip}:8080')
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True, args=['--no-proxy-server'])
-        # Only the fixed localhost Service forward uses the bootstrap certificate.
+        # Both allowed private paths use Argo CD's native bootstrap certificate.
         page = browser.new_page(ignore_https_errors=True)
         page.set_default_timeout(180000)
         response = page.goto(url + '/login', timeout=180000)
