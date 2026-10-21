@@ -27,8 +27,14 @@ access. A trusted HTTPS check needs a matching certificate and private ingress
 path; otherwise record it as pending. API VIPs are not dedicated ingress VIPs.
 
 Require `kubectl`, Python 3 with PyYAML (`python3 -c 'import yaml'`), access to
-both explicit kubeconfigs, and the reviewed Git revision. The default kubeconfig
-points to the separate kind reference cluster; never rely on it for K3s.
+both explicit kubeconfigs, and the reviewed Git revision. Each Python block
+below also links to a standalone script. Use either the inline block or its
+script file; both use the environment variables exported in step 1. You can
+copy a script to VM 200 and run it with `python3 /path/to/script.py`, or run
+the repository copy using the command beside its link.
+
+The default kubeconfig points to the separate kind reference cluster; never
+rely on it for K3s.
 
 Recovery inputs currently reside in the **original checkout**, not the migration
 worktree:
@@ -119,6 +125,9 @@ print('Render inspected and split; no resources applied')
 PY
 ```
 
+Standalone script: [Split the rendered manifests](../scripts/kubernetes/split-application-render.py).
+From the repository root, run `python3 scripts/kubernetes/split-application-render.py`.
+
 ## 2. Prepare the namespace and Secrets — Phase 2
 
 Run only after namespace/credential preparation is authorized. The render does
@@ -191,7 +200,14 @@ if result.returncode:
     raise SystemExit('Secret bootstrap failed; inspect permissions and conflicts without dumping values')
 print('Three application Secrets created; values were not logged')
 PY
+```
 
+Standalone script: [Bootstrap the application Secrets](../scripts/kubernetes/bootstrap-application-secrets.py).
+From the repository root, run `python3 scripts/kubernetes/bootstrap-application-secrets.py`.
+
+Then check the Secret names and types:
+
+```sh
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" get secrets
 ```
 
