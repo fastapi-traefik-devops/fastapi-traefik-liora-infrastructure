@@ -1,59 +1,69 @@
 # Private platform access and monitoring
 
-The operator approved a native status-ownership guard after the initial
-NONPROD installation exposed a K3s ServiceLB incompatibility. Apply the guard
-before VIP Services; its [decision record](../docs/testreports/PHASE8_ADMIN_VIP_DECISION.md)
-explains why class-only isolation is insufficient. See the Phase 8 report for
-actual rollout and acceptance boundaries.
+**Where:** Reviewed infrastructure checkout with explicit cluster kubeconfigs
+and access to the existing Tailscale subnet route.
 
-Phase 8 adds IP-and-port access through the existing Tailscale subnet route.
-Use this checkout and explicit kubeconfigs. The API VIPs, public Traefik,
-HAProxy, DNS, legacy VM 100 and its NAT rules stay under their existing owners.
-Do not perform failover/reboot/load tests in this procedure.
+> [!IMPORTANT]
+> Apply the approved native status-ownership guard **before** Admin VIP
+> Services. The initial NONPROD installation exposed a K3s ServiceLB
+> incompatibility; the [decision record](../docs/testreports/PHASE8_ADMIN_VIP_DECISION.md)
+> explains why class-only isolation is insufficient. See the Phase 8 report
+> for actual acceptance boundaries.
+
+> [!NOTE]
+> Phase 8 adds IP-and-port access through the existing Tailscale subnet
+> route. The API VIPs, public Traefik, HAProxy, DNS, legacy VM 100 and its
+> NAT rules stay under their existing owners. This procedure does not
+> perform failover, reboot, or load tests.
 
 ## Retrieve browser access credentials
 
-Use the [recovery password helper](../recovery/show_passwords.py) to display a
-single table of URLs, usernames and passwords for Application and Adminer in
-DEV/STAGE/PROD, Argo CD and Grafana in both clusters, and shared NONPROD Jenkins.
-The table also lists Prometheus and Alertmanager, which have no separate login.
-From the repository root, run:
+- [ ] When browser credentials are needed, run the
+      [recovery password helper](../recovery/show_passwords.py) from the
+      repository root:
 
 ```bash
 python3 recovery/show_passwords.py
 ```
 
-The helper warns that all passwords will be printed in plaintext and asks
-`Continue? y/n:`. Enter `y` to proceed; any other answer or EOF cancels before
-reading credentials. It works through SSH using standard input and requires
-Python 3, `kubectl`, and read access to the cluster Secrets and ConfigMaps.
-It reads both clusters on each run without modifying them or saving output.
-Private interface URLs require the existing Tailscale/private-network access.
+> [!WARNING]
+> The helper displays plaintext passwords after a `Continue? y/n:` prompt.
+> Enter `y` only in a private operator session. Any other answer or EOF
+> cancels before reading credentials. Keep output out of Git.
+
+It lists URLs and credentials for Application, Adminer, Argo CD, Grafana and
+NONPROD Jenkins. Prometheus and Alertmanager have no separate login. The
+helper requires Python 3, `kubectl`, and read access to both clusters'
+Secrets and ConfigMaps; it does not modify or save cluster data. Private
+URLs require Tailscale or equivalent private access.
 
 The default kubeconfigs are `~/.kube/config-dev-stage` and `~/.kube/config-prod`;
 override them with `--nonprod-kubeconfig PATH` and `--prod-kubeconfig PATH`.
-Argo CD passwords come from the initial-admin Secrets and may be stale or absent
-after rotation. Other passwords reflect the stored Secrets; the helper does not
-verify logins. This table covers browser interfaces, not SSH keys or infrastructure
-API tokens. Keep its plaintext output out of Git. See the
-[recovery helper documentation](../recovery/README.md#display-browser-passwords)
-for limitations and exit statuses.
+> [!NOTE]
+> Argo CD initial-admin passwords may be stale or absent after rotation.
+> Other passwords reflect stored Secrets; the helper does not verify
+> logins or display SSH keys and infrastructure API tokens. See the
+> [recovery helper documentation](../recovery/README.md#display-browser-passwords)
+> for limitations and exit statuses.
 
 ## Ownership and preparation
 
-`kubernetes/platform/upstream/` preserves selected source history and is not an
-installation entrypoint. Active platform manifests are applied by the operator
-from this repository. Helm owns the `monitoring` release and its CRDs; kubectl
-owns the additional dashboards, monitors, rules and private Services. These
-resources are not also attached to an Argo CD platform Application.
+> [!NOTE]
+> `kubernetes/platform/upstream/` preserves source history; it is not an
+> installation entrypoint. Helm owns the `monitoring` release and CRDs.
+> kubectl owns additional dashboards, monitors, rules and private Services.
+> They are not also attached to an Argo CD platform Application.
 
-Existing application Services are unchanged. Each environment overlay adds a
-separately named `adminer-private` Service. On the current installation apply
-only this new file, preserving database resources and avoiding unnecessary
-prestart hook execution. It has no Argo tracking annotation while local changes
-are unpublished. Publishing the reviewed overlay later lets its existing Argo
-Application adopt the identical Service. Do not add a second platform owner.
-On a fresh installation the environment overlay includes it automatically.
+- [ ] On the current installation, apply only each new
+      `adminer-private` Service file as shown below. Preserve database
+      resources and avoid an unnecessary prestart hook run.
+
+> [!NOTE]
+> Existing application Services are unchanged. The new Service has no Argo
+> tracking annotation while local changes are unpublished. Publishing the
+> reviewed overlay later lets its existing Argo Application adopt the
+> identical Service. A fresh environment overlay includes it automatically.
+> Do not add a second platform owner.
 
 The services-only kube-vip v1.2.3 uses ARP, `svc_election=false`, and the common
 `kube-system/liora-admin-services` lease. It watches only LoadBalancer class
@@ -70,8 +80,9 @@ Pinned source behavior:
 
 ## NONPROD access first
 
-Review the files and server validation before applying. Install the approved
-status guard first, including on a fresh recovery cluster:
+- [ ] Review the manifests and server validation. Apply the status guard
+      **first**, including on a fresh recovery cluster; then apply the
+      NONPROD admin access resources:
 
 ```bash
 kubectl --kubeconfig="$HOME/.kube/config-dev-stage" apply -f kubernetes/platform/base/admin-access/status-ownership.yaml
@@ -85,17 +96,25 @@ kubectl --kubeconfig="$HOME/.kube/config-dev-stage" get services -A -l liora.apr
 kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n kube-system get daemonsets
 ```
 
-Require exactly one Admin VIP owner, the separate lease, expected Service IPs,
-no administrative `svclb-*` workloads and an unchanged Traefik/API VIP. From a
-Tailscale client open Argo CD `https://192.168.77.16:8080`, DEV Adminer
-`http://192.168.77.16:8081`, STAGE Adminer `http://192.168.77.16:8082`.
-Argo uses native HTTPS and its bootstrap certificate; a warning is expected.
-Adminer uses each environment's existing database credentials.
+- [ ] Confirm exactly one Admin VIP owner, its separate lease, expected
+      Service IPs, no administrative `svclb-*` workloads, and unchanged
+      Traefik/API VIPs.
+- [ ] From a Tailscale client, open Argo CD
+      `https://192.168.77.16:8080`, DEV Adminer
+      `http://192.168.77.16:8081`, and STAGE Adminer
+      `http://192.168.77.16:8082`.
+
+> [!NOTE]
+> Argo uses native HTTPS with its bootstrap certificate; a warning is
+> expected. Adminer uses each environment's existing database credentials.
 
 ### Argo CD login credentials
 
-The username is `admin` in both clusters; passwords are separate. Retrieve the
-initial password for the corresponding endpoint:
+> [!NOTE]
+> The username is `admin` in both clusters; passwords are separate.
+
+- [ ] If using initial credentials, retrieve the password for the
+      corresponding cluster endpoint:
 
 ```bash
 # NONPROD: https://192.168.77.16:8080
@@ -107,39 +126,52 @@ kubectl --kubeconfig="$HOME/.kube/config-prod" -n argocd get secret argocd-initi
 printf '\n'
 ```
 
-These commands read the bootstrap password. If it has been changed, use the
-replacement credentials from the protected operator recovery archive; the initial
-Secret does not provide the replacement password and may have been removed.
+### If the Argo CD password was rotated
+
+> [!NOTE]
+> Use replacement credentials from the protected recovery archive. The
+> initial Secret does not provide the replacement password and may have
+> been removed.
 
 ## Per-cluster monitoring
 
-Use Helm 3 and pinned kube-prometheus-stack **92.2.0**. The chart is downloaded
-to ignored storage; compare its SHA-256 with `kubernetes/platform/chart-lock.json`
-before installation. Do not pass passwords through Helm values or arguments.
+Use Helm 3 and pinned kube-prometheus-stack **92.2.0**.
+
+- [ ] Download the chart to ignored storage and compare its SHA-256 with
+      `kubernetes/platform/chart-lock.json`. Stop on a mismatch.
 
 ```bash
 mkdir -p .local-work/charts
 helm pull kube-prometheus-stack --repo https://prometheus-community.github.io/helm-charts --version 92.2.0 --destination .local-work/charts
 sha256sum .local-work/charts/kube-prometheus-stack-92.2.0.tgz
+```
+
+- [ ] Only after the checksum matches, bootstrap NONPROD monitoring
+      credentials and install the chart and additional manifests:
+
+```bash
 bash scripts/local-python.sh scripts/kubernetes/bootstrap-platform-secrets.py --cluster nonprod --component monitoring
 helm upgrade --install monitoring .local-work/charts/kube-prometheus-stack-92.2.0.tgz --kubeconfig "$HOME/.kube/config-dev-stage" --namespace monitoring --values kubernetes/platform/nonprod/monitoring/values.yaml --wait --timeout 20m
 kubectl --kubeconfig="$HOME/.kube/config-dev-stage" apply -k kubernetes/platform/nonprod/monitoring
 ```
 
-[Standalone credential bootstrap script](../scripts/kubernetes/bootstrap-platform-secrets.py).
-It preserves existing login Secrets and writes new random credentials only to
-`.local-work/private/platform/<cluster>-<component>.json` with mode 0600.
-Include these private inputs in the operator's protected recovery archive;
-never add them to Git. Losing this file does not rotate an existing Secret.
-Recovery with an existing Secret preserves it; a fresh cluster reuses the input
-if supplied. Reapplying manifests does not restore PVC data.
+> [!IMPORTANT]
+> [The credential bootstrap script](../scripts/kubernetes/bootstrap-platform-secrets.py)
+> preserves existing login Secrets and writes new random credentials only
+> to `.local-work/private/platform/<cluster>-<component>.json` with mode
+> 0600. Include these inputs in the protected recovery archive, never Git.
+> Losing the file does not rotate an existing Secret. Reapplying manifests
+> does not restore PVC data.
 
 ### Grafana login credentials
 
-The login and password are the `username` and `password` fields in the
-cluster-specific JSON file. The bootstrap default username is
-`admin007@liora.aprt.info`. On the machine where bootstrap ran, from the checkout
-root, read the appropriate file:
+> [!NOTE]
+> Grafana's login and password are the `username` and `password` fields
+> in the cluster-specific JSON file. The bootstrap default username is
+> `admin007@liora.aprt.info`.
+
+- [ ] From the checkout where bootstrap ran, read the selected cluster's
+      private credential file:
 
 ```bash
 # NONPROD: http://192.168.77.16:3000
@@ -149,8 +181,10 @@ cat .local-work/private/platform/nonprod-monitoring.json
 cat .local-work/private/platform/prod-monitoring.json
 ```
 
-Both files are Git-ignored private recovery inputs, not files supplied by a fresh
-Git clone. Preserve them in the protected operator recovery archive.
+> [!WARNING]
+> Both files are Git-ignored recovery inputs, not files supplied by a
+> fresh clone. Preserve them in the protected operator archive and keep
+> their plaintext contents out of logs.
 
 ### Monitoring resources and acceptance
 
@@ -165,12 +199,20 @@ and 15-minute startup allowance accommodate the current version on this lab.
 External alert delivery is disabled (`pending-destination` receiver) until the
 operator agrees it. Alert evaluation and the private UI remain available.
 
-Verify all targets and rules load, dashboard identity/namespaces match the
-cluster, and native Grafana login works. Prometheus and Alertmanager use their
-native trusted-subnet access model. Native URLs are IP-and-port; no extra TLS,
-ingress, authentication proxy, DNS, Tailscale policy or firewall is installed.
+- [ ] Check all monitoring targets and rules load, dashboards identify
+      the correct cluster and namespaces, and native Grafana login works.
+
+> [!NOTE]
+> Prometheus and Alertmanager use native trusted-subnet access. Native
+> URLs are IP-and-port; this phase adds no TLS, ingress, authentication
+> proxy, DNS, Tailscale policy, or firewall.
 
 ## PROD after NONPROD functional readiness
+
+- [ ] Confirm NONPROD access and monitoring are functional before
+      deploying the same components in PROD.
+- [ ] Apply the guard first, then PROD private access, credentials,
+      monitoring chart, and additional manifests:
 
 ```bash
 kubectl --kubeconfig="$HOME/.kube/config-prod" apply -f kubernetes/platform/base/admin-access/status-ownership.yaml
@@ -183,18 +225,25 @@ helm upgrade --install monitoring .local-work/charts/kube-prometheus-stack-92.2.
 kubectl --kubeconfig="$HOME/.kube/config-prod" apply -k kubernetes/platform/prod/monitoring
 ```
 
-The cluster has separate credentials, storage, lease and monitoring state.
-Use `.17:8080` for Argo, `.17:8081` for PROD Adminer. Both clusters expose native
-HTTP Grafana `:3000`, Prometheus `:9090`, Alertmanager `:9093`. There is no PROD
-Jenkins. Check for one VIP owner and absence of administrative ServiceLB Pods
-as above, using the PROD kubeconfig.
+- [ ] With the PROD kubeconfig, confirm one VIP owner, expected Service
+      IPs, and no administrative ServiceLB Pods. Check Argo CD at
+      `.17:8080` and PROD Adminer at `.17:8081`.
+
+> [!NOTE]
+> PROD has separate credentials, storage, lease, and monitoring state.
+> Both clusters expose native HTTP Grafana `:3000`, Prometheus `:9090`,
+> and Alertmanager `:9093`. There is no PROD Jenkins.
 
 ## NONPROD Jenkins foundation
 
-The controller image is the existing PoC image published without rebuilding or
-changing core/plugins. Its plugin lock matches the preserved source. The active
-manifest pins the reviewed GHCR digest; Kubernetes receives registry credentials
-from ignored `recovery/.env`. No existing Docker controller is restarted.
+> [!NOTE]
+> This installs the existing PoC controller image without rebuilding or
+> upgrading core/plugins. The manifest pins its reviewed GHCR digest and
+> reads registry credentials from ignored `recovery/.env`. It does not
+> restart the existing Docker controller.
+
+- [ ] Bootstrap NONPROD Jenkins credentials, apply the foundation
+      manifests, wait for rollout, and inspect its PVC:
 
 ```bash
 bash scripts/local-python.sh scripts/kubernetes/bootstrap-platform-secrets.py --cluster nonprod --component jenkins
@@ -205,15 +254,16 @@ kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n jenkins get pvc
 
 [Standalone credential bootstrap script](../scripts/kubernetes/bootstrap-platform-secrets.py).
 
-Open `http://192.168.77.16:8085` and log in as `admin`. The password is the
-`password` field in `.local-work/private/platform/nonprod-jenkins.json` on the
-machine where the bootstrap script was run. From that checkout's root, read it:
+- [ ] From the checkout where bootstrap ran, read the Jenkins password
+      from the `password` field in the private file:
 
 ```bash
 cat .local-work/private/platform/nonprod-jenkins.json
 ```
 
-This file is Git-ignored; preserve it in the protected operator recovery archive.
+- [ ] Open `http://192.168.77.16:8085` through private access and log in
+      as `admin`. Preserve the Git-ignored credential file in the
+      protected operator recovery archive.
 
 Jenkins has a 5Gi local-path home, requests 100m/512Mi and limits 1 CPU/768Mi, with Java
 heap capped at 384Mi. JCasC sets its native URL, zero controller executors, no
@@ -223,31 +273,9 @@ credentials are deferred to Phase 9, along with consistent old-home backup,
 state/user/history transfer, agents and working CI. This fresh foundation does
 not constitute migration or backup of the old controller's state.
 
-## Acceptance, recovery and rollback
-
-Record actual readiness, browser logins, metrics/rules and endpoint map in the
-Phase 8 report. Verify original application PVC identities, Argo health, API VIPs
-and public application URLs. Inspect public routing for absence of new admin
-routes; verify the new interfaces are not exposed on the public origin. Legacy
-VM 100 routes are outside this change, so their existence is not evidence that
-a new Admin VIP is public. Never retire VM 100 during Phase 8.
-
-For an access-only rollback, delete the exact new private Service files first,
-then remove only `kube-vip-admin` and its dedicated RBAC via its kustomization.
-Do not delete `kube-vip-ds`, `plndr-cp-lock`, Traefik or existing application
-Services. Once published, change the application overlay source before removal
-to prevent Argo self-heal restoring it. Keep all database/Jenkins PVCs.
-
-For monitoring recovery, preserve both monitoring PVCs and private Grafana
-inputs; inspect `helm history monitoring` in the explicit cluster before a
-reviewed `helm rollback`. Do not uninstall to fix an ordinary readiness delay.
-Chart CRDs are shared cluster definitions; do not delete them during rollback.
-A Jenkins manifest reapply preserves its home; a fresh home creates a new
-foundation only. Restoring working CI state belongs to the Phase 9 procedure.
-Do not claim tested failover, host/storage recovery, notification delivery or
-scheduled renewals from these functional checks.
-
 ## Verify the approved guard and native UIs
+
+- [ ] Check the guard, VIP, and native interfaces on NONPROD and PROD:
 
 ```bash
 bash scripts/local-python.sh scripts/kubernetes/verify-admin-vip.py --cluster nonprod --check-admission
@@ -267,16 +295,54 @@ not a failover test. Obtain host keys from existing trusted provisioning records
 do not disable host-key verification. Browser checks do not save sessions or
 credentials, and report only a safe check name/type on error.
 
-For an existing partial installation whose monitoring status was already wiped,
-apply and verify the guard, then recreate only the three new private monitoring
-Services from `monitoring/services.yaml`. Do not delete original Services, Pods,
-PVCs or the shared VIP controller. Recreating these exposure objects lets kube-vip
-write status again; merely changing annotations need not resynchronize a cached
-service instance. Normal fresh installation does not need this repair.
+> [!NOTE]
+> The guard rejects non-owner writes to administrative Service status,
+> including manual patches. Removing its binding reintroduces the K3s
+> conflict. ServiceLB denied-update retries do not mean the VIP disappeared.
+> While these Services are active, keep the guard. During rollback remove
+> private Services before the guard and its binding/policy.
 
-The guard rejects all non-owner writes to administrative Service status,
-including manual administrator patches. Removing its exact binding reverses the
-guard but reintroduces the K3s conflict. Keep the guard while these Services are
-active; before removing its controller/RBAC during rollback, remove the private
-Services first, then its binding/policy. ServiceLB denied-update log retries are
-an acknowledged compatibility cost, not an indication that the VIP disappeared.
+### If monitoring status was wiped in a partial installation
+
+- [ ] Apply and verify the guard, then recreate **only** the three new
+      private monitoring Services from `monitoring/services.yaml`.
+
+> [!WARNING]
+> Do not delete original Services, Pods, PVCs, or the shared VIP controller.
+> Recreating these exposure objects lets kube-vip write status again;
+> changing annotations alone may not resynchronize a cached instance.
+> Fresh installation does not need this repair.
+
+## Acceptance
+
+- [ ] Record readiness, browser logins, metrics/rules, and endpoint map
+      in the Phase 8 report.
+- [ ] Confirm original application PVC identities, Argo health, API VIPs,
+      and public application URLs.
+- [ ] Inspect public routing for new admin routes. Confirm the new
+      interfaces are not exposed on the public origin.
+
+> [!NOTE]
+> Legacy VM 100 routes are outside Phase 8; their existence does not show
+> that a new Admin VIP is public. Do not retire VM 100 in this phase. These
+> functional checks do not prove failover, host/storage recovery,
+> notification delivery, or scheduled renewals.
+
+### If private access must be rolled back
+
+> [!WARNING]
+> Delete the exact new private Service files first, then remove only
+> `kube-vip-admin` and its dedicated RBAC via its kustomization. Once the
+> overlay is published, change its source before removal so Argo self-heal
+> does not restore it. Keep database and Jenkins PVCs. Do not delete
+> `kube-vip-ds`, `plndr-cp-lock`, Traefik, or existing application Services.
+
+### If monitoring or Jenkins needs recovery
+
+> [!WARNING]
+> Preserve both monitoring PVCs and private Grafana inputs. Inspect
+> `helm history monitoring` in the explicit cluster before a reviewed
+> `helm rollback`. Do not uninstall for an ordinary readiness delay or
+> delete shared chart CRDs. Reapplying the Jenkins manifest preserves its
+> home; a fresh home creates only a new foundation. Working CI state
+> recovery belongs to Phase 9.

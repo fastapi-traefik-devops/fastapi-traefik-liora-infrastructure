@@ -1,15 +1,22 @@
 # Migrate the existing Jenkins CI to NONPROD K3s
 
-Status: Phase 9 preparation only. No old jobs have been paused, no state has been
-restored, and no migrated agents, builds or publishing have been activated.
-The operator authorized preparation after Phase 8. Promotion behavior and final
-cutover require the concrete review below. Do not retire VM100 or change NAT.
+**Where:** Original infrastructure checkout and read-only application source.
+
+> [!IMPORTANT]
+> **Status: Phase 9 preparation only.** No old jobs have been paused, no
+> state has been restored, and no migrated agents, builds, or publishing
+> have been activated. The operator authorized preparation after Phase 8.
+> Promotion behavior and final cutover require the review below. Do not
+> retire VM 100 or change NAT.
 
 ## 1. Inventory before mutation
 
-Use the original infrastructure checkout and the read-only application source.
-The preserved deployment source is `kubernetes/platform/upstream/infra/jenkins-host/`.
-The application checkout still owns `Jenkinsfile`, `Jenkinsfile.promote` and `ci/`.
+> [!NOTE]
+> The preserved deployment source is
+> `kubernetes/platform/upstream/infra/jenkins-host/`. The application
+> checkout still owns `Jenkinsfile`, `Jenkinsfile.promote`, and `ci/`.
+
+- [ ] Inventory the running legacy controller without modifying it:
 
 ```bash
 bash scripts/local-python.sh scripts/kubernetes/inventory-legacy-jenkins.py
@@ -22,13 +29,18 @@ source hashes and authenticated queue/executor metadata without printing secret
 values. It does not load jobs or call Jenkins mutation endpoints. A momentarily
 empty queue is not evidence of a frozen/consistent Jenkins home.
 
-The runtime bind mounts still refer to the former repository path. Do not restart
-or recreate old Docker containers from that missing path. Read mounted runtime
-inputs inside the running controller and preserve them before any cutover.
-Compare their hashes with the retained source to identify intentional differences.
-Keep old paths as provenance, not as dependencies of the replacement.
+- [ ] Read mounted runtime inputs inside the running controller and compare
+      their hashes with the retained source. Preserve differences before
+      any cutover.
+
+> [!WARNING]
+> Runtime bind mounts still refer to the former repository path. Do not
+> restart or recreate old Docker containers from that missing path. Keep
+> old paths as provenance, not replacement dependencies.
 
 ## 2. Preserve an online copy without claiming a cutover backup
+
+- [ ] Run the online preservation helper:
 
 ```bash
 bash scripts/local-python.sh scripts/kubernetes/backup-legacy-jenkins.py
@@ -41,14 +53,19 @@ required controller configuration and encryption inputs. Nothing is restored,
 paused or stopped. Tar exit 1 may indicate online changes; the manifest retains
 its status. A hard tar failure or missing key fails without dumping diagnostics.
 
-The output is private plaintext credential-bearing operator data. Protect it
-like the existing recovery kit, and preserve it independently of the checkout
-before cleaning `.local-work/`. Do not paste archive contents into reports or Git.
-The helper labels every copy `consistent: false` and `restore_tested: false`.
-It does not copy CI/publisher workspaces or the Docker build cache. Do not use it
-as evidence that the final transfer can safely be performed while jobs run.
+- [ ] Preserve the resulting private archive independently of the checkout
+      before cleaning `.local-work/`.
+
+> [!IMPORTANT]
+> The output contains plaintext credentials. Protect it like the recovery
+> kit; do not paste archive contents into reports or Git. Every online
+> copy is labeled `consistent: false` and `restore_tested: false`. It
+> excludes CI/publisher workspaces and the Docker build cache. It is not
+> evidence that final transfer can run while jobs are active.
 
 ## 3. Verify GitHub App installation scope (read-only)
+
+- [ ] Check existing installation metadata without changing App grants:
 
 ```bash
 bash scripts/local-python.sh scripts/kubernetes/check-jenkins-github-access.py
@@ -69,20 +86,27 @@ Expected boundaries:
 | GitOps App / `gitops-app` | Infrastructure contents write; PR write for reviewed promotion | Not installed on infrastructure; PR write not granted |
 | Trusted publisher / `ghcr-write` | Publish immutable GHCR images | Existing PoC identity preserved; fresh publish check pending |
 
-The operator must grant the existing GitOps App access to the infrastructure
-repository and Pull requests: Read and write if automated PR creation is chosen.
-Recheck actual grants afterward. HTTP 404 from the App installation endpoint
-means installation access was not verified, not that the repository is absent.
-CI builds do not need infrastructure write or registry publishing credentials.
+> [!NOTE]
+> HTTP 404 from the App installation endpoint means access was not
+> verified; it does not prove the repository is absent. CI builds do
+> not need infrastructure write or registry publishing credentials.
+
+### If automated promotion PRs are chosen
+
+- [ ] Arrange GitOps App access to the infrastructure repository with
+      Pull requests: Read and write. Recheck the actual grants afterward.
 
 ## 4. Prepare cluster adaptation before running agents
 
-Preserve the working names/labels `host-ci` and `registry-publisher`, one executor
-each, controller zero executors. Keep the existing agent and DinD image/tool
-locks; do not upgrade dependencies as a side effect of migration. Publish pinned
-agent/daemon images only when the active manifests and image audit are ready.
-Trusted pipeline/helper source must come from a reviewed pinned revision, never
-from an untrusted build checkout or a mutable host bind mount.
+- [ ] Preserve the working `host-ci` and `registry-publisher` names/labels,
+      one executor each, and zero controller executors.
+- [ ] Keep existing agent/DinD image and tool locks. Review and pin trusted
+      pipeline/helper source before publishing agent or daemon images.
+
+> [!WARNING]
+> Do not upgrade dependencies as a side effect of migration or execute
+> trusted pipeline/helper code from an untrusted build checkout or mutable
+> host bind mount.
 
 Proposed placement, pending implementation review:
 
@@ -93,25 +117,40 @@ Proposed placement, pending implementation review:
 | DinD | Sidecar in CI Pod | Proposed 250m/1Gi; 1500m/2560Mi | Proposed 20Gi local-path cache and 5Gi shared work; private generated TLS client/server volumes |
 | Publisher | `jenkins-publisher`, separate Pod | Proposed 100m/256Mi; 500m/512Mi | Proposed 5Gi work; no build-daemon certificates or Docker socket |
 
-These are proposed PVCs/budgets, not created resources. Check node allocatable
-requests and existing workloads before applying. The source explicitly requires
-privileged DinD; this provides no kernel isolation from its worker VM. Review
-that existing privilege requirement before enabling it in K3s, keep service-account
-tokens and host Docker socket absent, and preserve logical build/publication
-separation. A same-Pod agent/DinD layout keeps the work path identical inside
-containers launched by nested Docker. Native sidecar timing/storage permissions
-must be verified rather than assumed. The publisher must not reach the build
-TLS endpoint; namespaces alone do not supply network isolation. Prepare a precise
-policy for these CI Pods before activation, without changing unrelated services.
+- [ ] Check node allocatable resources and existing workloads against the
+      **proposed**, not yet created, PVCs and budgets.
+- [ ] Review the source's privileged DinD requirement before enabling it
+      in K3s. Keep service-account tokens and the host Docker socket absent.
+- [ ] Define a precise network policy before activation so the publisher
+      cannot reach the build TLS endpoint. Verify agent/DinD sidecar timing,
+      shared path, and storage permissions.
 
-Recreate the disposable build cache. The old DinD data is about 9.6GiB on disk;
-the execution host has only about 6.4GiB free before this preservation copy.
-Do not copy/rebuild every layer locally or delete old cache automatically.
+> [!NOTE]
+> Privileged DinD provides no kernel isolation from its worker VM.
+> Namespaces alone do not isolate the publisher from the build endpoint.
+> Preserve the logical build/publication separation without changing
+> unrelated services.
+
+- [ ] Plan to recreate the disposable build cache on the target. Do not
+      copy/rebuild every layer locally or delete the old cache automatically.
+
+> [!NOTE]
+> Old DinD data was about 9.6GiB; the execution host had about 6.4GiB
+> free before the preservation copy.
 
 ## 5. Review the final consistent backup and cutover procedure
 
-The online helper does not implement these mutation steps. Prepare standalone
-helpers and review their exact affected containers/PVCs before execution:
+> [!IMPORTANT]
+> **Review plan only.** The online helper does not implement the mutation
+> steps below. Prepare standalone helpers and review their exact affected
+> containers and PVCs before execution. These numbered items are not
+> authorized cutover commands.
+
+- [ ] Review the proposed sequence below, identify missing helpers and
+      evidence, and record the affected containers/PVCs before seeking
+      cutover approval.
+
+### Proposed cutover sequence (not yet executable)
 
 1. Back up the new foundation home as well as old controller inputs. Record both
    controller image/plugin hashes, job/build counts, users and credential scopes.
@@ -141,22 +180,31 @@ helpers and review their exact affected containers/PVCs before execution:
    avoid duplicate publication. Retain both old home and consistent backups until
    replacement acceptance. VM100 shutdown/NAT removal remains operator work.
 
-Rollback before target publication: stop new agents/controller, preserve target
-state, and resume the original stopped controller using its retained container
-and unchanged home/inputs. Rollback after publication needs review of completed
-registry/repository side effects; restarting old polling is not an automatic undo.
-No rollback procedure may discard build history or restore mismatched keys.
+### Proposed rollback boundaries
+
+> [!WARNING]
+> Before target publication, preserve target state and resume the original
+> stopped controller with its retained container and unchanged home/inputs.
+> After publication, review completed registry/repository side effects;
+> restarting old polling is not an automatic undo. Never discard build
+> history or restore mismatched keys.
 
 ## 6. Resolve promotion before activation
 
-The old publisher automatically writes STAGE to the former repository's main
-branch. Do not run it unchanged. Preserve the verified-artifact and trusted
-publisher boundary, but adapt the target to this infrastructure repository.
-Trigger/promotion details remain under discussion. The generic plan's DEV →
-STAGE → PROD acceptance sequence is not approval to force every release through
-DEV or change the existing feature-branch/manual DEV model.
+> [!IMPORTANT]
+> The old publisher writes STAGE to the former repository's main branch.
+> Do not run it unchanged. Preserve the verified-artifact and trusted
+> publisher boundary while adapting the target to this infrastructure
+> repository.
 
-Agree branch triggers, digest selection/reuse, PR review and PROD release behavior
-before activating publisher promotion. The final tested image must not be rebuilt
-at release. No new GitHub PR, package publish, deployment or rollback test was
-performed during preparation. Record each later action in the Phase 9 report.
+- [ ] Agree branch triggers, digest selection/reuse, PR review, and PROD
+      release behavior before enabling publisher promotion.
+- [ ] Confirm the final tested image will be reused, not rebuilt at release.
+- [ ] Record each later PR, package publish, deployment, and rollback
+      check in the Phase 9 report when performed.
+
+> [!NOTE]
+> Trigger and promotion details remain under discussion. DEV → STAGE →
+> PROD acceptance does not authorize forcing every release through DEV
+> or changing the feature-branch/manual DEV model. Preparation has not
+> performed a new PR, publish, deployment, or rollback test.
