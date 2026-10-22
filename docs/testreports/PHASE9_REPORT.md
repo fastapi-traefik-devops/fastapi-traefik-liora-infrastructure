@@ -212,6 +212,25 @@ These archive checks do not substitute for a real restore or CI acceptance.
 
 ## Remaining work and boundaries
 
+### Operator Docker cleanup after the held restore
+
+On 2026-10-22 the operator ran `docker system prune -a --volumes` on the local
+execution host. Subsequent inspection found the stopped legacy containers and
+local images removed, with the seven named Jenkins volumes still present.
+All 14 stopped-source archive sizes and SHA-256 hashes match their private
+manifest. The migrated controller is Ready, its two homes remain Bound, and all
+six remote K3s nodes are Ready. Local cleanup did not modify those clusters.
+
+Legacy Docker rollback now needs container recreation from preserved private
+metadata/source, restoration of missing bind inputs and available images.
+It cannot rely on `docker start` or on the former local image tags. The exact
+controller image was recovered from the complete audit export made before
+cleanup. Agent/DinD registry tags were unavailable, so bounded rebuilds use the
+unchanged preserved Dockerfiles and tool locks. These are new builds, not a
+claim of byte-identical recovery: existing APK upgrade/install steps resolve
+current packages. Scan gates remain required before publishing/deployment.
+Remaining operator data is preserved; no further pruning was performed.
+
 Inventory, consistent source/foundation backups, concrete retained-home rollback
 preparation and held state restore/acceptance are complete. The first two plan
 items are complete. Remaining work includes the reviewed cluster adaptations,

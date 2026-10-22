@@ -603,6 +603,14 @@ and the execution/egress hold. No migrated jobs, agents or publishing have been
 activated. See [Phase 9 report](PHASE9_REPORT.md)
 and [runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
 
+Operator cleanup update, 2026-10-22: `docker system prune -a --volumes`
+removed the stopped local legacy containers and images. Seven named Jenkins
+volumes and the private stopped-source archives remain; all 14 archive size/hash
+checks passed after cleanup. Remote K3s homes and the retained-foundation rollback
+are unaffected. Legacy Docker recovery requires container recreation and private
+bind-input restoration, not restarting retained containers. Do not remove any
+remaining source volumes or archives.
+
 Preserve the maximum working behavior from the application's Jenkins proof of
 concept while adapting it to the nonprod K3s foundation and repository split.
 GitOps App access and Contents/Pull requests write grants on both repositories

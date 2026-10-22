@@ -14,6 +14,19 @@ Latest checkpoint: the held state restore passed API/browser checks with the
 unchanged current admin login. Agents, builds and publication remain inactive.
 See the [restore evidence](../docs/testreports/PHASE9_STATE_RESTORE.md).
 
+> [!IMPORTANT]
+> **Operator cleanup, 2026-10-22:** a subsequent local
+> `docker system prune -a --volumes` removed the stopped legacy containers and
+> local images. The seven named Jenkins volumes and private stopped-source
+> archives remain; all 14 archive size/hash checks passed afterward. Both remote
+> K3s clusters and their PVCs are unaffected. Inventory/online-backup/stop steps
+> below describe the completed source-preservation sequence and require the
+> original containers; do not rerun them against the cleaned host. For legacy
+> recovery, recreate containers from the privately preserved metadata/source,
+> restore missing bind inputs, and recover or rebuild images before starting.
+> Never assume a removed container can be restarted. Do not prune remaining
+> volumes, private archives or operator inputs during migration.
+
 ## 1. Inventory before mutation
 
 > [!NOTE]
@@ -259,8 +272,8 @@ actual container state before retrying. Never assume it rolled back. Canceled
 queue requests are recorded for review, not automatically replayed.
 
 Rollback must first reconstruct missing original bind sources from the preserved
-archives and inspect metadata. Do not issue `docker start` blindly: retained
-containers still refer to paths absent from the host. No files or volumes are
+archives and inspect metadata. After the operator cleanup, the old containers
+also need recreation; `docker start` cannot restore them. No files or volumes are
 deleted by this procedure. The staging helper supports separate
 preview and stopped-source formats; never relabel a stopped archive as online.
 
@@ -364,7 +377,8 @@ It retains the current login Secret and does not delete migrated data. The egres
 hold remains intentionally present pending review. Verify the foundation login
 and its original zero-job/zero-agent state. This rollback is prepared, not claimed
 executed/tested by a successful forward restore. Resuming old Docker Jenkins is
-a separate recovery operation requiring restoration of missing bind-source paths.
+a separate recovery operation requiring container recreation, available images
+and restoration of missing bind-source paths after the operator cleanup.
 
 > [!IMPORTANT]
 > Steps 1–6 below are implemented by the standalone helpers above. Steps 7–8
@@ -414,7 +428,9 @@ a separate recovery operation requiring restoration of missing bind-source paths
 
 > [!WARNING]
 > Before target publication, preserve target state and resume the original
-> stopped controller with its retained container and unchanged home/inputs.
+> stopped controller with its retained home/inputs. After the operator cleanup,
+> recreate its container and recover/rebuild its image first; the old container
+> no longer exists. Restore missing bind sources from the private archives.
 > After publication, review completed registry/repository side effects;
 > restarting old polling is not an automatic undo. Never discard build
 > history or restore mismatched keys.

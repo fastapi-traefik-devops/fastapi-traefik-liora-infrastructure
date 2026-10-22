@@ -75,8 +75,12 @@ hold. No external setting changed and no credential value was printed.
 The retained foundation rollback object/procedure is concrete but has not been
 executed as a rollback test. Successful state restore does not establish CI,
 publication, promotion, failover or old Docker restart readiness. Legacy Docker
-containers, volumes, cache and all source backups remain stopped and retained;
-missing legacy bind-source paths must be reconstructed before a Docker restart.
+containers, volumes, cache and all source backups were stopped and retained at
+that checkpoint. **Later operator cleanup:** `docker system prune -a --volumes`
+removed stopped containers and local images. Seven named Jenkins volumes and all
+14 verified stopped-source archives survive. Legacy recovery now requires
+container recreation, available images and reconstructed bind sources; the K3s
+foundation rollback above is unaffected.
 
 ## Files and verification
 

@@ -341,8 +341,13 @@ The legacy Jenkins ran in Docker on VM 100 at private address
 under `infra/jenkins-host/`. It has a controller with zero executors, a CI
 agent, a separate trusted registry publisher and an isolated Docker-in-Docker
 build daemon. This proof of concept is the migration source. Its controller,
-agents, daemon and local kind node have been stopped with operator authorization;
-containers, volumes, cache and private backups remain available for recovery.
+agents, daemon and local kind node were stopped with operator authorization.
+The operator subsequently ran `docker system prune -a --volumes` on the local
+execution host on 2026-10-22. The stopped containers and local images were
+removed; the seven named Jenkins volumes and private backups remain. Legacy
+Docker recovery now requires recreating containers and restoring missing bind
+inputs from the private archives. It cannot use `docker start` on the removed
+containers. This cleanup did not affect either remote K3s cluster or its PVCs.
 
 One Jenkins controller now runs in the DEV/STAGE cluster's `jenkins` namespace,
 with a separate 5Gi local-path `JENKINS_HOME` PVC and native HTTP/login at
