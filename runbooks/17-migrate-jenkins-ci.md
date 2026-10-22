@@ -798,3 +798,53 @@ new CI test networks. Roll out only `host-ci` while Jenkins is held; preserve th
 bound work/cache PVCs. Verify MTU and bounded HTTPS downloads from both nested
 network types before another application build. Do not relax network policies,
 change application databases or enable publishing as part of this correction.
+
+
+## Minimal live-cycle controls
+
+The reviewed standalone helper
+[phase9-live-cycle.py](../scripts/kubernetes/phase9-live-cycle.py) authenticates
+with the existing K3s administrator Secret in memory; it does not rotate or print
+credentials. `status` works during activation as well as under the hold.
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/phase9-live-cycle.py status
+```
+
+After installing the reviewed existing main/publisher definitions and helper pin,
+merging the bootstrap through the application's existing PR/check rules, and
+restoring the hold with all other jobs disabled, `start` requests one existing
+main build and enables its trusted publisher. It installs no polling trigger.
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/phase9-live-cycle.py start
+```
+
+Only after successful CI/publication and manual STAGE verification, use `poll` to
+install the existing main job's sole `H/2 * * * *` SCM trigger. Keep the multibranch
+folder's recurring indexing and all unrelated imported jobs disabled.
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/phase9-live-cycle.py poll
+```
+
+On checkpoint failure, `hold` enters quiet mode, disables jobs/removes triggers,
+cancels queued requests and aborts checkpoint main/publisher/bootstrap PR #62
+executions. It preserves build records and application state; it does not roll
+back a deployed application automatically. Preserve console/native JSON evidence
+before making another controlled request. The helper does not change branch rules
+or App permissions, install observers, enable DEV/PROD or run scans.
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/phase9-live-cycle.py hold
+```
+
+Bootstrap PR #62 is a related one-time prerequisite for the required real
+`continuous-integration/jenkins/pr-merge` check. Discover only `main PR-62`, disable
+orphan pruning to preserve imported history, and keep the CI worker temporarily
+offline while discovery requests are settled. Disable every unrelated imported
+job. Restore the worker and run only the bootstrap PR's functional pipeline;
+never fabricate the status or run the obsolete main pipeline. Keep original
+main/publisher build records and artifacts with Jenkins keep-forever before
+allowing their configured retention policies to run. Once the PR is normally
+merged, disable its job again and continue the same existing main/publisher.

@@ -1,6 +1,29 @@
 # Phase 9 — Authorized live cycle: application integration blocked
 
-Status: **blocked before Jenkins activation**. The operator explicitly authorized
+Latest continuation: the owner pushed `migration/phase9-k3s-bootstrap` and
+opened application [PR #62](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/pull/62)
+at `827b9be`. The existing required CI App identity matches `5369826`.
+The current bootstrap check is `app-ci/PR-62 #2`, running the existing functional
+profile on host-ci without export/publication. Main and trusted publisher remain
+disabled; all unrelated imported jobs remain disabled. This continuation is
+covered by the existing live authorization; branch rules/permissions are unchanged.
+
+The one-time discovery changed the existing app-ci source to the application
+repository with `main PR-62` filtering and orphan pruning disabled to preserve
+history. The CI worker was temporarily held offline during discovery. Its
+automatic PR #1 allocation was canceled and recorded ABORTED before functional
+gates; the execution hold was restored before requesting controlled PR #2.
+No imported build was deleted. The existing 12 main/30 publisher historical
+builds were marked keep-forever to prevent the configured retention policy
+pruning them during activation.
+
+Controller DNS/public HTTPS connectivity and the reviewed immutable publisher
+bundle `jenkins-publisher-ci-d87b3c9599c5` are installed. The publisher definition
+was validated and installed disabled with explicit ACTION/SOURCE_JOB/CI_BUILD
+parameters. No observer resources were activated; PROD remains blocked.
+Results of the PR, main/publisher and polling cycles are pending.
+
+Historical first-attempt status: **blocked before Jenkins activation**. The operator explicitly authorized
 reviewed GitHub pushes, existing-job/helper installation, necessary controller
 GitHub connectivity, one controlled STAGE cycle and then main-only SCM polling.
 No new authorization is needed for those actions once the integration blocker is
