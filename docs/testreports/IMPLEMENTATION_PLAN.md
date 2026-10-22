@@ -645,6 +645,20 @@ were verified on 2026-10-22 after the operator updated the installation.
 
 ### Initial working cycle — latest implementation priority
 
+**Live authorization received; blocked before activation.** The latest operator
+instruction authorizes reviewed pushes, existing-job/helper installation,
+necessary controller GitHub connectivity, the controlled cycle and subsequent
+main-only polling after success. This supersedes the earlier local-only boundary
+below. Application main rejected the push with GH013: PR required and required
+`continuous-integration/jenkins/pr-merge` missing. Infrastructure has no protected
+branch as confirmed by its owner; that is a separate repository. Do not change
+or bypass either repository's rules. See the
+[actual live-attempt/blocker report](PHASE9_LIVE_CYCLE.md).
+
+- [ ] Integrate the reviewed application source through its required PR/check
+      path before activating existing main CI. Application remote still contains
+      the obsolete pipeline; do not execute it as a workaround.
+
 Get the existing CI/CD working on K3s first, then complete the target below.
 Reuse the current agents/DinD, 13 functional gates, tested-image export and trusted
 immutable publisher. Keep the prepared split-history writer, exact-main rechecks,
@@ -655,7 +669,7 @@ immutable image publication → direct STAGE digest update in infrastructure mai
 Argo automatic deployment. Verify that first deployment MANUALLY: Argo
 Synced/Healthy, running pair and STAGE URL. Do not call that automated acceptance.
 
-- [ ] After separate live approval, adapt the existing app-ci source/main job and
+- [ ] Under the received live authorization, adapt the existing app-ci main job and
       trusted publisher definitions/pins. Main uses one SCM poll every two minutes;
       keep recurring folder indexing/nightly schedules off. Filter discovery to
       main before any one-time index; keep all imported PR/other jobs disabled.
@@ -666,7 +680,7 @@ Synced/Healthy, running pair and STAGE URL. Do not call that automated acceptanc
       for the initial STAGE writer. The earlier API 403 is an inspection limit,
       now resolved by owner confirmation; no push was used as a test. Recheck
       if rules change. No permission or branch-rule changes are authorized.
-- [ ] Approve and run the first minimal live cycle, then record manual STAGE
+- [ ] Run the authorized first minimal live cycle, then record manual STAGE
       verification tied to application SHA and both published/running digests.
       Keep the current admin, PostgreSQL data, history and recovery inputs intact.
 - [ ] After that cycle, integrate the preserved separate observer, automatic
@@ -680,8 +694,9 @@ Synced/Healthy, running pair and STAGE URL. Do not call that automated acceptanc
       retain immutable PROD digest reuse and manual rollback. Reuse prepared
       helpers and the same pipelines; do not create another migration or rewrite.
 
-Only LOCAL implementation/testing is authorized now. No live jobs, polling,
-publication, deployment, pushes or branch-rule changes until explicit approval.
+The earlier local-only boundary is superseded by the live authorization above.
+Live actions are authorized in the agreed order once application integration is
+resolved. Branch-rule and GitHub App permission changes remain prohibited.
 Automatic acceptance remains the agreed final architecture; its activation is
 simply deferred behind the first working cycle. See
 [implementation report](PHASE9_PUBLICATION_IMPLEMENTATION.md).
@@ -716,9 +731,10 @@ simply deferred behind the first working cycle. See
   `promotion.json` and `acceptance.json`. Verify App permissions and applicable
   main-branch rule exceptions before activation; repository write permissions
   alone do not restrict paths. DEV/PROD use manual reviewed changes.
-- Local pipeline/helper/validator implementation is authorized. All jobs,
-  polling, schedules, publication and deployment remain disabled until an
-  explicitly approved live checkpoint. No pushes or branch-rule changes now.
+- The minimal live checkpoint is now explicitly authorized, including necessary
+  reviewed pushes. Jobs/polling remain disabled while application integration is
+  blocked; first run one controlled cycle and verify STAGE before enabling the
+  main-only poll. Do not change branch rules or App permissions.
 - The operator authorized immediate stopping of the local legacy kind cluster
   and its Jenkins stack. Preserve containers, volumes, all recovery inputs and
   source; do not delete anything or change Proxmox NAT/VMs or remote K3s.
@@ -785,8 +801,11 @@ simply deferred behind the first working cycle. See
       later; the initial publisher does not call it and PROD stays blocked.
       Verify App permissions/rules without changing them. See
       [implementation and activation boundary](PHASE9_PUBLICATION_IMPLEMENTATION.md).
-- [ ] Obtain explicit approval for the next live checkpoint before any new CI
-      artifact build, job activation, image publication, Git push or deployment.
+- [x] Obtain explicit approval for the minimal live checkpoint, reviewed pushes,
+      existing-job/helper setup and necessary GitHub connectivity. The owner
+      authorized one controlled cycle followed by main-only polling and an
+      automatic demonstration after manual STAGE verification. Execution remains
+      blocked by application PR/check integration, not missing authorization.
 - [ ] After pipeline review, verify application build/publication credential
       separation, artifact provenance, SHA image tags and existing CI gates in
       controlled execution. Image vulnerability handling follows the explicit

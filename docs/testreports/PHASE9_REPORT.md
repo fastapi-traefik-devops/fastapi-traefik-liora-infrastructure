@@ -1,5 +1,12 @@
 # Phase 9 — Jenkins CI migration
 
+Latest live attempt: [application PR/check integration blocker](PHASE9_LIVE_CYCLE.md).
+The minimal live cycle is authorized, but the application main push was rejected
+with GH013 (PR required; `continuous-integration/jenkins/pr-merge` expected).
+Infrastructure prepared commits were published; Jenkins remains exactly held.
+No CI/publication/deployment ran. Resolve application integration through existing
+rules; do not change permissions, bypass checks or run the obsolete remote pipeline.
+
 Started: 2026-10-22. Status: **functional CI accepted; Jenkins jobs/publication
 remain held; Phase 9 publication/promotion work remains open**. See the
 [worker report](PHASE9_WORKERS.md) and detailed
