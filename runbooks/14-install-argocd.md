@@ -69,6 +69,22 @@ operator session; do not record it, put it in command arguments or commit it.
 The bootstrap server certificate is self-signed; this private test does not
 verify public TLS. Each installation has independent Argo CD Secrets.
 
+The login is `admin` in both clusters. Retrieve each cluster's initial password:
+
+```bash
+# NONPROD
+kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode
+printf '\n'
+
+# PROD
+kubectl --kubeconfig="$HOME/.kube/config-prod" -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode
+printf '\n'
+```
+
+These commands read the bootstrap password, not a subsequently changed admin
+password. After rotation, use the replacement credentials from the protected
+operator recovery archive; the initial Secret may have been removed.
+
 With the Python/Playwright environment from runbook 13, the automated alternative
 logs in through the actual UI and verifies the authenticated session API. It
 reads the initial password in memory and never saves authentication state:

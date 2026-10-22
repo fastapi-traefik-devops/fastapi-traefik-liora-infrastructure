@@ -11,6 +11,34 @@ Use this checkout and explicit kubeconfigs. The API VIPs, public Traefik,
 HAProxy, DNS, legacy VM 100 and its NAT rules stay under their existing owners.
 Do not perform failover/reboot/load tests in this procedure.
 
+## Retrieve browser access credentials
+
+Use the [recovery password helper](../recovery/show_passwords.py) to display a
+single table of URLs, usernames and passwords for Application and Adminer in
+DEV/STAGE/PROD, Argo CD and Grafana in both clusters, and shared NONPROD Jenkins.
+The table also lists Prometheus and Alertmanager, which have no separate login.
+From the repository root, run:
+
+```bash
+python3 recovery/show_passwords.py
+```
+
+The helper warns that all passwords will be printed in plaintext and asks
+`Continue? y/n:`. Enter `y` to proceed; any other answer or EOF cancels before
+reading credentials. It works through SSH using standard input and requires
+Python 3, `kubectl`, and read access to the cluster Secrets and ConfigMaps.
+It reads both clusters on each run without modifying them or saving output.
+Private interface URLs require the existing Tailscale/private-network access.
+
+The default kubeconfigs are `~/.kube/config-dev-stage` and `~/.kube/config-prod`;
+override them with `--nonprod-kubeconfig PATH` and `--prod-kubeconfig PATH`.
+Argo CD passwords come from the initial-admin Secrets and may be stale or absent
+after rotation. Other passwords reflect the stored Secrets; the helper does not
+verify logins. This table covers browser interfaces, not SSH keys or infrastructure
+API tokens. Keep its plaintext output out of Git. See the
+[recovery helper documentation](../recovery/README.md#display-browser-passwords)
+for limitations and exit statuses.
+
 ## Ownership and preparation
 
 `kubernetes/platform/upstream/` preserves selected source history and is not an
@@ -64,6 +92,25 @@ Tailscale client open Argo CD `https://192.168.77.16:8080`, DEV Adminer
 Argo uses native HTTPS and its bootstrap certificate; a warning is expected.
 Adminer uses each environment's existing database credentials.
 
+### Argo CD login credentials
+
+The username is `admin` in both clusters; passwords are separate. Retrieve the
+initial password for the corresponding endpoint:
+
+```bash
+# NONPROD: https://192.168.77.16:8080
+kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode
+printf '\n'
+
+# PROD: https://192.168.77.17:8080
+kubectl --kubeconfig="$HOME/.kube/config-prod" -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode
+printf '\n'
+```
+
+These commands read the bootstrap password. If it has been changed, use the
+replacement credentials from the protected operator recovery archive; the initial
+Secret does not provide the replacement password and may have been removed.
+
 ## Per-cluster monitoring
 
 Use Helm 3 and pinned kube-prometheus-stack **92.2.0**. The chart is downloaded
@@ -86,6 +133,26 @@ Include these private inputs in the operator's protected recovery archive;
 never add them to Git. Losing this file does not rotate an existing Secret.
 Recovery with an existing Secret preserves it; a fresh cluster reuses the input
 if supplied. Reapplying manifests does not restore PVC data.
+
+### Grafana login credentials
+
+The login and password are the `username` and `password` fields in the
+cluster-specific JSON file. The bootstrap default username is
+`admin007@liora.aprt.info`. On the machine where bootstrap ran, from the checkout
+root, read the appropriate file:
+
+```bash
+# NONPROD: http://192.168.77.16:3000
+cat .local-work/private/platform/nonprod-monitoring.json
+
+# PROD: http://192.168.77.17:3000
+cat .local-work/private/platform/prod-monitoring.json
+```
+
+Both files are Git-ignored private recovery inputs, not files supplied by a fresh
+Git clone. Preserve them in the protected operator recovery archive.
+
+### Monitoring resources and acceptance
 
 Both clusters adapt the PoC budget: one Prometheus (100m/512Mi requested,
 500m/1536Mi limit), retention 3 days/1500MB and 2Gi PVC; one Alertmanager
@@ -138,8 +205,17 @@ kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n jenkins get pvc
 
 [Standalone credential bootstrap script](../scripts/kubernetes/bootstrap-platform-secrets.py).
 
-Open `http://192.168.77.16:8085`; use the private foundation login input. Jenkins
-has a 5Gi local-path home, requests 100m/512Mi and limits 1 CPU/768Mi, with Java
+Open `http://192.168.77.16:8085` and log in as `admin`. The password is the
+`password` field in `.local-work/private/platform/nonprod-jenkins.json` on the
+machine where the bootstrap script was run. From that checkout's root, read it:
+
+```bash
+cat .local-work/private/platform/nonprod-jenkins.json
+```
+
+This file is Git-ignored; preserve it in the protected operator recovery archive.
+
+Jenkins has a 5Gi local-path home, requests 100m/512Mi and limits 1 CPU/768Mi, with Java
 heap capped at 384Mi. JCasC sets its native URL, zero controller executors, no
 agents, no clouds, no jobs and a disabled inbound-agent listener. Only the login
 Secret is mounted. Existing source Job DSL, polling, schedules and publisher
