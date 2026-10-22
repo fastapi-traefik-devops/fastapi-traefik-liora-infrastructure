@@ -643,6 +643,46 @@ concept while adapting it to the nonprod K3s foundation and repository split.
 GitOps App access and Contents/Pull requests write grants on both repositories
 were verified on 2026-10-22 after the operator updated the installation.
 
+### Initial working cycle — latest implementation priority
+
+Get the existing CI/CD working on K3s first, then complete the target below.
+Reuse the current agents/DinD, 13 functional gates, tested-image export and trusted
+immutable publisher. Keep the prepared split-history writer, exact-main rechecks,
+serial STAGE lock, file allowlist and concurrent-infrastructure retry behavior.
+
+The first approved live cycle is application main → existing main Jenkins CI →
+immutable image publication → direct STAGE digest update in infrastructure main →
+Argo automatic deployment. Verify that first deployment MANUALLY: Argo
+Synced/Healthy, running pair and STAGE URL. Do not call that automated acceptance.
+
+- [ ] After separate live approval, adapt the existing app-ci source/main job and
+      trusted publisher definitions/pins. Main uses one SCM poll every two minutes;
+      keep recurring folder indexing/nightly schedules off. Filter discovery to
+      main before any one-time index; keep all imported PR/other jobs disabled.
+- [ ] Verify GitHub App direct-write access and classic protection with an owner.
+      Current repository write grants are confirmed; classic protection API 403
+      is an inspection-permission blocker, not evidence that pushes are forbidden
+      or allowed. No permission/branch-rule workaround is authorized.
+- [ ] Approve and run the first minimal live cycle, then record manual STAGE
+      verification tied to application SHA and both published/running digests.
+      Keep the current admin, PostgreSQL data, history and recovery inputs intact.
+- [ ] After that cycle, integrate the preserved separate observer, automatic
+      acceptance receipts and lock coverage through observation. Its manifests
+      and fixture-tested helpers remain outside the initial activation path;
+      no observer node, new RBAC or acceptance receipts are prerequisites now.
+- [ ] Implement AND verify the agreed automatic STAGE acceptance gate live before
+      enabling PROD. Initial publisher offers no PROD action and the writer/CLI
+      explicitly blocks it. A manual first-deployment check does not bypass this.
+- [ ] Extend manual DEV/PROD workflows incrementally after the working cycle;
+      retain immutable PROD digest reuse and manual rollback. Reuse prepared
+      helpers and the same pipelines; do not create another migration or rewrite.
+
+Only LOCAL implementation/testing is authorized now. No live jobs, polling,
+publication, deployment, pushes or branch-rule changes until explicit approval.
+Automatic acceptance remains the agreed final architecture; its activation is
+simply deferred behind the first working cycle. See
+[implementation report](PHASE9_PUBLICATION_IMPLEMENTATION.md).
+
 ### Confirmed migration scope and activation boundary
 
 - Keep the existing DinD approach with a privileged daemon alongside the CI
@@ -651,15 +691,31 @@ were verified on 2026-10-22 after the operator updated the installation.
 - Preserve required Jenkins state, credential IDs and encryption keys, and other
   users, but **exclude the legacy `admin` login/account data**. Retain the current
   K3s administrator account and password; verify it after transfer.
-- Migrate current Jenkins settings/pipeline sources without redesigning DEV,
-  STAGE or PROD behavior in this increment. Adapt only required runtime plumbing;
-  retain originals. Imported jobs remain disabled pending operator review. Do not
-  execute the legacy publisher's old direct-push promotion as a migration check.
-- Desired later behavior: main CI publishes images and opens a reviewed STAGE
-  PR; PROD uses a release tag and the same STAGE-verified digest pair, without
-  rebuilding. DEV behavior and pipeline changes are deferred to operator review.
-  The promotion checklist below describes that later target, not authorization
-  to change pipeline behavior now.
+- The original restore preserved Jenkins settings/pipeline sources. The current
+  approved local adaptation changes only what the initial K3s STAGE cycle needs;
+  retain originals and useful prepared target work. Imported jobs remain disabled
+  until live approval. Never execute the obsolete publisher unchanged.
+- Confirmed current target (supersedes the earlier requirement for human review
+  of every GitOps PR): successful CI of the resulting application `main` commit
+  publishes immutable images, then automatically commits the exact digest pair
+  directly to infrastructure `main`; Argo CD automatically deploys STAGE. There
+  is no STAGE PR or human approval. DEV and PROD remain manual; PROD uses a
+  release tag and the exact successfully STAGE-accepted pair without rebuilding.
+- Serialize STAGE promotion and acceptance. Recheck application `main` immediately
+  before each infrastructure push; skip superseded candidates, including when
+  newer commits fail CI. Never fall back to an older candidate automatically.
+  Preserve unrelated concurrent infrastructure changes through bounded retries.
+- Automatically verify Argo CD Synced/Healthy, ready running frontend/backend
+  digest pair and the STAGE HTTPS URL. Record evidence tied to application SHA,
+  both digests and infrastructure/Argo revisions. Successful acceptance is a
+  mandatory PROD gate. Rollback remains manual.
+- The trusted direct writer may modify only STAGE `kustomization.yaml`,
+  `promotion.json` and `acceptance.json`. Verify App permissions and applicable
+  main-branch rule exceptions before activation; repository write permissions
+  alone do not restrict paths. DEV/PROD use manual reviewed changes.
+- Local pipeline/helper/validator implementation is authorized. All jobs,
+  polling, schedules, publication and deployment remain disabled until an
+  explicitly approved live checkpoint. No pushes or branch-rule changes now.
 - The operator authorized immediate stopping of the local legacy kind cluster
   and its Jenkins stack. Preserve containers, volumes, all recovery inputs and
   source; do not delete anything or change Proxmox NAT/VMs or remote K3s.
@@ -684,7 +740,8 @@ were verified on 2026-10-22 after the operator updated the installation.
       Job DSL/pipeline sources without executing them or redesigning promotion.
 - [x] Review the preserved Job DSL/pipelines and settings with the operator
       before adapting old repository targets or enabling their behavior. Required
-      runtime plumbing is allowed; promotion behavior changes remain deferred.
+      initial CI-only runtime changes were approved there; the later local
+      promotion adaptation is authorized by the current decisions above.
       Findings and the proposed minimal CI-only path are recorded in
       [the review](PHASE9_PIPELINE_REVIEW.md); operator agreement received.
 - [x] After agreement, prepare the reviewed CI-only source/profile and manually
@@ -713,21 +770,32 @@ were verified on 2026-10-22 after the operator updated the installation.
       The operator accepted the existing privileged DinD requirement explicitly.
 - [x] Review the retained publisher/promotion implementation for the repository
       split. [Findings and proposed changes](PHASE9_PUBLICATION_REVIEW.md) identify
-      required artifact evidence, separate Git histories and human-reviewed PRs.
+      required artifact evidence and separate Git histories. Its original STAGE PR
+      proposal is superseded by the confirmed direct-commit policy above.
       Current jobs, credentials, policies and publication remain held.
-- [ ] Agree the explicit functional-artifact admission mode and proposed local
-      implementation before editing pipelines. Implement and test with two
-      independent fixture repositories and mocked remote APIs before requesting
-      any artifact build, publication, Git push or PR activation.
+- [x] Agree the explicit functional-artifact admission mode and proposed local
+      implementation before editing pipelines. Operator approval includes exporting
+      tested images with explicit deferred-scan evidence, adapting the trusted
+      publisher, separating histories and updating pinned helpers/validators.
+- [x] Implement and test locally with two independent fixture repositories and
+      mocked remote APIs. Preserve read-only STAGE observation/evidence work for
+      later; the initial publisher does not call it and PROD stays blocked.
+      Verify App permissions/rules without changing them. See
+      [implementation and activation boundary](PHASE9_PUBLICATION_IMPLEMENTATION.md).
+- [ ] Obtain explicit approval for the next live checkpoint before any new CI
+      artifact build, job activation, image publication, Git push or deployment.
 - [ ] After pipeline review, verify application build/publication credential
       separation, artifact provenance, SHA image tags and existing CI gates in
       controlled execution. Image vulnerability handling follows the explicit
       educational-project deferral above; no further scans in this increment.
-- [ ] Keep build/test and image publication in the application repository.
-      Change promotion tooling to propose reviewed digest updates to this
-      infrastructure repository rather than its former `deploy/overlays/`.
-- [ ] Add checks to render all overlays and reject placeholder PROD images.
-      Review one DEV → STAGE → PROD promotion.
+- [x] Keep build/test and image publication source in the application repository.
+      Change promotion tooling to update infrastructure STAGE directly, with
+      manual DEV/PROD review, rather than application `deploy/overlays/`.
+- [x] Add local checks to render all overlays and reject placeholder/mixed-source
+      images. PR-validation workflow is prepared for later; not an initial-cycle
+      dependency.
+- [ ] Complete live promotion validation incrementally after the first STAGE
+      cycle; DEV/PROD remain manual and PROD is blocked pending its gate.
 - [ ] Verify Argo CD deploys the reviewed digests and can roll back. Retire
       old GitOps source paths only after this succeeds.
 - [ ] Enable polling/schedules and trusted publication only at the reviewed
@@ -735,7 +803,8 @@ were verified on 2026-10-22 after the operator updated the installation.
       VM 100 agents, bind mounts or Docker services, and preserve a private
       recovery copy of the migrated Jenkins state.
 
-**Pass:** working CI and reviewed promotion run from nonprod K3s, reuse the
+**Pass:** working CI and the agreed automatic STAGE/manual DEV/PROD promotion
+run from nonprod K3s, reuse the
 proof of concept, preserve required state, and respect the two repository
 boundaries. Report readiness for the operator's later VM 100/legacy NAT cleanup;
 do not perform that cleanup as part of this implementation.

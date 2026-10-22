@@ -26,7 +26,10 @@ class ManualCheckpointTests(unittest.TestCase):
                                                'definition_sha256': hashlib.sha256(b'fixture').hexdigest()})]:
             (self.directory / name).write_text(json.dumps(data))
 
-    def execute(self, fail_post=False):
+    def execute(self, fail_post=False, export=False):
+        receipt = json.loads((self.directory / 'receipt.json').read_text())
+        receipt['export_images'] = export
+        (self.directory / 'receipt.json').write_text(json.dumps(receipt))
         request = Mock(side_effect=lambda path: b'<flow-definition><definition><script>fixture</script></definition></flow-definition>'
                        if path.endswith('config.xml') else json.dumps(
                            {'builds': [{'number': 1, 'building': False, 'result': 'FAILURE'}]}).encode())
@@ -40,7 +43,11 @@ class ManualCheckpointTests(unittest.TestCase):
             else:
                 self.module['execute'](self.directory)
         post.assert_called_once()
+        self.assertEqual(post.call_args.args[2]['EXPORT_IMAGES'], str(export).lower())
         hold.assert_called_once_with(request)
+
+    def test_explicit_artifact_export_is_bound_to_the_receipt(self):
+        self.execute(export=True)
 
     def test_finished_failed_build_is_not_retried(self):
         self.execute()
@@ -77,6 +84,7 @@ class ManualCheckpointTests(unittest.TestCase):
                                  'script': activate, 'post': post, 'hold': hold}):
             self.module['execute'](self.directory)
         post.assert_called_once()
+        self.assertEqual(post.call_args.args[2]['EXPORT_IMAGES'], 'false')
         hold.assert_called_once()
         self.assertIn('nextBuildNumber == 2', activate.call_args.args[1])
         self.assertIn('builds.size() == 1', activate.call_args.args[1])

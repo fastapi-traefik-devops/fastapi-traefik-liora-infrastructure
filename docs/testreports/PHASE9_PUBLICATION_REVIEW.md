@@ -1,6 +1,13 @@
 # Phase 9 — Publisher and repository-split review
 
-Date: 2026-10-22. Status: **review complete; proposal awaiting agreement**.
+> Superseded decision, 2026-10-22: the operator approved local implementation
+> with automatic direct STAGE commits (no PR/approval), manual DEV/PROD and
+> automatic STAGE acceptance as the PROD gate. Earlier STAGE-PR proposals below
+> are historical. The latest priority uses a minimal initial STAGE cycle with
+> manual first-deployment checks; observer/receipts are deferred, PROD blocked. See [current implementation](PHASE9_PUBLICATION_IMPLEMENTATION.md).
+
+Date: 2026-10-22. Status at that review: **review complete; proposal then awaiting agreement**.
+Current agreement/priority is recorded in the supersession note above.
 Only documentation and private review receipts were written. No Pipeline source,
 job definition, publisher bundle, credential, network policy or cluster resource
 was changed. No token was minted, job activated, image published, Git reference

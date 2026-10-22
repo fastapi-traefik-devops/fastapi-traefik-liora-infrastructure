@@ -70,18 +70,38 @@ unchanged; follow [runbook 17](../../../../runbooks/17-migrate-jenkins-ci.md).
 The separate publisher still expects the application's `ci/` files at
 `/opt/phase1-ci`. Prepare that input with
 [`prepare-jenkins-publisher-source.py`](../../../../scripts/kubernetes/prepare-jenkins-publisher-source.py)
-using `--output` for a new local JSON path. It reads all 17 files from Git
-objects at application commit `b98a22e48527c256193ed65c10307eb574b27ab6`,
+using `--output` for a new local JSON path. The prepared pin reads all 27 files
+from Git objects at application commit `d87b3c9599c5b79dfc6b6751739a110ecbb2ba96`,
 verifies object hashes and produces an immutable ConfigMap named
-`jenkins-publisher-ci-b98a22e48527` in `jenkins-publisher`. It neither executes
+`jenkins-publisher-ci-d87b3c9599c5` in `jenkins-publisher`. It neither executes
 those helpers nor applies the bundle. The application checkout is read-only;
 mutable working-tree changes are excluded. The reviewed source commit and bundle
 hash are recorded in annotations. Existing output is never overwritten.
+
+The live publisher still mounts the earlier `jenkins-publisher-ci-b98a22e48527`;
+retain that immutable bundle for rollback. No helper or workload was applied by
+this preparation. `--observer` emits a separate one-file, immutable
+`jenkins-acceptance-ci-d87b3c9599c5` bundle for the zero-replica standalone
+[`acceptance/`](acceptance/kustomization.yaml) overlay. That overlay is not included
+by `agents/`; its limited STAGE read-only RBAC and future inbound node require
+explicit live approval. It never receives publisher credentials.
 
 Mount this bundle read-only for the publisher, never from an untrusted build
 checkout. Its presence does not authorize executing the preserved legacy
 promotion workflow. The deployment helper prepares the same bundle directly
 and retains a private copy alongside the deployment evidence.
+
+## Prepared initial cycle
+
+`initial-cycle/` composes the existing two-agent overlay with the controller DNS
+and public HTTPS egress needed for GitHub polling/App token generation. It does
+not include `acceptance/` or an observer node. Applying it relaxes the current
+egress hold and requires explicit live approval; it has NOT been applied.
+The existing jobs remain disabled until separately installed/approved. Main CI
+uses one SCM poll; the initial publisher stops after the STAGE update and the
+operator verifies the first deployment manually. PROD is explicitly blocked
+until automatic acceptance is implemented and live-verified. Retain prepared
+observer work for that later increment.
 
 ## Connected workers under the hold
 

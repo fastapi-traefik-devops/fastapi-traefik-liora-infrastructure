@@ -11,7 +11,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE_COMMIT = 'b98a22e48527c256193ed65c10307eb574b27ab6'
+SOURCE_COMMIT = 'd87b3c9599c5b79dfc6b6751739a110ecbb2ba96'
 SOURCE_REPOSITORY = 'fastapi-traefik-devops/fastapi-traefik-liora-application'
 
 
@@ -22,7 +22,7 @@ def git(source, *arguments):
     return result.stdout
 
 
-def prepare(source):
+def prepare(source, observer=False):
     remote = git(source, 'remote', 'get-url', 'origin').decode().strip()
     if remote not in [f'git@github.com:{SOURCE_REPOSITORY}.git',
                       f'https://github.com/{SOURCE_REPOSITORY}.git',
@@ -47,14 +47,17 @@ def prepare(source):
         if hashlib.sha1(blob).hexdigest() != oid:
             raise RuntimeError('Publisher source integrity failure')
         data[name] = content.decode('utf-8')
-    if not {'registry.py', 'phase1.py', 'publish.sh', 'promote-stage.sh'} <= data.keys():
+    if not {'registry.py', 'phase1.py', 'candidate.py', 'promote.py', 'publish.sh',
+            'promote-stage.sh', 'publisher-action.sh', 'stage_acceptance.py', 'validate_gitops.py', 'validate.sh'} <= data.keys():
         raise RuntimeError('Required publisher helpers are missing')
     if sum(len(k.encode()) + len(v.encode()) for k, v in data.items()) > 900 * 1024:
         raise RuntimeError('Publisher bundle exceeds ConfigMap budget')
+    if observer:
+        data = {'stage_acceptance.py': data['stage_acceptance.py']}
     digest = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
     return {'apiVersion': 'v1', 'kind': 'ConfigMap', 'immutable': True,
-            'metadata': {'name': 'jenkins-publisher-ci-' + SOURCE_COMMIT[:12],
-                         'namespace': 'jenkins-publisher',
+            'metadata': {'name': ('jenkins-acceptance-ci-' if observer else 'jenkins-publisher-ci-') + SOURCE_COMMIT[:12],
+                         'namespace': 'jenkins-acceptance' if observer else 'jenkins-publisher',
                          'annotations': {'liora.aprt.info/source-repository': 'https://github.com/' + SOURCE_REPOSITORY,
                                          'liora.aprt.info/source-commit': SOURCE_COMMIT,
                                          'liora.aprt.info/data-sha256': digest}},
@@ -65,9 +68,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, default=ROOT.parent / 'fastapi-traefik-liora-application')
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--observer', action='store_true', help='Prepare only the read-only STAGE observer')
     args = parser.parse_args()
     os.umask(0o077)
-    bundle = prepare(args.source)
+    bundle = prepare(args.source, args.observer)
     # Exclusive creation prevents silently replacing reviewed source provenance.
     with args.output.open('x') as stream:
         json.dump(bundle, stream, indent=2)

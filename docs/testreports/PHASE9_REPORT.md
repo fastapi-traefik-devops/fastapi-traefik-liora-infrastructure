@@ -7,8 +7,16 @@ remain held; Phase 9 publication/promotion work remains open**. See the
 the preparation baseline; the latest decisions supersede its approval boundaries.
 
 Latest review: [publisher and promotion repository split](PHASE9_PUBLICATION_REVIEW.md).
-The review is complete; its proposed local implementation awaits agreement.
-No publisher or promotion code/job/policy was changed or activated.
+The operator approved local implementation with automatic direct STAGE commits,
+manual DEV/PROD and automatic STAGE acceptance as a mandatory PROD gate. This
+supersedes earlier human approval for every GitOps PR. See the
+[local implementation and activation gates](PHASE9_PUBLICATION_IMPLEMENTATION.md).
+The latest priority narrows the initial path to existing CI → immutable
+publication → direct STAGE update → Argo, with manual first-deployment checks.
+Observer/receipts and expanded workflows are preserved for later. PROD is
+explicitly blocked until automatic acceptance is implemented and live-verified.
+Source, validators and optional observer are prepared locally; no job, policy,
+publication or deployment was activated.
 
 Latest execution checkpoint: [MTU correction and successful manual build #2](PHASE9_CI_RETRY.md).
 The operator approved continuing after the [first aborted attempt](PHASE9_MANUAL_CI.md).
@@ -32,8 +40,9 @@ disposable build cache. Preserve required users, jobs, build records, retained
 artifacts, credential IDs and encryption material **except legacy administrator
 login data**: the current K3s admin account/password must remain authoritative.
 
-Migrate current settings and pipeline sources without changing DEV/STAGE/PROD
-promotion behavior in this increment. Preserve originals and keep imported jobs
+Earlier checkpoint boundary (superseded for local source preparation by the
+latest confirmed decisions linked above): migrate current settings and pipeline
+sources without changing DEV/STAGE/PROD promotion behavior in that increment. Preserve originals and keep imported jobs
 inactive pending operator review. The desired later target is main CI/publication
 followed by a human-reviewed STAGE PR, and release-tag PROD promotion reusing
 the STAGE-verified digest pair. These targets do not authorize running the

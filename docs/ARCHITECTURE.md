@@ -376,10 +376,26 @@ Migration is staged:
   from the existing image/plugin/tool locks, Dockerfiles, JCasC, Job DSL,
   pipelines, users, credential IDs/scopes, history and artifacts. Keep CI and
   trusted publication separate. Current pipeline sources/settings remain preserved
-  without promotion behavior changes pending operator review. The agreed later
-  target adapts promotion to reviewed infrastructure
-  repository changes while application code/build pipelines remain owned by
-  the application repository.
+  with the newly approved promotion adaptation prepared locally. The current
+  target supersedes human review for every GitOps PR: successful CI of the exact
+  resulting application main commit publishes immutable images, directly commits
+  the pair to infrastructure main and lets Argo CD deploy STAGE automatically.
+  DEV/PROD remain manual; PROD reuses a successfully STAGE-accepted pair without
+  rebuilding. Application code/build pipelines stay in the application repository.
+  Serialize STAGE promotion, recheck application main before each push and skip
+  superseded builds. Automatic Argo health, running-digest and HTTPS smoke evidence
+  tied to source/pair is mandatory before PROD. Rollback remains manual.
+  The trusted writer restricts direct commits to STAGE image, promotion and
+  acceptance files; unrelated concurrent infrastructure changes are preserved.
+  App grants/branch exceptions require verification before activation. No jobs,
+  publication or deployment are enabled by this local preparation.
+  The latest implementation priority is a minimal first working STAGE cycle.
+  Its existing main job will use one SCM poll; the publisher stops after the
+  STAGE update, and the first deployment is verified manually. The separate
+  observer/automatic acceptance and expanded promotion workflows are preserved
+  but deferred outside that initial path. PROD is explicitly blocked until the
+  agreed automated acceptance gate is implemented and live-verified. This is a
+  staged implementation of the target above, not an alternative architecture.
 
 Controller resources and image provenance are tracked in
 `kubernetes/platform/nonprod/jenkins/`. Its default overlay supports a fresh

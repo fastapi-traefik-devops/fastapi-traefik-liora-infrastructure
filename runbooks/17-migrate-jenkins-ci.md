@@ -147,7 +147,7 @@ It signs short-lived App JWTs in memory using controller-mounted keys and issues
 GET requests for installation metadata. It never creates an installation token,
 changes an App, writes a repository or sends a message. Output contains only
 repository names, HTTP status and granted permissions; private metadata is mode
-0600 in `.local-work/private/phase9/github-app-access.json`.
+0600 in `.local-work/private/phase9/github-app-access-current.json`.
 
 Expected boundaries:
 
@@ -286,11 +286,11 @@ Implemented worker budgets (idle observations are not application CI load tests)
 
 ### Prepare pinned publisher helpers and worker images
 
-The application checkout remains read-only. The helper below reads `ci/` from
+The helper does not modify the application checkout. It reads `ci/` from
 Git objects at the reviewed application commit
-`b98a22e48527c256193ed65c10307eb574b27ab6`, verifies the blobs and prepares an
+`d87b3c9599c5b79dfc6b6751739a110ecbb2ba96`, verifies the blobs and prepares an
 immutable ConfigMap for `jenkins-publisher`. It does not use mutable working-tree
-files, execute pipelines, or apply anything to Kubernetes. It preserves all 17
+files, execute pipelines, or apply anything to Kubernetes. It preserves all 27
 source files for the publisher's existing `/opt/phase1-ci` path.
 
 ```bash
@@ -608,21 +608,105 @@ controller egress held until the separately reviewed activation steps.
 > publisher boundary while adapting the target to this infrastructure
 > repository.
 
-- [ ] Agree branch triggers, digest selection/reuse, PR review, and PROD
-      release behavior before enabling publisher promotion. The desired target
-      is automatic reviewed STAGE PR creation after main CI/publication, followed
-      by release-tag PROD promotion reusing the STAGE-verified digests. Pipeline
-      behavior changes are deferred by the operator; preserve current sources
-      and keep their execution disabled until that review.
-- [ ] Confirm the final tested image will be reused, not rebuilt at release.
-- [ ] Record each later PR, package publish, deployment, and rollback
-      check in the Phase 9 report when performed.
+### Initial activation path — current priority
 
-> [!NOTE]
-> Trigger and promotion details remain under discussion. DEV → STAGE →
-> PROD acceptance does not authorize forcing every release through DEV
-> or changing the feature-branch/manual DEV model. Preparation has not
-> performed a new PR, publish, deployment, or rollback test.
+This is local preparation, not authorization to enable jobs or push. Reuse the
+existing `app-ci/main`, `trusted/publish`, host-ci/DinD and registry-publisher.
+The initial publisher needs neither `stage-observer` nor acceptance receipts.
+Keep PROD blocked even if a manually created/fixture receipt exists.
+
+After explicit live approval only:
+
+1. Verify source availability, the App grants and classic protection/any required
+   exception with an owner. Do not execute the old publisher or full imported
+   Job DSL. No permission/branch-rule workaround is part of this checkpoint.
+2. Set the existing app-ci SCM source to the application repository and discovery
+   filter to main only before any one-time index. Retain current scoped CI App
+   credentials. Install the reviewed main Jenkinsfile and trusted inline publisher
+   and its immutable helper bundle on the existing agents. Keep every other
+   imported job, legacy schedules and recurring folder indexing disabled.
+3. Use the main job's sole SCM polling trigger (`H/2 * * * *`); no webhook,
+   recurring indexing or nightly cron is needed. An approved first manual run
+   may establish its checkout/poll baseline. Do not enable all imported jobs.
+   The prepared [`initial-cycle/` overlay](../kubernetes/platform/nonprod/jenkins/initial-cycle/kustomization.yaml)
+   includes the existing agents and necessary controller DNS/public HTTPS egress;
+   applying it relaxes the current egress hold and needs explicit live approval.
+   It excludes the observer. Standard NetworkPolicy cannot limit HTTPS to a
+   GitHub hostname. Ensure this prerequisite only at that approved point.
+4. Follow application main SHA → successful functional CI → tested immutable
+   images → serialized direct infrastructure STAGE update → Argo deployment.
+   Exact-main rechecks skip older candidates, even if newer CI fails. Do not
+   force-push or overwrite unrelated concurrent infrastructure changes.
+5. Manually verify Argo Synced/Healthy, expected deployment/running digests and
+   STAGE URL. Record source SHA, both digests and actual outcomes. This is manual
+   verification, not a successful automated receipt and not PROD acceptance.
+   Rollback stays manual. Stop/restore the hold if the checkpoint fails.
+
+### Preserved target work — not required for the initial cycle
+
+The following observer/receipt and expanded promotion work is intentionally
+outside initial activation. Full prepared orchestration is retained in
+application Git commit `3b37b50`; extend the same publisher incrementally later.
+Implement AND live-verify the gate before a reviewed change may unblock PROD.
+
+- [x] Confirm resulting-main CI → immutable publication → direct infrastructure
+      main STAGE commit → Argo auto-deployment. No STAGE PR/human approval.
+      DEV/PROD remain manual; PROD requires a release tag and the exact
+      successfully STAGE-accepted pair, without rebuilding.
+- [ ] Complete local implementation/fixture checks and obtain explicit approval
+      for the next live checkpoint. Keep all jobs, polling, schedules,
+      publication and deployment disabled meanwhile. No Git push now.
+- [ ] Before activation verify classic main protection/App exception, source
+      availability, artifact retention, controller token-mint egress, pinned
+      publisher source and the read-only observer. Do not apply changes now.
+- [ ] Serialize STAGE publication/promotion/acceptance. Recheck application main
+      immediately before every infrastructure push. Skip superseded builds;
+      failed newer builds keep existing STAGE. Retry only infrastructure
+      non-fast-forward races, preserving unrelated concurrent edits.
+- [ ] Record Argo Synced/Healthy, actual running pair and HTTPS root/health smoke
+      with application SHA, both digests, infrastructure/Argo revisions and UTC
+      time. Failed/missing acceptance blocks PROD; rollback is manual.
+
+Direct writes are limited to
+`kubernetes/apps/liora/overlays/stage/{kustomization.yaml,promotion.json,acceptance.json}`.
+Source ancestry and release-tag checks use application history; only infrastructure
+history supplies STAGE acceptance. New pairs invalidate current acceptance.
+Successful historical acceptance may qualify the same pair for an explicitly
+selected PROD release. DEV can use a manually approved feature-branch candidate;
+DEV need not precede STAGE. DEV/PROD produce review branches/compare links, never
+an automatic main merge.
+
+For the later increment, the optional observer is preserved under
+[`acceptance/`](../kubernetes/platform/nonprod/jenkins/acceptance/kustomization.yaml),
+separate from the active agents overlay, with zero replicas. Future activation
+needs an inbound Jenkins node named/labeled `stage-observer`, one exclusive
+executor, remote directory `/home/jenkins/agent`, its connection Secret and private
+GHCR pull Secret. Retain both existing worker nodes and the current administrator
+login. Do not execute imported Job DSL to add this node. Its ServiceAccount can
+only get the two STAGE Deployments, list STAGE Pods and get Argo `app-stage`.
+It has no database, GitHub or registry writer credentials.
+
+Prepare its immutable helper bundle locally (exclusive output, no apply):
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/prepare-jenkins-publisher-source.py \
+  --observer --output .local-work/private/phase9/stage-observer-source.json
+```
+
+Script: [prepare-jenkins-publisher-source.py](../scripts/kubernetes/prepare-jenkins-publisher-source.py).
+The helper name in the prepared deployment must match the bundle. Before any
+future publication verify real K3s imageID format, API network/RBAC and STAGE URL
+smoke responses. The controller currently denies all egress; binding App tokens
+needs separately approved DNS/public HTTPS egress. Standard NetworkPolicy cannot
+enforce a github.com-only hostname rule.
+
+Build #2 is not a publication candidate: no archives were exported. Never relabel
+its result. A separately approved new manual build may use `EXPORT_IMAGES=true`
+(default false) to export tested archives with explicit deferred-scan evidence;
+this option itself does not publish or deploy. The manual helper records it
+only with `prepare --export-images` in a new receipt; `run` cannot override it.
+Do not execute either action before live approval. See the
+[local implementation report](../docs/testreports/PHASE9_PUBLICATION_IMPLEMENTATION.md).
 
 ## Manual functional-only migration checkpoint
 

@@ -19,7 +19,7 @@ SECRET = 'FAKE-PUBLISHER-SOURCE-SECRET-ONLY-02ca'
 
 
 class PublisherSourceTests(unittest.TestCase):
-    def invoke(self, wrong_remote=False, unsafe_mode=False, corrupt_blob=False, existing=False, git_failure=False):
+    def invoke(self, wrong_remote=False, unsafe_mode=False, corrupt_blob=False, existing=False, git_failure=False, observer=False):
         content = ('# fixture ' + SECRET + '\n').encode()
         oid = hashlib.sha1(b'blob ' + str(len(content)).encode() + b'\0' + content).hexdigest()
 
@@ -32,7 +32,8 @@ class PublisherSourceTests(unittest.TestCase):
             elif command[0] == 'ls-tree':
                 mode = '120000' if unsafe_mode else '100644'
                 result = b''.join(f'{mode} blob {oid}\tci/{name}\0'.encode() for name in
-                                  ['registry.py', 'phase1.py', 'publish.sh', 'promote-stage.sh'])
+                                  ['registry.py', 'phase1.py', 'candidate.py', 'promote.py', 'publish.sh',
+                                   'promote-stage.sh', 'publisher-action.sh', 'stage_acceptance.py', 'validate_gitops.py', 'validate.sh'])
             else:
                 self.assertEqual(command[:2], ['cat-file', 'blob'])
                 result = b'changed' if corrupt_blob else content
@@ -44,7 +45,7 @@ class PublisherSourceTests(unittest.TestCase):
                 output.write_text(SECRET)
             stdout, stderr = io.StringIO(), io.StringIO()
             with patch('subprocess.run', side_effect=command), \
-                    patch.object(sys, 'argv', [str(SCRIPT), '--output', str(output)]), \
+                    patch.object(sys, 'argv', [str(SCRIPT), '--output', str(output)] + (['--observer'] if observer else [])), \
                     redirect_stdout(stdout), redirect_stderr(stderr):
                 status = 0
                 try:
@@ -59,13 +60,19 @@ class PublisherSourceTests(unittest.TestCase):
             elif not failed:
                 bundle = json.loads(output.read_text())
                 self.assertIs(bundle['immutable'], True)
-                self.assertEqual(bundle['data']['registry.py'].encode(), content)
+                self.assertEqual(bundle['data']['stage_acceptance.py' if observer else 'registry.py'].encode(), content)
+                if observer:
+                    self.assertEqual(set(bundle['data']), {'stage_acceptance.py'})
+                    self.assertEqual(bundle['metadata']['namespace'], 'jenkins-acceptance')
                 self.assertEqual(output.stat().st_mode & 0o777, 0o600)
             else:
                 self.assertFalse(output.exists())
 
     def test_preserves_pinned_source_bytes_without_executing_or_printing(self):
         self.invoke()
+
+    def test_observer_bundle_excludes_all_writer_helpers(self):
+        self.invoke(observer=True)
 
     def test_wrong_repository_is_rejected(self):
         self.invoke(wrong_remote=True)

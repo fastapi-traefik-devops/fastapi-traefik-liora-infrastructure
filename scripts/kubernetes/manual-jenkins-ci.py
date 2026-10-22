@@ -73,7 +73,7 @@ println 'Execution hold restored'
 ''')
 
 
-def prepare(app, directory, previous=None):
+def prepare(app, directory, previous=None, export_images=False):
     if subprocess.check_output(['git', '-C', str(app), 'status', '--porcelain']).strip():
         raise RuntimeError('Application checkout must be clean and committed')
     sha = subprocess.check_output(['git', '-C', str(app), 'rev-parse', 'HEAD'], text=True).strip()
@@ -177,19 +177,20 @@ os.chown(path.parent, 1000, 1000)
         crumb = json.loads(request('/crumbIssuer/api/json'))
         request('/createItem?name=' + JOB, ET.tostring(root),
                 {crumb['crumbRequestField']: crumb['crumb'], 'Content-Type': 'application/xml'})
-        # Parameters must exist before the first build, without executing Pipeline properties.
-        script(request, '''
-    import hudson.model.*
-    def job = jenkins.model.Jenkins.get().getItemByFullName('migration-ci')
-    job.addProperty(new ParametersDefinitionProperty([
-     new StringParameterDefinition('APP_COMMIT', '', 'Exact approved application commit'),
-     new StringParameterDefinition('SOURCE_BUNDLE', '', 'Operator-staged local Git bundle')]))
-    job.save()
-    println 'Manual job installed disabled'
-    ''')
+    # Parameters must exist before the first build, without executing Pipeline properties.
+    script(request, '''
+import hudson.model.*
+def job = jenkins.model.Jenkins.get().getItemByFullName('migration-ci')
+job.addProperty(new ParametersDefinitionProperty([
+ new BooleanParameterDefinition('EXPORT_IMAGES', false, 'Export tested archives only; never publish'),
+ new StringParameterDefinition('APP_COMMIT', '', 'Exact approved application commit'),
+ new StringParameterDefinition('SOURCE_BUNDLE', '', 'Operator-staged local Git bundle')]))
+job.save()
+println 'Manual job installed disabled'
+''')
     save(directory, 'receipt.json', {'sha': sha, 'bundle': target, 'bundle_sha256': digest,
          'definition_sha256': hashlib.sha256(definition.encode()).hexdigest(), 'job': JOB,
-         'build_number': number, 'previous_directory': str(previous) if previous else None})
+         'build_number': number, 'export_images': bool(export_images), 'previous_directory': str(previous) if previous else None})
     print('Manual Pipeline validated; source bundle verified; job installed disabled.', flush=True)
 
 
@@ -197,6 +198,9 @@ def execute(directory):
     receipt = json.loads((directory / 'receipt.json').read_text())
     baseline = json.loads((directory / 'baseline.json').read_text())
     number = receipt.get('build_number', 1)
+    export_images = receipt.get('export_images', False)
+    if type(export_images) is not bool:
+        raise ValueError('Artifact export must be an explicit boolean in the approved receipt')
     request = client()
     before = inspect(request)
     if before['configs'] != baseline['configs'] or before['users'] != baseline['users']:
@@ -221,7 +225,8 @@ println 'Only manual CI enabled'
 '''.replace('EXPECTED_NUMBER', str(number)).replace('EXPECTED_COUNT', str(number - 1)))
         # Jenkins redirects to the queue URL. The held client follows it; no retry is made.
         post(request, '/job/migration-ci/buildWithParameters',
-             {'APP_COMMIT': receipt['sha'], 'SOURCE_BUNDLE': receipt['bundle']})
+             {'APP_COMMIT': receipt['sha'], 'SOURCE_BUNDLE': receipt['bundle'],
+              'EXPORT_IMAGES': str(export_images).lower()})
         print(f'Exactly one manual build requested; monitoring migration-ci #{number}.', flush=True)
         deadline = time.monotonic() + 96 * 60
         last = None
@@ -262,10 +267,13 @@ def main():
     parser.add_argument('directory', type=Path, help='New private evidence directory (prepare), same directory (run)')
     parser.add_argument('--previous', type=Path, help='Completed prior attempt receipt; never reuse its request boundary')
     parser.add_argument('--application', type=Path, default=ROOT.parent / 'fastapi-traefik-liora-application')
+    parser.add_argument('--export-images', action='store_true', help='Prepare a new archive-only checkpoint; requires explicit live approval')
     args = parser.parse_args()
+    if args.action != 'prepare' and args.export_images:
+        parser.error('--export-images must be recorded during prepare')
     os.umask(0o077)
     if args.action == 'prepare':
-        prepare(args.application.resolve(), args.directory.resolve(), args.previous.resolve() if args.previous else None)
+        prepare(args.application.resolve(), args.directory.resolve(), args.previous.resolve() if args.previous else None, args.export_images)
     else:
         execute(args.directory.resolve())
 
