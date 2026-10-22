@@ -220,6 +220,13 @@ local images removed, with the seven named Jenkins volumes still present.
 All 14 stopped-source archive sizes and SHA-256 hashes match their private
 manifest. The migrated controller is Ready, its two homes remain Bound, and all
 six remote K3s nodes are Ready. Local cleanup did not modify those clusters.
+Comparison with the preserved kind-container mount metadata also confirmed that
+its anonymous data volume was removed. Jenkins archives do not back up that
+kind cluster's state; do not claim the legacy kind cluster can resume in place.
+The operator subsequently confirmed that its application environments contained
+only default installation data: no application/database transfer from kind is
+required. Keep the current K3s PostgreSQL content. This does not reduce the
+separate Jenkins history/user/credential preservation requirement.
 
 Legacy Docker rollback now needs container recreation from preserved private
 metadata/source, restoration of missing bind inputs and available images.

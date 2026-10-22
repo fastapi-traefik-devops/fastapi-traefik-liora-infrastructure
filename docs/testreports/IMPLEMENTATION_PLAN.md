@@ -610,6 +610,11 @@ checks passed after cleanup. Remote K3s homes and the retained-foundation rollba
 are unaffected. Legacy Docker recovery requires container recreation and private
 bind-input restoration, not restarting retained containers. Do not remove any
 remaining source volumes or archives.
+The legacy kind node's anonymous data volume was removed as well; its cluster
+state is not part of the Jenkins backups or the K3s foundation rollback.
+The operator confirmed that kind's demo/STAGE/PROD applications contained only
+default installation data. No application/database transfer from kind is needed;
+retain the current PostgreSQL content in K3s without replacement or reseeding.
 
 Vulnerability deferral, 2026-10-22: the operator explicitly accepted proceeding
 with deployment for this educational setup and deferred remediation/further

@@ -348,6 +348,8 @@ removed; the seven named Jenkins volumes and private backups remain. Legacy
 Docker recovery now requires recreating containers and restoring missing bind
 inputs from the private archives. It cannot use `docker start` on the removed
 containers. This cleanup did not affect either remote K3s cluster or its PVCs.
+The old kind node's anonymous data volume was removed too; the Jenkins backups
+do not preserve that cluster's state.
 
 One Jenkins controller now runs in the DEV/STAGE cluster's `jenkins` namespace,
 with a separate 5Gi local-path `JENKINS_HOME` PVC and native HTTP/login at
