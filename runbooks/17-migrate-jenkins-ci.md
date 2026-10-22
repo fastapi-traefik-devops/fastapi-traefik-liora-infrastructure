@@ -63,6 +63,49 @@ its status. A hard tar failure or missing key fails without dumping diagnostics.
 > excludes CI/publisher workspaces and the Docker build cache. It is not
 > evidence that final transfer can run while jobs are active.
 
+### Prepare an inactive copy offline
+
+- [ ] Set `BACKUP_DIRECTORY` to the timestamped online preservation directory
+      returned above, then prepare a separate copy:
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/stage-jenkins-home.py "$BACKUP_DIRECTORY"
+```
+
+[Standalone inactive-copy helper](../scripts/kubernetes/stage-jenkins-home.py).
+It verifies the home archive against its source manifest, then streams a new
+archive without extracting files, contacting Jenkins, or writing a PVC. The
+output directory is mode 0700; archive and manifest are mode 0600. It leaves
+the original archive untouched and preserves encryption keys, credential files,
+user password hashes, build records, artifacts and plugins.
+
+Only the copy changes: executable jobs and multibranch projects are disabled;
+scan/timer triggers are removed; Pipeline resume is disabled; static agent
+definitions, cloud definitions, queued work and old initialization scripts are
+omitted. A new initialization hook requests quiet mode with zero controller
+executors. The original configurations remain in the source backup. Unknown job
+types, links/special entries, duplicate/unsafe paths, missing encryption keys,
+and archive integrity errors fail for review instead of being silently accepted.
+
+Exit 0 means the offline copy and manifest were written; exit 1 means validation
+or processing failed; argument errors exit 2. Success and failure output exclude
+credential values. A failed run may leave a private partial archive without a
+completion manifest; do not use that output. Nothing is removed automatically.
+
+> [!IMPORTANT]
+> This helper accepts the **online preservation** format only and always records
+> `consistent=false`, `restore_tested=false`, `ready_for_cutover=false`. It does
+> not implement the final consistent transfer or prove startup behavior. Do not
+> restore this preview to the live controller. Target JCasC must also be reviewed:
+> the Phase 8 foundation sets its own admin password, while the old JCasC imports
+> active agents and Job DSL. Neither should be applied unchanged to migrated
+> users/jobs. Plugin/image initialization hooks and all external bootstrap inputs
+> also need review before an isolated startup test.
+
+The hook follows Jenkins' [initialization hook mechanism](https://www.jenkins.io/doc/book/managing/groovy-hook-scripts/).
+The four-argument quiet-mode method was checked against the running Jenkins 2.585
+class API; no hook was executed on the running controller.
+
 ## 3. Verify GitHub App installation scope (read-only)
 
 - [ ] Check existing installation metadata without changing App grants:

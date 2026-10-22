@@ -596,7 +596,8 @@ confirmed external Tailscale browser access and passwords; Phase 8 is closed.
 
 Status: **in progress; preparation authorized on 2026-10-22**. Runtime inventory,
 read-only GitHub App checks and a private online preservation copy are complete.
-The copy is not consistent and has not been restore-tested. No jobs, agents,
+An inactive offline copy has also been prepared and its retained files checked;
+neither copy is consistent or restore-tested. No jobs, agents,
 publishing or cutover have been activated. See [Phase 9 report](PHASE9_REPORT.md)
 and [runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
 

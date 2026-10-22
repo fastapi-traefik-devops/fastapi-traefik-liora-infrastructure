@@ -85,6 +85,32 @@ adaptation and does not silently introduce a new mandatory promotion path.
 
 ## Prepared execution procedure
 
+### Offline inactive-copy preparation
+
+The standalone staging helper verified the online archive's manifest and wrote
+`.local-work/private/phase9/staged-20261022T094005Z/` without extracting files or
+contacting either controller. The original online backup remains unchanged.
+The private directory is mode 0700; archive and manifest are mode 0600.
+
+The copy retains all 30 job configurations, 120 build records and three user
+configurations. A separate source/output hash comparison verified 6,067 unchanged
+files byte-for-byte, including keys, credentials, users, history and artifacts.
+All 29 executable jobs/multibranch projects are disabled, scan/timer
+triggers removed and Pipeline resume disabled. The plain folder remains a
+folder. Controller executors are zero; static agents, clouds, old startup hooks
+and queued-work files are omitted only from the copy. A new quiet-mode startup
+hook is included. The method signature was checked against the running 2.585
+class API without executing any Groovy on the controller.
+
+Fixture tests cover retained secret/history bytes and private output modes,
+suppressed secret-bearing errors, missing keys, changed source hashes, unsafe
+paths, unreviewed job types, links and duplicate normalized members. All eight
+staging fixture tests and the existing four backup tests pass. Successful staging
+is **not** a running restore test. The copy is explicitly marked
+`consistent=false`, `restore_tested=false`, `ready_for_cutover=false`; final
+consistent-backup support, target JCasC/user ownership and startup behavior still
+need implementation/validation before cutover.
+
 [Runbook 17](../../runbooks/17-migrate-jenkins-ci.md) records source/runtime mapping,
 backup boundaries, App prerequisites, proposed agent/DinD/publisher placement and
 resources, and the ordered consistent-backup/state-transfer/cutover/rollback
@@ -104,6 +130,7 @@ Standalone helpers:
 - [Runtime inventory](../../scripts/kubernetes/inventory-legacy-jenkins.py).
 - [Online preservation copy](../../scripts/kubernetes/backup-legacy-jenkins.py).
 - [Read-only GitHub App access check](../../scripts/kubernetes/check-jenkins-github-access.py).
+- [Offline inactive-copy preparation](../../scripts/kubernetes/stage-jenkins-home.py).
 
 The backup helper's fixture checks cover private file modes, no secret output,
 explicit online inconsistency, missing-key rejection and suppressed tar errors.
