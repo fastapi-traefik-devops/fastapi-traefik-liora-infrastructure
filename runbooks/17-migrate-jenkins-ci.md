@@ -607,3 +607,58 @@ and restoration of missing bind-source paths after the operator cleanup.
 > PROD acceptance does not authorize forcing every release through DEV
 > or changing the feature-branch/manual DEV model. Preparation has not
 > performed a new PR, publish, deployment, or rollback test.
+
+## Manual functional-only migration checkpoint
+
+After explicit operator agreement, use the application-owned
+`Jenkinsfile.migration` and `migration` profile. Keep every imported job,
+multibranch indexing, polling, schedules and trusted publisher disabled. This
+checkpoint binds no write credentials, runs no security scans, produces no
+release attestation/image archives and does not deploy. Do not enable the
+regular `Jenkinsfile`: a manual main build can schedule publication.
+
+Commit the reviewed application changes locally on top of the reviewed upstream
+history. Do not push merely to make Jenkins fetch the source. The helper bundles
+that exact commit, validates the Declarative Pipeline on Jenkins, verifies the
+bundle copied to the CI work volume and installs `migration-ci` disabled.
+Controller egress remains denied. All source checkout runs on `host-ci`.
+The helper uses the existing `recovery/LIORA-id_ed25519` administrator SSH key
+and `.local-work/phase8/node-known-hosts` to transfer the bundle into the bound
+CI local-path volume. It verifies the NONPROD node, PVC binding and SHA-256;
+it does not overwrite an existing bundle. Bulk `kubectl exec` stdin was observed
+to truncate transfers on this lab server, so it is not used for the bundle.
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/manual-jenkins-ci.py prepare \
+  "$PWD/.local-work/private/phase9/manual-ci-YYYYMMDD"
+```
+
+Review the private receipt and baseline before the one permitted activation:
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/manual-jenkins-ci.py run \
+  "$PWD/.local-work/private/phase9/manual-ci-YYYYMMDD"
+```
+
+Script: [manual-jenkins-ci.py](../scripts/kubernetes/manual-jenkins-ci.py).
+
+The helper records an exclusive request boundary **before** enabling the job or
+sending the one build request. It never retries a build POST, even if the HTTP
+response is ambiguous. Do not delete that boundary or choose a new directory to
+circumvent it. Inspect queue/history first if a request or monitor is interrupted;
+do not request another build without a new operator decision. A preparation-only
+interruption may be retried against the same unchanged baseline. Preserve any
+partial transferred bundle for diagnosis; preparation never overwrites it.
+
+Use a persistent operator session for the monitor. Its `finally` block disables
+the manual job and restores quiet mode after success, failure or a caught error.
+A killed process or lost session may require an operator to restore that hold
+through Jenkins; quiet mode alone does not abort a running build. The helper
+fails if work is still queued/running or imported configuration/user hashes differ.
+Authentication uses the current K3s administrator Secret and never prints it.
+
+Archive actual JUnit/coverage and `migration-result.json`. Missing/deferred gates
+are not PASS. No `gates.json` or publisher-eligible tarball is generated. Tests
+use their existing disposable Docker database; do not mount or modify K3s
+PostgreSQL data. Preserve the 90-minute pipeline timeout and current resources
+for this first observation; report failures before changing bounds or retrying.
