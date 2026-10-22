@@ -116,6 +116,8 @@ spec:
         image: ghcr.io/fastapi-traefik-devops/liora-jenkins-dind@sha256:8a1438a15d85154fc53aa500782707780dd0d0ce7f8bc256ac200eb47c2787fc
         args:
         - --storage-driver=overlay2
+        - --mtu=1450
+        - --default-network-opt=bridge=com.docker.network.driver.mtu=1450
         env:
         - name: DOCKER_TLS_CERTDIR
           value: /certs

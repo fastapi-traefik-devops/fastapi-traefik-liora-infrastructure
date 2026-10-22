@@ -686,3 +686,11 @@ bash scripts/local-python.sh scripts/kubernetes/manual-jenkins-ci.py run \
 ```
 
 Script: [manual-jenkins-ci.py](../scripts/kubernetes/manual-jenkins-ci.py).
+
+The 2026-10-22 correction sets `--mtu=1450` and
+`--default-network-opt=bridge=com.docker.network.driver.mtu=1450` on the CI DinD
+sidecar, matching the K3s pod interface. This covers the default build bridge and
+new CI test networks. Roll out only `host-ci` while Jenkins is held; preserve the
+bound work/cache PVCs. Verify MTU and bounded HTTPS downloads from both nested
+network types before another application build. Do not relax network policies,
+change application databases or enable publishing as part of this correction.
