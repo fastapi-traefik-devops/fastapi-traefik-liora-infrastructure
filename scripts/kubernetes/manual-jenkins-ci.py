@@ -73,7 +73,7 @@ println 'Execution hold restored'
 ''')
 
 
-def prepare(app, directory):
+def prepare(app, directory, previous=None):
     if subprocess.check_output(['git', '-C', str(app), 'status', '--porcelain']).strip():
         raise RuntimeError('Application checkout must be clean and committed')
     sha = subprocess.check_output(['git', '-C', str(app), 'rev-parse', 'HEAD'], text=True).strip()
@@ -82,8 +82,27 @@ def prepare(app, directory):
     definition = subprocess.check_output(['git', '-C', str(app), 'show', sha + ':Jenkinsfile.migration']).decode()
     request = client()
     baseline = inspect(request)
-    if JOB in baseline['jobs']:
-        raise RuntimeError('Manual job already exists; inspect its evidence, do not replace it')
+    number = 1
+    existing = JOB in baseline['jobs']
+    if existing:
+        if previous is None:
+            raise RuntimeError('Manual job exists; an explicit completed previous receipt is required')
+        previous_receipt = json.loads((previous / 'receipt.json').read_text())
+        previous_after = json.loads((previous / 'after.json').read_text())
+        previous_result = json.loads((previous / 'build-result.json').read_text())
+        if not (previous / 'request-boundary.json').is_file() or previous_result['building']:
+            raise RuntimeError('Previous attempt is not complete')
+        if baseline != previous_after:
+            raise RuntimeError('State differs from the completed previous attempt')
+        current = ET.fromstring(request('/job/migration-ci/config.xml'))
+        if hashlib.sha256(current.findtext('definition/script').encode()).hexdigest() != previous_receipt['definition_sha256']:
+            raise RuntimeError('Previous installed definition differs from its receipt')
+        number = previous_receipt.get('build_number', 1) + 1
+        job = json.loads(request('/job/migration-ci/api/json?tree=nextBuildNumber,builds[number]'))
+        if job['nextBuildNumber'] != number or sorted(b['number'] for b in job['builds']) != list(range(1, number)):
+            raise RuntimeError('Unexpected manual build history')
+    elif previous is not None:
+        raise RuntimeError('Previous receipt requires the preserved existing job')
     directory.mkdir(parents=True, mode=0o700, exist_ok=True)
     if (directory / 'baseline.json').exists():
         if json.loads((directory / 'baseline.json').read_text()) != baseline:
@@ -139,36 +158,45 @@ os.chown(path.parent, 1000, 1000)
     copied = subprocess.check_output(kube + ['exec', pod, '-c', 'agent', '--', 'sha256sum', target], text=True).split()[0]
     if copied != digest:
         raise RuntimeError('Staged bundle hash differs')
-    root = ET.Element('flow-definition', {'plugin': 'workflow-job'})
-    ET.SubElement(root, 'description').text = 'Approved local-only Phase 9 checkpoint; no publication or deployment.'
-    ET.SubElement(root, 'keepDependencies').text = 'false'
-    ET.SubElement(root, 'properties')
-    node = ET.SubElement(root, 'definition', {'class': 'org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition', 'plugin': 'workflow-cps'})
-    ET.SubElement(node, 'script').text = definition
-    ET.SubElement(node, 'sandbox').text = 'true'
-    ET.SubElement(root, 'triggers')
-    ET.SubElement(root, 'disabled').text = 'true'
     crumb = json.loads(request('/crumbIssuer/api/json'))
-    request('/createItem?name=' + JOB, ET.tostring(root),
-            {crumb['crumbRequestField']: crumb['crumb'], 'Content-Type': 'application/xml'})
-    # Parameters must exist before the first build, without executing Pipeline properties.
-    script(request, '''
-import hudson.model.*
-def job = jenkins.model.Jenkins.get().getItemByFullName('migration-ci')
-job.addProperty(new ParametersDefinitionProperty([
- new StringParameterDefinition('APP_COMMIT', '', 'Exact approved application commit'),
- new StringParameterDefinition('SOURCE_BUNDLE', '', 'Operator-staged local Git bundle')]))
-job.save()
-println 'Manual job installed disabled'
-''')
+    if existing:
+        current.find('definition/script').text = definition
+        current.find('disabled').text = 'true'
+        request('/job/migration-ci/config.xml', ET.tostring(current),
+                {crumb['crumbRequestField']: crumb['crumb'], 'Content-Type': 'application/xml'})
+    else:
+        root = ET.Element('flow-definition', {'plugin': 'workflow-job'})
+        ET.SubElement(root, 'description').text = 'Approved local-only Phase 9 checkpoint; no publication or deployment.'
+        ET.SubElement(root, 'keepDependencies').text = 'false'
+        ET.SubElement(root, 'properties')
+        node = ET.SubElement(root, 'definition', {'class': 'org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition', 'plugin': 'workflow-cps'})
+        ET.SubElement(node, 'script').text = definition
+        ET.SubElement(node, 'sandbox').text = 'true'
+        ET.SubElement(root, 'triggers')
+        ET.SubElement(root, 'disabled').text = 'true'
+        crumb = json.loads(request('/crumbIssuer/api/json'))
+        request('/createItem?name=' + JOB, ET.tostring(root),
+                {crumb['crumbRequestField']: crumb['crumb'], 'Content-Type': 'application/xml'})
+        # Parameters must exist before the first build, without executing Pipeline properties.
+        script(request, '''
+    import hudson.model.*
+    def job = jenkins.model.Jenkins.get().getItemByFullName('migration-ci')
+    job.addProperty(new ParametersDefinitionProperty([
+     new StringParameterDefinition('APP_COMMIT', '', 'Exact approved application commit'),
+     new StringParameterDefinition('SOURCE_BUNDLE', '', 'Operator-staged local Git bundle')]))
+    job.save()
+    println 'Manual job installed disabled'
+    ''')
     save(directory, 'receipt.json', {'sha': sha, 'bundle': target, 'bundle_sha256': digest,
-         'definition_sha256': hashlib.sha256(definition.encode()).hexdigest(), 'job': JOB})
+         'definition_sha256': hashlib.sha256(definition.encode()).hexdigest(), 'job': JOB,
+         'build_number': number, 'previous_directory': str(previous) if previous else None})
     print('Manual Pipeline validated; source bundle verified; job installed disabled.', flush=True)
 
 
 def execute(directory):
     receipt = json.loads((directory / 'receipt.json').read_text())
     baseline = json.loads((directory / 'baseline.json').read_text())
+    number = receipt.get('build_number', 1)
     request = client()
     before = inspect(request)
     if before['configs'] != baseline['configs'] or before['users'] != baseline['users']:
@@ -180,46 +208,49 @@ def execute(directory):
         raise RuntimeError('Installed Pipeline differs from approved source')
     # Exclusive creation happens BEFORE enabling or POSTing. Never retry this operation.
     save(directory, 'request-boundary.json', {'time': datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                                            'sha': receipt['sha'], 'automatic_retry': False})
+                                            'sha': receipt['sha'], 'build_number': number, 'automatic_retry': False})
     try:
         script(request, '''
 def j = jenkins.model.Jenkins.get()
 def job = j.getItemByFullName('migration-ci')
-assert job.nextBuildNumber == 1
-assert job.builds.isEmpty()
+assert job.nextBuildNumber == EXPECTED_NUMBER
+assert job.builds.size() == EXPECTED_COUNT
 job.setDisabled(false); job.save()
 j.doCancelQuietDown()
 println 'Only manual CI enabled'
-''')
+'''.replace('EXPECTED_NUMBER', str(number)).replace('EXPECTED_COUNT', str(number - 1)))
         # Jenkins redirects to the queue URL. The held client follows it; no retry is made.
         post(request, '/job/migration-ci/buildWithParameters',
              {'APP_COMMIT': receipt['sha'], 'SOURCE_BUNDLE': receipt['bundle']})
-        print('Exactly one manual build requested; monitoring migration-ci #1.', flush=True)
+        print(f'Exactly one manual build requested; monitoring migration-ci #{number}.', flush=True)
         deadline = time.monotonic() + 96 * 60
         last = None
         while time.monotonic() < deadline:
             job = json.loads(request('/job/migration-ci/api/json?tree=builds[number,building,result],inQueue'))
-            builds = job.get('builds', [])
-            if len(builds) > 1 or (builds and builds[0]['number'] != 1):
+            all_builds = job.get('builds', [])
+            builds = [build for build in all_builds if build['number'] == number]
+            if len(all_builds) > number or any(build['number'] > number for build in all_builds):
                 raise RuntimeError('Unexpected build count; restore hold and inspect')
             state = builds[0] if builds else {'queued': job.get('inQueue')}
             if state != last:
                 print(json.dumps(state), flush=True)
                 last = state
             if builds and not builds[0]['building']:
-                save(directory, 'build-result.json', json.loads(request('/job/migration-ci/1/api/json')))
+                save(directory, 'build-result.json', json.loads(request(f'/job/migration-ci/{number}/api/json')))
                 break
             time.sleep(20)
         else:
-            raise RuntimeError('Monitor deadline reached; inspect #1 before any further action')
+            raise RuntimeError('Monitor deadline reached; inspect the requested build before any further action')
     finally:
         hold(request)
         final = inspect(request)
         save(directory, 'after.json', final)
         if final['configs'] != baseline['configs'] or final['users'] != baseline['users']:
             raise RuntimeError('Imported configuration or user hashes changed')
-        if any(final['jobs'][name] != state for name, state in baseline['jobs'].items()):
+        if any(final['jobs'][name] != state for name, state in baseline['jobs'].items() if name != JOB):
             raise RuntimeError('Imported job state changed')
+        if JOB in baseline['jobs'] and final['jobs'][JOB] != {'disabled': True, 'builds': number, 'triggers': 0}:
+            raise RuntimeError('Unexpected final manual build history')
         if not final['quiet'] or final['queue'] or final['running'] or any(not j['disabled'] or j['triggers'] for j in final['jobs'].values()):
             raise RuntimeError('Execution is held; inspect remaining running/queued work')
         print('All jobs disabled; quiet mode restored; imported configuration and users unchanged.', flush=True)
@@ -229,11 +260,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['prepare', 'run'])
     parser.add_argument('directory', type=Path, help='New private evidence directory (prepare), same directory (run)')
+    parser.add_argument('--previous', type=Path, help='Completed prior attempt receipt; never reuse its request boundary')
     parser.add_argument('--application', type=Path, default=ROOT.parent / 'fastapi-traefik-liora-application')
     args = parser.parse_args()
     os.umask(0o077)
     if args.action == 'prepare':
-        prepare(args.application.resolve(), args.directory.resolve())
+        prepare(args.application.resolve(), args.directory.resolve(), args.previous.resolve() if args.previous else None)
     else:
         execute(args.directory.resolve())
 

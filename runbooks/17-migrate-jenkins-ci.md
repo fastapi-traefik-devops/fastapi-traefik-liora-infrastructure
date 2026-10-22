@@ -668,3 +668,21 @@ not mean CI passed. Inspect `build-result.json` and the archived reports. The
 [first attempt report](../docs/testreports/PHASE9_MANUAL_CI.md) records an aborted
 network stall and a source-only reporting fix; do not delete its request guard
 or rerun it to obtain a green result.
+
+### Explicitly approved follow-up attempt
+
+After reviewing a failed/stopped attempt and obtaining approval for one further
+build, retain its entire evidence directory and pass it explicitly when preparing
+a new directory. The helper requires the previous completed result, restored
+hold, unchanged job/user state and sequential build history. It updates only the
+held manual job definition and preserves all previous builds and request guards.
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/manual-jenkins-ci.py prepare \
+  "$PWD/.local-work/private/phase9/manual-ci2-YYYYMMDD" \
+  --previous "$PWD/.local-work/private/phase9/manual-ci-YYYYMMDD"
+bash scripts/local-python.sh scripts/kubernetes/manual-jenkins-ci.py run \
+  "$PWD/.local-work/private/phase9/manual-ci2-YYYYMMDD"
+```
+
+Script: [manual-jenkins-ci.py](../scripts/kubernetes/manual-jenkins-ci.py).

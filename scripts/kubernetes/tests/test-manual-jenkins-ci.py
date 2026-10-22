@@ -59,6 +59,37 @@ class ManualCheckpointTests(unittest.TestCase):
                 self.module['execute'](self.directory)
         activate.assert_not_called()
 
+    def test_explicit_second_attempt_preserves_first_build(self):
+        receipt = json.loads((self.directory / 'receipt.json').read_text())
+        receipt['build_number'] = 2
+        (self.directory / 'receipt.json').write_text(json.dumps(receipt))
+        self.state['jobs']['migration-ci'] = {'disabled': True, 'builds': 1, 'triggers': 0}
+        (self.directory / 'baseline.json').write_text(json.dumps(self.state))
+        final = json.loads(json.dumps(self.state))
+        final['jobs']['migration-ci']['builds'] = 2
+        request = Mock(side_effect=lambda path:
+            b'<flow-definition><definition><script>fixture</script></definition></flow-definition>'
+            if path.endswith('config.xml') else json.dumps({'builds': [
+                {'number': 2, 'building': False, 'result': 'SUCCESS'},
+                {'number': 1, 'building': False, 'result': 'ABORTED'}]}).encode())
+        activate, post, hold = Mock(), Mock(), Mock()
+        with patch.dict(self.env, {'client': lambda: request, 'inspect': Mock(side_effect=[self.state, final]),
+                                 'script': activate, 'post': post, 'hold': hold}):
+            self.module['execute'](self.directory)
+        post.assert_called_once()
+        hold.assert_called_once()
+        self.assertIn('nextBuildNumber == 2', activate.call_args.args[1])
+        self.assertIn('builds.size() == 1', activate.call_args.args[1])
+        self.assertTrue(any('/migration-ci/2/api/json' in call.args[0] for call in request.call_args_list))
+
+    def test_existing_job_requires_explicit_previous_receipt(self):
+        self.state['jobs']['migration-ci'] = {'disabled': True, 'builds': 1, 'triggers': 0}
+        with patch.dict(self.env, {'client': Mock(), 'inspect': lambda _: self.state}), \
+                patch('subprocess.check_output', side_effect=[b'', 'a' * 40, b'fixture']):
+            with self.assertRaisesRegex(RuntimeError, 'explicit completed previous receipt'):
+                self.module['prepare'](Path('/fake/app'), self.directory / 'new')
+        self.assertFalse((self.directory / 'new').exists())
+
     def test_modified_imported_configuration_blocks_activation(self):
         changed = {**self.state, 'configs': {'legacy': 'different'}}
         activate = Mock()
