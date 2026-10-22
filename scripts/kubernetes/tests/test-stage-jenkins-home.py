@@ -20,7 +20,7 @@ SECRET = 'FIXTURE-SECRET-ONLY-72c44d'
 
 
 class StagingTests(unittest.TestCase):
-    def invoke(self, alteration=None):
+    def invoke(self, alteration=None, stopped=False, missing_admin=False, wrong_admin=False, encrypted_admin=False):
         files = {
             'config.xml': b'<hudson><numExecutors>2</numExecutors><slaveAgentPort>50000</slaveAgentPort><clouds><cloud/></clouds><securityRealm>keep</securityRealm></hudson>',
             'jobs/ci/config.xml': b'<flow-definition><disabled>false</disabled><properties><pipeline><triggers><timer>schedule</timer></triggers></pipeline></properties></flow-definition>',
@@ -38,6 +38,8 @@ class StagingTests(unittest.TestCase):
         }
         if alteration:
             alteration(files)
+        if stopped:
+            files['users/admin/config.xml'] = ('<user><id>admin</id><passwordHash>' + SECRET + '</passwordHash></user>').encode()
         with tempfile.TemporaryDirectory(dir=SCRIPT.parents[2] / '.local-work') as directory:
             root = Path(directory)
             script = root / 'scripts/kubernetes/stage-jenkins-home.py'
@@ -59,13 +61,26 @@ class StagingTests(unittest.TestCase):
             manifest = {'mode': 'online-preservation-only', 'archives': [
                 {'file': home.name, 'bytes': home.stat().st_size,
                  'sha256': hashlib.sha256(home.read_bytes()).hexdigest()}]}
+            if stopped:
+                manifest.update(mode='stopped-preservation', consistent=True)
+            admin = root / 'current-admin.xml'
+            admin_bytes = b'<user><id>admin</id><properties><passwordHash>FAKE-CURRENT-ADMIN-HASH</passwordHash></properties></user>'
+            if wrong_admin:
+                admin_bytes = admin_bytes.replace(b'<id>admin</id>', b'<id>another-user</id>')
+            if encrypted_admin:
+                admin_bytes = admin_bytes.replace(b'</properties>', b'<domainCredentialsMap><entry>FAKE-USER-CREDENTIAL</entry></domainCredentialsMap></properties>')
+            admin.write_bytes(admin_bytes)
+            admin.chmod(0o600)
             if alteration == corrupt_digest:
                 manifest['archives'][0]['sha256'] = '0' * 64
             (source / 'manifest.json').write_text(json.dumps(manifest))
             source_digest = hashlib.sha256(home.read_bytes()).hexdigest()
             stdout, stderr = io.StringIO(), io.StringIO()
             status = 0
-            with patch.object(sys, 'argv', [str(script), str(source)]), redirect_stdout(stdout), redirect_stderr(stderr):
+            argv = [str(script), str(source)]
+            if stopped and not missing_admin:
+                argv += ['--admin-config', str(admin)]
+            with patch.object(sys, 'argv', argv), redirect_stdout(stdout), redirect_stderr(stderr):
                 try:
                     runpy.run_path(str(script), run_name='__main__')
                 except SystemExit as error:
@@ -73,13 +88,14 @@ class StagingTests(unittest.TestCase):
             self.assertNotIn(SECRET, stdout.getvalue() + stderr.getvalue())
             # Source material is never rewritten, including after failed staging.
             self.assertEqual(hashlib.sha256(home.read_bytes()).hexdigest(), source_digest)
-            if alteration:
+            if alteration or missing_admin or wrong_admin or encrypted_admin:
                 self.assertEqual(status, 1)
                 self.assertFalse(list(root.glob('.local-work/private/phase9/*/manifest.json')))
                 return
             self.assertEqual(status, 0)
             result = json.loads(stdout.getvalue())
-            self.assertFalse(result['consistent'])
+            self.assertEqual(result['consistent'], stopped)
+            self.assertEqual(result['admin_login_preserved'], stopped)
             self.assertFalse(result['restore_tested'])
             self.assertFalse(result['ready_for_cutover'])
             self.assertEqual(result['counts']['job_configs'], 3)
@@ -106,6 +122,9 @@ class StagingTests(unittest.TestCase):
                         self.assertEqual(config.findtext('disabled'), 'true')
                     if config.tag == 'flow-definition':
                         self.assertIsNotNone(config.find('properties/org.jenkinsci.plugins.workflow.job.properties.DisableResumeJobProperty'))
+                elif stopped and name == 'users/admin/config.xml':
+                    self.assertEqual(output[name], admin_bytes)
+                    self.assertNotIn(SECRET.encode(), output[name])
                 else:
                     self.assertEqual(output[name], data)
             self.assertIn(b'doQuietDown', output['init.groovy.d/00-migration-hold.groovy'])
@@ -133,6 +152,18 @@ class StagingTests(unittest.TestCase):
 
     def test_rejects_duplicate_normalized_paths(self):
         self.invoke(lambda files: files.update({'./config.xml': files['config.xml']}))
+
+    def test_stopped_copy_preserves_current_admin_in_source_user_directory(self):
+        self.invoke(stopped=True)
+
+    def test_stopped_copy_requires_current_admin(self):
+        self.invoke(stopped=True, missing_admin=True)
+
+    def test_current_admin_identity_must_match(self):
+        self.invoke(stopped=True, wrong_admin=True)
+
+    def test_current_admin_encrypted_user_credentials_require_separate_review(self):
+        self.invoke(stopped=True, encrypted_admin=True)
 
 
 def corrupt_digest(files):

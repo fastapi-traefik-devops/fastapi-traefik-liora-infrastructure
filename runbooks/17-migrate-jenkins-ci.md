@@ -94,18 +94,20 @@ credential values. A failed run may leave a private partial archive without a
 completion manifest; do not use that output. Nothing is removed automatically.
 
 > [!IMPORTANT]
-> This helper accepts the **online preservation** format only and always records
-> `consistent=false`, `restore_tested=false`, `ready_for_cutover=false`. It does
-> not implement the final consistent transfer or prove startup behavior. Do not
-> restore this preview to the live controller. Target JCasC must also be reviewed:
+> Online input produces a preview with `consistent=false`, `restore_tested=false`,
+> `ready_for_cutover=false`; never use it as the final transfer. Stopped-source
+> input is supported only with `--admin-config` pointing to the private current
+> K3s admin XML. It produces an inactive restore candidate, retains the source's
+> consistency flag and still does not claim runtime acceptance. Target JCasC must
+> also be reviewed:
 > the Phase 8 foundation sets its own admin password, while the old JCasC imports
 > active agents and Job DSL. Neither should be applied unchanged to migrated
 > users/jobs. Plugin/image initialization hooks and all external bootstrap inputs
 > also need review before an isolated startup test.
 
 The hook follows Jenkins' [initialization hook mechanism](https://www.jenkins.io/doc/book/managing/groovy-hook-scripts/).
-The four-argument quiet-mode method was checked against the running Jenkins 2.585
-class API; no hook was executed on the running controller.
+The four-argument quiet-mode method was checked against Jenkins 2.585. The hook
+is executed only on the migrated controller; the legacy controller remains stopped.
 
 ## 3. Verify GitHub App installation scope (read-only)
 
