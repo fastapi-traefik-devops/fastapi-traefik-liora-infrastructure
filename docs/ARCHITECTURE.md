@@ -13,6 +13,9 @@ operator confirmed all interfaces and passwords through Tailscale on 2026-10-22.
 Phase 8 is complete. See the
 [Phase 8 report](testreports/PHASE8_REPORT.md) and
 [implementation plan](testreports/IMPLEMENTATION_PLAN.md).
+Phase 9 has restored Jenkins state to a separate NONPROD home while retaining
+the current administrator login. The controller remains held with disabled jobs
+and no agents; working CI is not active. See the [Phase 9 report](testreports/PHASE9_REPORT.md).
 
 ## Host and private network
 
@@ -82,7 +85,7 @@ in the Phase 8 report.
 | `infrastructure/k3s-cluster/ansible/` | Guest preparation, two K3s clusters, kubeconfigs |
 | `kubernetes/apps/liora/` | Current application manifests, environment overlays, and imported deployment history; DEV/STAGE/PROD deployed and privately verified |
 | `kubernetes/gitops/argocd/` | Implemented independent Argo CD installations and cluster-specific GitOps definitions |
-| `kubernetes/platform/nonprod/` | Implemented NONPROD administrative access, monitoring and Jenkins foundation |
+| `kubernetes/platform/nonprod/` | Implemented NONPROD administrative access, monitoring and Jenkins foundation/held restore overlays |
 | `kubernetes/platform/prod/` | Implemented independent PROD administrative access and monitoring |
 | `scripts/kubernetes/` | Reusable deployment, certificate and verification helpers |
 | `recovery/` | Local recovery inputs and examples; live credentials stay out of Git |
@@ -331,20 +334,30 @@ notification receipt is not yet verified.
 
 ## Jenkins and CI
 
-**Current state: K3s controller foundation implemented; working CI remains on VM 100.**
+**Current state: Jenkins state restored in K3s under an execution hold; working CI inactive.**
 
-The existing Jenkins runs in Docker on VM 100 and uses private address
+The legacy Jenkins ran in Docker on VM 100 at private address
 `192.168.77.100:8085`. Its source configuration is in the application repository
 under `infra/jenkins-host/`. It has a controller with zero executors, a CI
 agent, a separate trusted registry publisher and an isolated Docker-in-Docker
-build daemon. This proof of concept is the migration source.
+build daemon. This proof of concept is the migration source. Its controller,
+agents, daemon and local kind node have been stopped with operator authorization;
+containers, volumes, cache and private backups remain available for recovery.
 
 One Jenkins controller now runs in the DEV/STAGE cluster's `jenkins` namespace,
-with a 5Gi local-path `JENKINS_HOME` PVC and native HTTP/login at
+with a separate 5Gi local-path `JENKINS_HOME` PVC and native HTTP/login at
 `192.168.77.16:8085`. It reuses the unchanged PoC image/plugin set, published to
-GHCR and pinned by digest. Native browser login and authenticated API checks
-confirmed zero jobs, zero agents and zero executors. It requests 100m/512Mi,
+GHCR and pinned by digest. The restored state contains 30 configured items,
+139 build records and three persisted users. The current K3s admin account and
+password are retained; legacy admin data remains only in the recovery archive.
+Native browser/API login passed, credential IDs/scopes and decryption were checked,
+and original encryption/user-directory keys were retained. It requests 100m/512Mi,
 limits 1 CPU/768Mi and caps its heap at 384Mi. No PROD controller is planned.
+Jobs, multibranch scanning and Pipeline resume are disabled; controller executors,
+agents, running builds and queued work are zero. A startup hook enters quiet mode
+and a selected egress NetworkPolicy blocks controller outbound connections.
+An init check prevents the restored-state overlay from starting on an incomplete
+home. The original foundation PVC and a consistent foundation backup are retained.
 Migration is staged:
 
 - Phase 8 installs the controller, storage and private access. Working jobs,
@@ -352,16 +365,23 @@ Migration is staged:
 - Phase 9 moves working CI and its private state. Preserve as much as possible
   from the existing image/plugin/tool locks, Dockerfiles, JCasC, Job DSL,
   pipelines, users, credential IDs/scopes, history and artifacts. Keep CI and
-  trusted publication separate. Adapt promotion to reviewed infrastructure
+  trusted publication separate. Current pipeline sources/settings remain preserved
+  without promotion behavior changes pending operator review. The agreed later
+  target adapts promotion to reviewed infrastructure
   repository changes while application code/build pipelines remain owned by
   the application repository.
 
 Controller resources and image provenance are tracked in
-`kubernetes/platform/nonprod/jenkins/`. Agent/build-daemon configuration, private
-state transfer, cutover and promotion details remain **in development** for
-Phase 9. The source JCasC/Job DSL and publisher credentials are not activated in
-the new foundation. Live credentials, encryption keys and home archives remain
-private operator data outside Git.
+`kubernetes/platform/nonprod/jenkins/`. Its default overlay supports a fresh
+foundation; `held/` selects the restored home and execution guard. Do not apply
+the foundation overlay over the restored controller as routine reconciliation.
+Agent/build-daemon migration, trusted publisher activation and pipeline/promotion
+review remain **in development** for Phase 9. The existing DinD approach with a
+privileged daemon and separate publisher is approved for initial migration;
+the disposable cache will be recreated. Stored publisher/App credentials have
+been restored, but publication is inactive and imported Job DSL is not executed.
+Live credentials, encryption keys and home archives remain private operator data
+outside Git. Successful state restore does not establish CI or promotion readiness.
 
 VM 100 retirement and legacy public NAT cleanup are operator work outside
 this implementation's scope. Phase 8 does not complete the working CI

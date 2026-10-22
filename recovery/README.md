@@ -185,6 +185,16 @@ or infrastructure changes are needed.
 
 ## Jenkins GitHub App installation recovery
 
+Jenkins Phase 9 state is restored under a hold. Retain both private source and
+foundation backups, the staged home, current-admin XML and transfer/acceptance
+receipts under `.local-work/private/phase9/` in protected operator recovery storage;
+they include credential-bearing data and must never enter Git. The current K3s
+admin login is authoritative; the legacy admin profile remains in source backup
+only. Follow the [state transfer and retained-PVC rollback procedure](../runbooks/17-migrate-jenkins-ci.md#restore-to-a-new-pvc-while-retaining-the-current-admin-login).
+Fresh bootstrap uses the default Jenkins overlay; an existing restored controller
+uses `kubernetes/platform/nonprod/jenkins/held`. Do not apply the foundation over
+that controller or activate old jobs/promotion as part of credential recovery.
+
 Restoring a GitHub App key does not restore its repository selection or granted
 permissions. Recover the existing `fastapi-gitops` installation with access to
 both the application and infrastructure repositories, **Contents: Read and write**,

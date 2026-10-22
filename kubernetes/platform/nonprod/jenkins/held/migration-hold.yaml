@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jenkins-migration-hold
+  namespace: jenkins
+data:
+  jenkins.yaml: |
+    jenkins:
+      systemMessage: Migrated Jenkins state held for review. Jobs, resume, agents and promotion remain disabled.
+      numExecutors: 0
+      mode: EXCLUSIVE
+      clouds: []
+      nodes: []
+      securityRealm:
+        local:
+          allowsSignup: false
+      authorizationStrategy:
+        globalMatrix:
+          entries:
+          - user:
+              name: admin
+              permissions:
+              - Overall/Administer
+      remotingSecurity:
+        enabled: true
+      slaveAgentPort: -1
+    unclassified:
+      location:
+        url: http://192.168.77.16:8085/
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jenkins-home-migrated
+  namespace: jenkins
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: jenkins-migration-hold
+  namespace: jenkins
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: jenkins
+  policyTypes:
+  - Egress
+  egress: []

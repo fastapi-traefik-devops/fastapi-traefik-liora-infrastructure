@@ -596,10 +596,11 @@ confirmed external Tailscale browser access and passwords; Phase 8 is closed.
 
 Status: **in progress; migration decisions and legacy stop authorized on 2026-10-22**. Runtime inventory,
 read-only GitHub App checks and a private online preservation copy are complete.
-An inactive offline preview has also been prepared and its retained files checked;
-that preview is not consistent or restore-tested. The authorized legacy stop
-and stopped-source preservation are recorded in the report. No migrated jobs,
-agents or publishing have been activated. See [Phase 9 report](PHASE9_REPORT.md)
+The authorized legacy stop, consistent source/foundation backups and restore to
+a separate NONPROD PVC are complete. Runtime and browser checks verified the
+current K3s admin login, retained users/history/credential scopes and decryption,
+and the execution/egress hold. No migrated jobs, agents or publishing have been
+activated. See [Phase 9 report](PHASE9_REPORT.md)
 and [runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
 
 Preserve the maximum working behavior from the application's Jenkins proof of
@@ -631,16 +632,24 @@ were verified on 2026-10-22 after the operator updated the installation.
   reviewed publication/promotion and finally polling/schedules. Preserving
   pipeline source does not authorize executing its old promotion behavior.
 
-- [ ] Inventory and privately back up the existing Jenkins home, jobs,
+- [x] Inventory and privately back up the existing Jenkins home, jobs,
       plugin versions, build history/artifacts, encryption keys and required
       credential files before migration. Plan a consistent transfer/cutover
       without losing or duplicating active work. Keep source copies intact
-      until the replacement is accepted.
-- [ ] Migrate reusable Job DSL/JCasC and required private state into the new
-      controller. Preserve credential IDs/scopes, non-admin users and permissions;
-      retain the new K3s admin login instead of importing the legacy admin. Adapt
-      old host paths and repository URLs deliberately. Keep all live secrets
-      and Jenkins encryption material outside Git and diagnostic output.
+      until the replacement is accepted. The operator's immediate-stop instruction
+      superseded draining active work; interrupted executions were recorded and
+      retained, not claimed successful. Both original homes remain intact and a
+      concrete K3s foundation rollback object/procedure is prepared, not run-tested.
+- [x] Restore required private state into a separate new controller home with
+      compatible minimal JCasC and disabled execution. Preserve credential IDs/
+      scopes, non-admin users, history/artifacts and original encryption keys;
+      retain the current K3s admin login instead of importing the legacy admin.
+      Verify the existing password in API/browser and check credential decryption.
+      Keep all private state outside Git and diagnostics. Preserve original
+      Job DSL/pipeline sources without executing them or redesigning promotion.
+- [ ] Review the preserved Job DSL/pipelines and settings with the operator
+      before adapting old repository targets or enabling their behavior. Required
+      runtime plumbing is allowed; promotion behavior changes remain deferred.
 - [ ] Move CI agents, isolated build daemon and separate registry publisher
       into the nonprod CI platform with bounded resources. Preserve the
       existing separation of build and publication credentials, verified

@@ -1,5 +1,11 @@
 # Jenkins controller foundation
 
+The default overlay remains the Phase 8 foundation for fresh bootstrap. The
+current Phase 9 controller uses the [`held/`](held/kustomization.yaml) overlay;
+do not apply the default overlay over that controller as routine reconciliation.
+It would switch back to the retained foundation home. The foundation manifests
+are now under `base/`; image, resources and initial-login behavior are unchanged.
+
 The image is the unchanged running PoC controller, published to GHCR at
 `ghcr.io/fastapi-traefik-devops/liora-jenkins-controller:phase8-b98a22e` and pinned
 in the Deployment by digest. Its `/usr/share/jenkins/ref/plugins.txt` SHA-256
@@ -26,8 +32,32 @@ of old Jenkins state. Phase 9 handles consistent transfer, users/credential IDs,
 history, build agents, isolated Docker and trusted publishing. Do not restart
 legacy Docker containers or activate jobs during foundation setup.
 
-The controller is deployed and Ready, its PVC is Bound, and native browser
+At Phase 8 acceptance, the controller was Ready, its PVC Bound, and native browser
 login passed. The mounted plugin lock matches the preserved source. Authenticated
 API checks found zero jobs, zero agents and zero controller executors. The
 [approved status guard](../../../../docs/testreports/PHASE8_ADMIN_VIP_DECISION.md)
-protects its VIP status. Working CI/state migration remains Phase 9.
+protects its VIP status. The subsequent held restore is described below; working
+CI remains deferred within Phase 9.
+
+## Held migration overlay
+
+The held overlay keeps the same controller image, service, login Secret and
+resource limits, but mounts the separate 5Gi `jenkins-home-migrated` PVC.
+`jenkins-home` remains intact for rollback. The restore helper backs up the
+stopped foundation before transferring any state to the new volume.
+
+The migration JCasC defines the same local realm and admin matrix without a
+user/password declaration, so it uses the preserved user files without resetting
+the current admin password. It imports no Job DSL, agents or clouds. Private
+job configuration, non-admin users, credentials and encryption material come
+from the validated stopped archive; current admin data replaces only the legacy
+admin profile at the path determined by the preserved user-directory HMAC key.
+Nothing private is generated into Git.
+
+An init container refuses startup without the restored configuration, encryption
+material, admin profile, quiet-mode hook and verified-transfer marker. A selected
+NetworkPolicy denies all controller egress while it is held; this includes DNS
+and external API/registry calls. Administrative replies to allowed incoming
+connections remain usable. Jobs, multibranch scanning and Pipeline resume remain
+disabled. The old source, schedules and promotion pipeline must not be activated
+unchanged; follow [runbook 17](../../../../runbooks/17-migrate-jenkins-ci.md).

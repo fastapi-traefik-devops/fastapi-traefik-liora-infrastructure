@@ -10,6 +10,10 @@
 > promotion is authorized for automatic activation. Retain the current K3s admin
 > credentials. Do not retire VM 100, delete containers/volumes or change NAT.
 
+Latest checkpoint: the held state restore passed API/browser checks with the
+unchanged current admin login. Agents, builds and publication remain inactive.
+See the [restore evidence](../docs/testreports/PHASE9_STATE_RESTORE.md).
+
 ## 1. Inventory before mutation
 
 > [!NOTE]
@@ -257,20 +261,120 @@ queue requests are recorded for review, not automatically replayed.
 Rollback must first reconstruct missing original bind sources from the preserved
 archives and inspect metadata. Do not issue `docker start` blindly: retained
 containers still refer to paths absent from the host. No files or volumes are
-deleted by this procedure. The online staging helper currently accepts only its
-preview format; the stopped archive must not be relabeled as an online copy.
+deleted by this procedure. The staging helper supports separate
+preview and stopped-source formats; never relabel a stopped archive as online.
+
+### Restore to a new PVC while retaining the current admin login
+
+Start from the working Phase 8 foundation and the completed stopped-source backup.
+For fresh recovery, first bootstrap the namespace, login/pull Secrets and default
+foundation overlay as in runbook 16. The default overlay remains the foundation;
+the restored controller uses the separate `jenkins/held` overlay. Never apply the
+foundation overlay over an accepted migrated controller as routine reconciliation.
+
+- [ ] Set `STOPPED_BACKUP_DIRECTORY` to the private stopped-source directory:
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/restore-jenkins-state.py "$STOPPED_BACKUP_DIRECTORY"
+```
+
+[Standalone state-transfer helper](../scripts/kubernetes/restore-jenkins-state.py).
+
+This changes **NONPROD Jenkins only**. It refuses an existing migration PVC or
+an unexpected running foundation, checks the locked plugin input, saves current
+admin XML privately and stages the stopped archive. It identifies legacy admin
+by the XML user ID, replaces only that user's data with the current profile and
+keeps the original `secrets/hudson.model.User.DIRNAMES` key. Jenkins 2.585 uses
+that key for salted directory names; copying the new directory name unchanged
+would not preserve the login. Non-admin users remain unchanged. A current admin
+profile with user-scoped encrypted credentials requires separate review rather
+than silently moving it under unrelated controller keys.
+
+Before mutation it saves the original Deployment and an apply-ready rollback
+object. It applies the held configuration/PVC/network policy, stops the foundation,
+and creates a bounded transfer Pod on the foundation PVC's node. The original
+PVC is mounted read-only. It writes a consistent private foundation-home backup
+and restores only to new `jenkins-home-migrated`, refusing non-empty storage.
+The tar mount-root entry is excluded so non-root extraction does not attempt to
+change the PVC's root ownership/mode. Every restored file hash must match before
+the transfer Pod exits and the held controller starts. No original files, PVCs
+or legacy containers are deleted. Both new and old PVCs remain protected against
+Argo pruning/deletion.
+
+The held overlay preserves the current admin login through user files, with no
+JCasC password reset or imported Job DSL. It explicitly retains local authentication
+and the existing admin authorization matrix. Jobs/scans/resume stay disabled,
+nodes/clouds and controller executors are zero, and the startup hook enters quiet
+mode. Controller egress is denied, including DNS. A read-only init check refuses
+startup on an empty or incomplete home. There are no runnable CI agents yet.
+
+Private output is `.local-work/private/phase9/restore-<UTC>/`, mode 0700; XML,
+archives, hash manifests, rollback objects and receipts are mode 0600. Exit 0
+means Ready after file validation, **not** runtime acceptance; exit 1 means a
+failed precondition/operation and exit 2 means invalid arguments. Errors suppress
+private diagnostics. Failures leave data in place; inspect actual state and the
+private receipts instead of rerunning a transfer over existing storage.
+
+If extraction returned an error but all files may already have copied, inspect
+the private context and backup first. This continuation **does not re-extract or
+overwrite files**: it requires a stopped controller and matching rollback archive,
+then checks every target file before allowing startup:
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/restore-jenkins-state.py --resume-verified-copy "$RESTORE_DIRECTORY"
+```
+
+[Standalone verified-copy continuation](../scripts/kubernetes/restore-jenkins-state.py).
+It fails closed if any file is missing, changed or extra. Never use it to bypass
+a failed integrity check. A rollout failure after the completion marker needs
+inspection/rollback; this continuation is only for the still-running transfer Pod.
+
+- [ ] Verify the restored controller with the current password:
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/verify-jenkins-migration.py "$RESTORE_DIRECTORY"
+```
+
+[Standalone runtime verifier](../scripts/kubernetes/verify-jenkins-migration.py).
+It authenticates using the unchanged foundation Secret, performs a native browser
+login, checks the retained admin password hash and original encryption/HMAC keys,
+and inspects users, jobs, build history, plugins, disabled execution and empty
+queue/nodes. A read-only administrative Groovy inspection via `scriptText` checks
+credential IDs/scopes and decryption to presence booleans in the JVM; it does not
+print credential values, bind credentials, save objects, schedule work or contact
+GitHub/GHCR. It also checks that the baseline public-IP egress probe is blocked.
+That probe supports the controller hold check; it is not a general network
+penetration test. Exit 0 writes private `runtime-acceptance.json`; exit 1 fails
+without printing secret-bearing errors. Success does not mean CI/promotion is active.
+
+### Roll back to the retained K3s foundation
+
+Keep the current migration PVC and private receipts. Set `RESTORE_DIRECTORY` to
+the relevant restore receipt, then stop the migrated writer before switching:
+
+```bash
+kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n jenkins scale deployment/jenkins --replicas=0
+kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n jenkins wait --for=delete pod -l app.kubernetes.io/name=jenkins --timeout=180s
+kubectl --kubeconfig="$HOME/.kube/config-dev-stage" apply -f "$RESTORE_DIRECTORY/rollback-deployment.json"
+kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n jenkins rollout status deployment/jenkins --timeout=900s
+```
+
+The rollback object points to original `jenkins-home` and `jenkins-foundation`.
+It retains the current login Secret and does not delete migrated data. The egress
+hold remains intentionally present pending review. Verify the foundation login
+and its original zero-job/zero-agent state. This rollback is prepared, not claimed
+executed/tested by a successful forward restore. Resuming old Docker Jenkins is
+a separate recovery operation requiring restoration of missing bind-source paths.
 
 > [!IMPORTANT]
-> **Remaining transfer plan only.** The online helper does not implement the mutation
-> steps below. Prepare standalone helpers and review their exact affected
-> containers and PVCs before execution. These numbered items are not
-> authorized cutover commands.
+> Steps 1–6 below are implemented by the standalone helpers above. Steps 7–8
+> remain an activation sequence for review; a successful restore does not
+> authorize executing legacy promotion or changing pipeline behavior.
 
-- [ ] Review the proposed sequence below, identify missing helpers and
-      evidence, and record the affected containers/PVCs before seeking
-      cutover approval.
+- [ ] Review remaining agent, smoke and pipeline activation work below; retain
+      disabled jobs and the egress hold until that work is ready and reviewed.
 
-### Transfer sequence (remaining steps need implementation)
+### Transfer sequence and remaining activation
 
 1. Back up the new foundation home as well as old controller inputs. Record both
    controller image/plugin hashes, job/build counts, users and credential scopes.
@@ -282,15 +386,16 @@ preview format; the stopped archive must not be relabeled as an online copy.
    runtime bind mounts. Take the final consistent home archive and matching
    encryption/secret inputs from the stopped state with a verified manifest.
    Do not restart it from a missing Compose source path.
-4. Stop the new foundation controller before writing its PVC. Stage old state
+4. Stop the new foundation controller and back up its read-only home; restore
+   only to a separate new PVC, preserving the original for rollback. Stage old state
    privately; preserve users, password hashes, master key, `hudson.util.Secret`,
    credentials, jobs/build records, fingerprints and required artifacts together.
 5. Sanitize only the migration copy: no imported job DSL, no active agents,
    disable all jobs and scan/timer triggers, and enforce startup quiet mode before
    starting with the same plugin set. Preserve original configs in the backup.
    Keep the current K3s admin account/password and omit legacy admin account data.
-   Preserve the remaining users. Identify admin's user directory through the
-   Jenkins user map; do not assume its directory is literally named `admin`.
+   Preserve the remaining users. Identify admin's user directory from the XML
+   user ID and retain the directory-name HMAC key; do not assume it is `admin`.
    Old encrypted credentials require old encryption keys; do not combine them
    with a fresh controller key or copy only credentials XML. The migrated users
    must not overwrite the current K3s admin login; verify its existing password

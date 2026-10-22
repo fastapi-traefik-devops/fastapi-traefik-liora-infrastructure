@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+  namespace: jenkins
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: verify-restored-home
+        image: ghcr.io/fastapi-traefik-devops/liora-jenkins-controller@sha256:7c7e8f8806b7c6aba679aee7cfaec51c0b40475cf536958be8146885e7b310ad
+        command:
+        - sh
+        - -c
+        - >-
+          test -s /var/jenkins_home/config.xml &&
+          test -s /var/jenkins_home/secrets/master.key &&
+          test -s /var/jenkins_home/secrets/hudson.util.Secret &&
+          test -s /var/jenkins_home/init.groovy.d/00-migration-hold.groovy &&
+          test -e /var/jenkins_home/.transfer-complete &&
+          test -s /var/jenkins_home/users/admin_*/config.xml
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: home
+          mountPath: /var/jenkins_home
+          readOnly: true
+      volumes:
+      - name: home
+        persistentVolumeClaim:
+          claimName: jenkins-home-migrated
+      - name: config
+        configMap:
+          name: jenkins-migration-hold

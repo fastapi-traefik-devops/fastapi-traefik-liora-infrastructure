@@ -1,8 +1,8 @@
 # Phase 9 — Jenkins CI migration
 
-Started: 2026-10-22. Status: **migration in progress; legacy stop authorized;
-no target state restore or migrated job activation**. The new K3s controller
-remains the isolated Phase 8 foundation. Earlier observations below describe
+Started: 2026-10-22. Status: **state restored and verified under an execution hold;
+CI agents/builds/publication remain inactive**. See the detailed
+[state restore report](PHASE9_STATE_RESTORE.md). Earlier observations below describe
 the preparation baseline; the latest decisions supersede its approval boundaries.
 
 ## Confirmed decisions — 2026-10-22
@@ -71,7 +71,8 @@ and four online-backup tests also pass. No fixture secret appeared in output.
 
 Both remote clusters were checked read-only after the legacy stop: all six
 nodes Ready, K3s Jenkins available 1/1, all five Argo CD applications
-Synced/Healthy. The target foundation has not been restored or modified.
+Synced/Healthy. At that legacy-stop checkpoint the target foundation had not
+yet been modified; the later state restore report supersedes that status.
 Rollback still requires reconstructing missing original bind-source paths from
 private archives before starting old containers; do not blindly restart them.
 Source archives and partial/earlier preparation receipts have been retained.
@@ -202,6 +203,8 @@ Standalone helpers:
 - [Online preservation copy](../../scripts/kubernetes/backup-legacy-jenkins.py).
 - [Read-only GitHub App access check](../../scripts/kubernetes/check-jenkins-github-access.py).
 - [Offline inactive-copy preparation](../../scripts/kubernetes/stage-jenkins-home.py).
+- [State transfer / verified-copy continuation](../../scripts/kubernetes/restore-jenkins-state.py).
+- [Runtime acceptance without running jobs](../../scripts/kubernetes/verify-jenkins-migration.py).
 
 The backup helper's fixture checks cover private file modes, no secret output,
 explicit online inconsistency, missing-key rejection and suppressed tar errors.
@@ -209,17 +212,16 @@ These archive checks do not substitute for a real restore or CI acceptance.
 
 ## Remaining work and boundaries
 
-The inventory and consistent stopped-source backup are complete. The first
-combined plan item remains open pending executable target transfer/rollback
-preparation; no target migration acceptance is claimed. Remaining work includes
-the reviewed cluster adaptations, agent/daemon image availability and checks, isolated
-state restore, jobs/users/history validation, controlled CI and trusted publisher
+Inventory, consistent source/foundation backups, concrete retained-home rollback
+preparation and held state restore/acceptance are complete. The first two plan
+items are complete. Remaining work includes the reviewed cluster adaptations,
+agent/daemon image availability and checks, controlled CI and trusted publisher
 activation, reviewed promotion/rollback and old-source retirement after acceptance.
 
 The GitOps App access prerequisite is verified. The latest operator decisions
 authorize the immediate legacy stop and define the desired later promotion
-target, while deferring pipeline behavior changes to review. State transfer and
-target activation remain unverified. No remote K3s resources, application
-checkout files, GitHub repository contents, GHCR packages or credentials were
-changed during this preparation. No push, deletion, VM100 retirement or NAT
+target, while deferring pipeline behavior changes to review. Target CI activation
+remains unverified. Only NONPROD Jenkins storage/configuration and its selected
+hold policy changed. Application files, GitHub repository contents, GHCR packages
+and credential values were not changed. No push, source-data deletion, VM100 retirement or NAT
 cleanup was performed. Phase 9 remains open.
