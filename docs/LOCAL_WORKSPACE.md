@@ -19,6 +19,7 @@ separately in protected backups:
 | `.local-work/private/platform/` | Active Grafana/Jenkins login recovery inputs; mode 0600; preserve separately |
 | `.local-work/phase8/evidence/` | VIP, browser, admission, preservation and routing evidence |
 | `.local-work/phase8/docker-auth/` | Private registry client credentials; protect like recovery inputs |
+| `.local-work/private/phase9/` | Credential-bearing legacy Jenkins preservation archives, manifests and private migration inventory |
 
 The private platform inputs are not disposable tool caches. Preserve them in
 the protected recovery archive before moving or cleaning the local workspace.

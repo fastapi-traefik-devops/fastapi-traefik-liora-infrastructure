@@ -594,9 +594,16 @@ confirmed external Tailscale browser access and passwords; Phase 8 is closed.
 
 ## Phase 9 — Move promotion and CI ownership
 
-Status: **planned; starts separately after Phase 8**. Preserve the maximum
-working behavior from the application's Jenkins proof of concept while
-adapting it to the nonprod K3s foundation and repository split.
+Status: **in progress; preparation authorized on 2026-10-22**. Runtime inventory,
+read-only GitHub App checks and a private online preservation copy are complete.
+The copy is not consistent and has not been restore-tested. No jobs, agents,
+publishing or cutover have been activated. See [Phase 9 report](PHASE9_REPORT.md)
+and [runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
+
+Preserve the maximum working behavior from the application's Jenkins proof of
+concept while adapting it to the nonprod K3s foundation and repository split.
+GitOps App infrastructure installation/PR permissions and final promotion details
+remain pending; they do not block independent migration preparation.
 
 - [ ] Inventory and privately back up the existing Jenkins home, jobs,
       plugin versions, build history/artifacts, encryption keys and required
