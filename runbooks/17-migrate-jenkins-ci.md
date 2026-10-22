@@ -175,7 +175,8 @@ while requested permissions are configured on the App itself.
 2. Set repository permissions to **Contents: Read and write**, **Pull requests:
    Read and write**, and **Metadata: Read-only** (required automatically by
    GitHub). Save the settings. No Actions, administration or organization write
-   permissions are required for the planned digest-update PRs.
+   permissions are required for writing digest updates. Administration read is
+   optional for inspecting classic protection; otherwise use owner inspection.
 3. Open the organization's installed GitHub Apps settings, find **fastapi-gitops**
    and select **Configure**. Under **Repository access**, select these repositories:
    - `fastapi-traefik-devops/fastapi-traefik-liora-application`
@@ -188,9 +189,19 @@ while requested permissions are configured on the App itself.
    A repository selector alone is insufficient; record the actual granted result.
 6. Keep the CI App's existing application-only contents/PR read and status write
    scope. Do not give the build identity infrastructure writes or move publishing
-   keys onto the untrusted CI agent. No branch-protection bypass is needed for a
-   human-reviewed promotion PR, and this App change does not authorize direct
-   main-branch pushes or determine the unresolved promotion workflow.
+   keys onto the untrusted CI agent. STAGE now targets direct infrastructure
+   main commits; DEV/PROD remain manual reviewed changes.
+7. Before activation inspect rulesets AND classic main protection. An owner must
+   approve any GitOps App exception needed to bypass required PRs for STAGE.
+   Do not modify rules during this inspection. Repository write permission
+   cannot restrict paths: the pinned trusted writer enforces the STAGE allowlist.
+
+The helper now reads stored keys from held K3s Jenkins into memory, verifies
+installation grants and inspects rules with a temporary infrastructure token,
+which it revokes. It prints/stores neither keys nor tokens. The current audit
+verified both GitOps grants, empty rulesets/effective main rules, and HTTP 403
+for classic protection (missing Administration read). Classic protection and
+any required exception remain an owner-verification gate; no rule was changed.
 
 The operator completed steps 1–4 on 2026-10-22. The read-only helper subsequently
 verified both **gitops** installation grants with all three expected permissions.
