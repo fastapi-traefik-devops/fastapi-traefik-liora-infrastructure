@@ -200,8 +200,11 @@ The helper now reads stored keys from held K3s Jenkins into memory, verifies
 installation grants and inspects rules with a temporary infrastructure token,
 which it revokes. It prints/stores neither keys nor tokens. The current audit
 verified both GitOps grants, empty rulesets/effective main rules, and HTTP 403
-for classic protection (missing Administration read). Classic protection and
-any required exception remain an owner-verification gate; no rule was changed.
+for classic protection (missing Administration read). The repository owner then
+confirmed that the infrastructure repository currently has no protected branch.
+Together with the empty rulesets/effective main rules, this closes the inspection
+gate; no App exception or broader permission is currently needed. No rule was
+changed and no push was tested. Recheck protection if the owner changes rules.
 
 The operator completed steps 1–4 on 2026-10-22. The read-only helper subsequently
 verified both **gitops** installation grants with all three expected permissions.
@@ -617,9 +620,10 @@ Keep PROD blocked even if a manually created/fixture receipt exists.
 
 After explicit live approval only:
 
-1. Verify source availability, the App grants and classic protection/any required
-   exception with an owner. Do not execute the old publisher or full imported
-   Job DSL. No permission/branch-rule workaround is part of this checkpoint.
+1. Verify source availability and the App grants. Owner confirmation of no
+   infrastructure branch protection is recorded above; recheck if rules changed.
+   Do not execute the old publisher or full imported Job DSL. No permission or
+   branch-rule workaround is part of this checkpoint.
 2. Set the existing app-ci SCM source to the application repository and discovery
    filter to main only before any one-time index. Retain current scoped CI App
    credentials. Install the reviewed main Jenkinsfile and trusted inline publisher

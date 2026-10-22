@@ -113,12 +113,15 @@ infrastructure inspection token was revoked (HTTP 204).
 
 Authenticated rulesets and effective main rules were empty. Classic main
 protection returned **403**, because this App lacks Administration read.
-Therefore classic protection/any necessary App exception still needs owner
-verification. This is a confirmed inspection-permission blocker; a direct-write
-rule rejection has NOT been demonstrated. No permission change, branch-rule
+The repository owner subsequently inspected the infrastructure repository and
+confirmed that it currently has no protected branch. Together with the empty
+rulesets/effective main rules, this closes the inspection blocker: no App branch
+exception or additional permission is currently needed for the initial STAGE
+writer. The 403 remains historical API evidence, not a reason to request broader
+App access. No actual push has been tested. No permission change, branch-rule
 change, push or workaround was attempted.
 
-Before a separately approved live checkpoint: verify those rules, make the
+Before a separately approved live checkpoint: recheck rules if changed, make the
 reviewed source available, install the reviewed existing-job definitions/pins,
 set the existing app-ci SCM to the application repository/main-only discovery,
 verify scoped credentials and approve necessary controller GitHub egress.

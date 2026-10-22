@@ -659,10 +659,13 @@ Synced/Healthy, running pair and STAGE URL. Do not call that automated acceptanc
       trusted publisher definitions/pins. Main uses one SCM poll every two minutes;
       keep recurring folder indexing/nightly schedules off. Filter discovery to
       main before any one-time index; keep all imported PR/other jobs disabled.
-- [ ] Verify GitHub App direct-write access and classic protection with an owner.
-      Current repository write grants are confirmed; classic protection API 403
-      is an inspection-permission blocker, not evidence that pushes are forbidden
-      or allowed. No permission/branch-rule workaround is authorized.
+- [x] Verify GitHub App repository write grants and main protection. The App
+      grants were verified by API; the repository owner confirmed that the
+      infrastructure repository currently has no protected branch. Combined
+      with empty rulesets/effective main rules, no branch exception is needed
+      for the initial STAGE writer. The earlier API 403 is an inspection limit,
+      now resolved by owner confirmation; no push was used as a test. Recheck
+      if rules change. No permission or branch-rule changes are authorized.
 - [ ] Approve and run the first minimal live cycle, then record manual STAGE
       verification tied to application SHA and both published/running digests.
       Keep the current admin, PostgreSQL data, history and recovery inputs intact.
