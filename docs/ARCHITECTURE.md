@@ -1,17 +1,16 @@
 # Infrastructure architecture
 
-Updated **2026-10-21**. This document describes the implemented infrastructure
+Updated **2026-10-22**. This document describes the implemented infrastructure
 and the agreed target architecture. Sections explicitly distinguish
-**Implemented**, **In progress**, **Agreed, not deployed**, and **In development**. Agreement on
-a design does not establish its operational readiness or tested availability.
+**Implemented**, **In progress**, **Agreed, not deployed**, and **In development**.
+Agreement on a design does not establish its operational readiness or tested availability.
 
 The implemented application, GitOps and public HTTPS topology is documented in
-the Phase 0–7 reports. Permanent Admin VIP access, separate cluster monitoring
-and the K3s Jenkins foundation are being introduced in Phase 8. NONPROD admin
-access and monitoring are partially deployed; ServiceLB status ownership blocks
-acceptance and PROD rollout. The Jenkins controller is prepared, not deployed.
-See the [Phase 8 progress report](testreports/PHASE8_REPORT.md). Detailed steps
-and phase acceptance remain in the
+the Phase 0–7 reports. Phase 8 has deployed separate Admin VIP controllers and
+monitoring in both clusters and a persistent, isolated Jenkins foundation in
+NONPROD. Native browser/API checks passed from the execution host; independent
+browser confirmation through Tailscale remains pending. See the
+[Phase 8 report](testreports/PHASE8_REPORT.md) and
 [implementation plan](testreports/IMPLEMENTATION_PLAN.md).
 
 ## Host and private network
@@ -63,11 +62,12 @@ current host before creating the template.
 | --- | --- | --- | --- |
 | Kubernetes API | `192.168.77.11:6443` | `192.168.77.12:6443` | Implemented; API kube-vip |
 | Public application ingress | `.201`–`.203:80/443` | `.211`–`.213:80/443` | Implemented; Traefik/ServiceLB behind HAProxy |
-| Private administrative Services | `192.168.77.16` | `192.168.77.17` | NONPROD partially deployed; PROD prepared; status conflict unresolved |
+| Private administrative Services | `192.168.77.16` | `192.168.77.17` | Implemented in both clusters; native status-ownership guard |
 
 The operator confirms `.16` and `.17` are free and allocated to private
 administration. They are distinct from both API VIPs and public ingress
-addresses. Their reservation is not a claim that either Admin VIP is active.
+addresses. Both Admin VIPs are active; their independent ownership is recorded
+in the Phase 8 report.
 
 ## Repository boundaries
 
@@ -81,8 +81,8 @@ addresses. Their reservation is not a claim that either Admin VIP is active.
 | `infrastructure/k3s-cluster/ansible/` | Guest preparation, two K3s clusters, kubeconfigs |
 | `kubernetes/apps/liora/` | Current application manifests, environment overlays, and imported deployment history; DEV/STAGE/PROD deployed and privately verified |
 | `kubernetes/gitops/argocd/` | Implemented independent Argo CD installations and cluster-specific GitOps definitions |
-| `kubernetes/platform/nonprod/` | NONPROD admin/monitoring partial deployment; Jenkins foundation prepared |
-| `kubernetes/platform/prod/` | Prepared independent PROD administrative access and monitoring; not deployed |
+| `kubernetes/platform/nonprod/` | Implemented NONPROD administrative access, monitoring and Jenkins foundation |
+| `kubernetes/platform/prod/` | Implemented independent PROD administrative access and monitoring |
 | `scripts/kubernetes/` | Reusable deployment, certificate and verification helpers |
 | `recovery/` | Local recovery inputs and examples; live credentials stay out of Git |
 | `runbooks/` | Operator steps for installation and recovery |
@@ -90,9 +90,9 @@ addresses. Their reservation is not a claim that either Admin VIP is active.
 | `.local-work/` | Existing ignored operator tools, browser dependencies and generated output |
 
 The platform paths above now contain Phase 8 configuration and preserved
-upstream source history; partial deployment is recorded in its report. Work uses
-the original infrastructure checkout and
-its ignored local workspace, without an additional migration worktree. See
+upstream source history; actual deployment is recorded in its report. Work uses
+the original infrastructure checkout and its ignored local workspace, without
+an additional migration worktree. See
 the [local workspace guide](LOCAL_WORKSPACE.md) for tool and archive locations.
 
 The application repository owns application code, tests, image builds and
@@ -211,12 +211,13 @@ path remains optional follow-up and was not part of this DNS-only acceptance.
 
 ## Permanent private administrative access
 
-**Status: NONPROD partially deployed; acceptance blocked. PROD not deployed.**
+**Status: Implemented; external Tailscale browser confirmation pending.**
 
-Initial Argo login at `.16:8080` passed. The separate ServiceLB EndpointSlice
-worker nevertheless clears administrative VIP status despite the LoadBalancer
-class, so stable access is not established. The proposed status-ownership guard
-is not deployed; see the [pending decision](../kubernetes/platform/proposals/README.md).
+Both Admin VIPs serve the agreed endpoints. Argo/Grafana/Jenkins native logins,
+all Adminer database logins, Prometheus/Alertmanager browser UIs and all four
+Grafana dashboards per cluster passed direct-VIP checks from the execution host.
+The approved [status ownership guard](testreports/PHASE8_ADMIN_VIP_DECISION.md)
+prevents K3s ServiceLB from clearing their VIP status.
 
 Trusted administrators use the existing Tailscale route to
 `192.168.77.0/24`. The agreed browser path is Tailscale → Admin VIP →
@@ -234,9 +235,8 @@ flowchart LR
   ProdServices --> ProdPods[Pods in PROD K3s]
 ```
 
-All endpoints in the following table are **agreed target addresses**, not
-currently available VIP endpoints. Argo CD and Adminer already run internally;
-Grafana, Prometheus, Alertmanager and the K3s Jenkins controller are planned.
+All endpoints below are deployed and locally verified. This is separate from
+operator confirmation of the external Tailscale browser path.
 
 | Interface | DEV/STAGE | PROD |
 | --- | --- | --- |
@@ -266,21 +266,34 @@ own addresses; they are not routed through these Kubernetes Admin VIPs.
 
 ### Services-only kube-vip
 
-**Status: Architecture agreed; detailed configuration in development.**
+**Status: Implemented.**
 
-Each cluster will have a separate services-only kube-vip v1.2.3 DaemonSet.
-Every administrative LoadBalancer Service will explicitly select its cluster's
-Admin VIP and use a distinct port on that VIP. One common leader per cluster
-will own the shared administrative address, independently of the API VIP's
-leader and lease.
+Each cluster runs its own services-only kube-vip v1.2.3 DaemonSet named
+`kube-vip-admin`, with dedicated selectors/service account/RBAC. Global service
+election uses `svc_election=false` and `kube-system/liora-admin-services`,
+independent of the API instance's `plndr-cp-lock`. The shared Admin VIP has one
+leader across all administrative Services. Reads of all three nodes in each
+cluster confirmed exactly one physical owner, matching its lease and Service
+annotations. Metrics use `2113`, separate from the API instance's `2112`.
 
-Exact v1.2.3 election/lease settings, LoadBalancer class handling, RBAC and
-resource ownership remain in development. Distinct DaemonSet names,
-labels/selectors and hostNetwork listener ports must avoid conflicts with the
-API DaemonSet; its existing metrics listener uses port `2112`. Administrative
-Services must be excluded from K3s ServiceLB processing, and the new kube-vip
-must not claim public Traefik. Any NodePort allocation must be documented;
-the agreed VIP path is not a claim of further private-network isolation.
+Each Service explicitly sets `kube-vip.io/loadbalancerIPs`, class
+`liora.aprt.info/admin-vip`, `externalTrafficPolicy: Cluster`, and
+`allocateLoadBalancerNodePorts: false`. No new NodePorts are allocated. Strict
+class handling keeps kube-vip away from public Traefik and avoids administrative
+ServiceLB DaemonSets. K3s v1.36.5+k3s1 nevertheless has a separate EndpointSlice
+status worker that ignores class; a native ValidatingAdmissionPolicy allows only
+the dedicated kube-vip identity to update this class's Service status. Other
+classes and workload admission are unaffected. ServiceLB may log/retry denied
+writes; this prevents corruption rather than patching K3s. See the decision
+record for enforcement, rollback and its limits.
+
+Existing application Services are preserved; separately named `adminer-private`
+Services are declared in their environment overlays. They are currently applied
+by the operator and can be adopted by the existing Argo Application when reviewed
+source changes are published. Helm owns monitoring chart resources; operator
+manifests own the additional private Services and scrape/dashboard/rule resources.
+There is no second platform Argo owner. A VIP path does not isolate other trusted
+private-network paths or host listeners.
 
 API VIPs, their DaemonSets and public ingress remain unchanged. VIP failover,
 reboot and outage-duration tests are deferred. A common VIP leader does not
@@ -288,9 +301,9 @@ establish availability of the services, their storage or the single Proxmox host
 
 ## Cluster monitoring
 
-**Status: NONPROD stack Ready; VIP/browser acceptance blocked. PROD prepared only.**
+**Status: Implemented independently in both clusters.**
 
-Each cluster will have its own monitoring namespace, Grafana, Prometheus and
+Each cluster has its own monitoring namespace, Grafana, Prometheus and
 Alertmanager. The agreed stack includes Prometheus Operator, kube-state-metrics,
 Node Exporter, Argo CD/Traefik monitoring, dashboards and alert rules adapted
 from the application repository's existing `monitoring/` configuration.
@@ -301,8 +314,12 @@ Phase 8 pins kube-prometheus-stack 92.2.0 and retains the bounded PoC budgets:
 Prometheus retention is three days/1500MB with a 2Gi local-path PVC; Alertmanager
 uses a 256Mi local-path PVC. Grafana state is ephemeral with provisioned dashboards
 and datasource. Helm owns its release; separately applied configuration owns
-custom monitors/rules/dashboards and private Services. Internal NONPROD diagnostics
-found 26/26 targets up and eight healthy rules, independently of broken VIP routing.
+custom monitors/rules/dashboards and private Services. Direct-VIP checks found
+26/26 targets up, eight healthy rules, a healthy Grafana datasource and four loaded
+dashboards in each cluster. The inherited Grafana 384Mi limit caused an OOM kill;
+both clusters now request 100m/256Mi, limit 500m/768Mi and allow up to 15 minutes
+for cold startup. The replacement instances remained Ready without restarts at
+the 2026-10-22 follow-up. These observations do not constitute a load/HA test.
 Exact resource limits are tracked in the per-cluster values and
 [runbook 16](../runbooks/16-private-platform-access.md).
 
@@ -313,7 +330,7 @@ notification receipt is not yet verified.
 
 ## Jenkins and CI
 
-**Current state: Implemented proof of concept on VM 100. K3s migration agreed.**
+**Current state: K3s controller foundation implemented; working CI remains on VM 100.**
 
 The existing Jenkins runs in Docker on VM 100 and uses private address
 `192.168.77.100:8085`. Its source configuration is in the application repository
@@ -321,9 +338,12 @@ under `infra/jenkins-host/`. It has a controller with zero executors, a CI
 agent, a separate trusted registry publisher and an isolated Docker-in-Docker
 build daemon. This proof of concept is the migration source.
 
-The agreed target is one Jenkins controller in the DEV/STAGE cluster's
-`jenkins` namespace, with its own persistent `JENKINS_HOME` volume and native
-HTTP/login at `192.168.77.16:8085`. No PROD Jenkins controller is planned.
+One Jenkins controller now runs in the DEV/STAGE cluster's `jenkins` namespace,
+with a 5Gi local-path `JENKINS_HOME` PVC and native HTTP/login at
+`192.168.77.16:8085`. It reuses the unchanged PoC image/plugin set, published to
+GHCR and pinned by digest. Native browser login and authenticated API checks
+confirmed zero jobs, zero agents and zero executors. It requests 100m/512Mi,
+limits 1 CPU/768Mi and caps its heap at 384Mi. No PROD controller is planned.
 Migration is staged:
 
 - Phase 8 installs the controller, storage and private access. Working jobs,
@@ -335,10 +355,12 @@ Migration is staged:
   repository changes while application code/build pipelines remain owned by
   the application repository.
 
-Exact Kubernetes deployment resources, image publication, storage sizing,
-agent/build-daemon configuration and the state-transfer/cutover procedure
-are **in development**. Live Jenkins credentials, encryption keys and home
-archives remain private operator data outside Git.
+Controller resources and image provenance are tracked in
+`kubernetes/platform/nonprod/jenkins/`. Agent/build-daemon configuration, private
+state transfer, cutover and promotion details remain **in development** for
+Phase 9. The source JCasC/Job DSL and publisher credentials are not activated in
+the new foundation. Live credentials, encryption keys and home archives remain
+private operator data outside Git.
 
 VM 100 retirement and legacy public NAT cleanup are operator work outside
 this implementation's scope. Phase 8 does not complete the working CI

@@ -1,12 +1,11 @@
 # Kubernetes implementation plan
 
-Planning update: **2026-10-21**. Phases 0–7 are complete within their recorded
-acceptance boundaries. The operator has agreed the private-access architecture
-and a staged Jenkins migration. Phase 8 execution was authorized on 2026-10-21
-and has started. NONPROD
-admin access and monitoring are partially deployed; a K3s ServiceLB status
-ownership conflict blocks functional acceptance and PROD rollout. See
-[the Phase 8 progress report](PHASE8_REPORT.md).
+Implementation update: **2026-10-22**. Phases 0–7 are complete within their
+recorded acceptance boundaries. Phase 8 is deployed in both clusters and local
+functional/browser checks passed, including the NONPROD Jenkins foundation.
+The approved status guard resolved the ServiceLB incompatibility. Independent
+external Tailscale browser confirmation remains pending; Phase 8 is not closed.
+See [the Phase 8 report](PHASE8_REPORT.md).
 
 ## Target architecture
 
@@ -34,9 +33,9 @@ while adding private administration.
 
 The target database platform is CloudNativePG. The initial deployment below
 deliberately retains the application's current PostgreSQL Deployment and PVC;
-database migration is a later, separately verified change. The current kube-vip
-DaemonSets serve the API only, and K3s ServiceLB serves public Traefik. Add an
-independent services-only DaemonSet to each cluster for administrative Services;
+database migration is a later, separately verified change. The original kube-vip
+DaemonSets serve the API only, and K3s ServiceLB serves public Traefik. Independent
+services-only DaemonSets now serve administrative Services in each cluster;
 do not repurpose the API DaemonSets or change public ingress ownership.
 
 ### Agreed private access and service addresses
@@ -45,8 +44,8 @@ Trusted administrators reach the whole `192.168.77.0/24` subnet through the
 existing Tailscale router. Use browser access by IP and port, with no private
 ingress, DNS records, additional reverse proxy, SSH tunnel or manual
 port-forward. The operator confirms `.16` and `.17` are available and assigns
-them to this purpose; this is an address-allocation decision, not evidence of
-a deployed or tested VIP.
+them to this purpose. Both are now deployed and locally verified; external
+Tailscale browser confirmation remains separate.
 
 ```mermaid
 flowchart LR
@@ -62,14 +61,14 @@ flowchart LR
 | Interface | DEV/STAGE endpoint | PROD endpoint | Current state / native service |
 | --- | --- | --- | --- |
 | Kubernetes API | `https://192.168.77.11:6443` | `https://192.168.77.12:6443` | Existing; API VIPs stay unchanged |
-| Argo CD | `https://192.168.77.16:8080` | `https://192.168.77.17:8080` | Existing UI/API; expose native HTTPS port 443 |
-| Grafana | `http://192.168.77.16:3000` | `http://192.168.77.17:3000` | Phase 8; native HTTP and Grafana login |
-| Prometheus | `http://192.168.77.16:9090` | `http://192.168.77.17:9090` | Phase 8; native HTTP |
-| Alertmanager | `http://192.168.77.16:9093` | `http://192.168.77.17:9093` | Phase 8; native HTTP |
+| Argo CD | `https://192.168.77.16:8080` | `https://192.168.77.17:8080` | Deployed; native HTTPS server |
+| Grafana | `http://192.168.77.16:3000` | `http://192.168.77.17:3000` | Deployed; native HTTP and Grafana login |
+| Prometheus | `http://192.168.77.16:9090` | `http://192.168.77.17:9090` | Deployed; native HTTP |
+| Alertmanager | `http://192.168.77.16:9093` | `http://192.168.77.17:9093` | Deployed; native HTTP |
 | Adminer DEV | `http://192.168.77.16:8081` | — | Existing `app-dev/adminer:80`; database login |
 | Adminer STAGE | `http://192.168.77.16:8082` | — | Existing `app-stage/adminer:80`; database login |
 | Adminer PROD | — | `http://192.168.77.17:8081` | Existing `app-prod/adminer:80`; database login |
-| Jenkins | `http://192.168.77.16:8085` | — | Phase 8 controller/UI; Phase 9 working CI migration |
+| Jenkins | `http://192.168.77.16:8085` | — | Controller/UI deployed; working CI migration in Phase 9 |
 
 Use the HTTP/HTTPS and authentication supplied by each service. Do not add TLS
 termination, a private CA, new certificates, SSO or an authentication proxy for
@@ -100,10 +99,13 @@ daemons and metrics endpoints do not receive administrative browser endpoints.
 - Give the new DaemonSet distinct names, labels/selectors and appropriate
   service-account/RBAC resources. Avoid hostNetwork listener conflicts: the
   existing API kube-vip exposes metrics on `2112`.
-- Use explicit LoadBalancer class handling compatible with the installed
-  K3s version so ServiceLB does not process administrative Services, and the
-  services-only kube-vip does not claim public Traefik. Preserve both API
-  DaemonSets, their leases, and existing public ingress Services.
+- Use strict LoadBalancer class handling so services-only kube-vip does not
+  claim public Traefik and ServiceLB creates no administrative DaemonSets.
+  The installed K3s EndpointSlice worker still attempts foreign status writes;
+  the operator approved a native status-owner admission guard, verified on
+  NONPROD before PROD. Only kube-vip-admin may update this class's status.
+  Record its denied-write retries and preserve both API DaemonSets, their
+  leases and public ingress. See the [decision](PHASE8_ADMIN_VIP_DECISION.md).
 - One shared leader is an address-ownership choice. It does not establish
   service, storage or host high availability. Failover, reboot, outage timing,
   load and resilience tests are deferred and are not Phase 8 acceptance gates.
@@ -159,7 +161,7 @@ runbooks/                    installation and recovery procedures
 .local-work/                 ignored tools, rendered output and operator evidence
 ```
 
-This is the target layout, not a list of already-created directories. Keep
+The Phase 8 platform directories now exist alongside preserved upstream source. Keep
 namespace-specific administrative Services with clear, single ownership:
 application namespace exposure belongs with its environment overlay; platform
 configuration must not silently compete with an existing Argo CD owner.
@@ -477,54 +479,56 @@ other admin interfaces behind Tailscale or equivalent private access.
 
 ## Phase 8 — Add monitoring and operational access
 
-Status: **in progress; NONPROD partially deployed, blocked on ServiceLB status
-ownership**. See [Phase 8 report](PHASE8_REPORT.md) and the
-[proposed implementation adjustment](../../kubernetes/platform/proposals/README.md).
-The original monitoring-only phase now includes permanent
-Admin VIP access and the Jenkins controller foundation. Working CI migration
-remains a separate Phase 9.
+Status: **deployment and local acceptance complete; external Tailscale browser
+confirmation pending**. NONPROD then PROD were verified with the operator-approved
+[status guard](PHASE8_ADMIN_VIP_DECISION.md). Both monitoring stacks and the
+NONPROD Jenkins foundation work. See the [Phase 8 report](PHASE8_REPORT.md).
+Working CI migration remains a separate Phase 9.
 
 ### 8.1 — Prepare manifests and ownership
 
-- [ ] Record the actual source revisions and current cluster resources.
+- [x] Record the actual source revisions and current cluster resources.
       Adapt monitoring inputs from the application repository and import the
       Jenkins foundation from `infra/jenkins-host/`, preserving useful source
       configuration and history. Keep the application checkout read-only in
       this phase.
-- [ ] Prepare independent nonprod/PROD resources for the agreed Admin VIPs.
+- [x] Prepare independent nonprod/PROD resources for the agreed Admin VIPs.
       Resolve v1.2.3 election/lease, selectors, RBAC, hostNetwork port separation
       and LoadBalancer class handling before applying either DaemonSet.
-- [ ] Review Service ownership against Argo CD inventories. Use reviewed
+- [x] Review Service ownership against Argo CD inventories. Use reviewed
       environment changes for existing managed Services or separately named
       administrative Services; do not introduce two declarative owners for
       one resource or allow self-healing to undo the intended exposure.
-- [ ] Write the implementation and recovery runbooks alongside manifests.
+- [x] Write the implementation and recovery runbooks alongside manifests.
       Provide standalone files for substantive operator scripts. Keep new
       reports/plans under `docs/testreports/` and generated data ignored.
 
 ### 8.2 — Establish DEV/STAGE Admin VIP
 
-- [ ] Deploy its services-only kube-vip and explicit VIP Services. Keep the
+- [x] Deploy its services-only kube-vip and explicit VIP Services. Keep the
       existing API kube-vip and public Traefik/ServiceLB unchanged.
-- [ ] Expose Argo CD at `.16:8080`, Adminer DEV at `.16:8081` and Adminer
+- [x] Expose Argo CD at `.16:8080`, Adminer DEV at `.16:8081` and Adminer
       STAGE at `.16:8082` using the native service protocols and logins.
 - [ ] Check ordinary readiness, one agreed VIP owner, the separate service
       lease, correct Service status and no ServiceLB administrative workloads.
       Confirm browser access from a Tailscale client without a tunnel or
       manual port-forward. This is a functional check, not a failover test.
 
+Local readiness/browser/ownership checks passed. The external Tailscale
+browser confirmation in the remaining checkbox is pending; failover is untested.
+
 ### 8.3 — Install DEV/STAGE monitoring
 
-- [ ] Adapt source `monitoring/` values, monitors, dashboards and alert rules
+- [x] Adapt source `monitoring/` values, monitors, dashboards and alert rules
       to actual K3s labels/namespaces and `local-path` storage. Pin the chart
       and images as appropriate; size CPU/RAM, retention and PVCs for this
       single-host lab before installation. Do not copy kind `standard` storage.
-- [ ] Install its own Prometheus, Alertmanager, Grafana, operator,
+- [x] Install its own Prometheus, Alertmanager, Grafana, operator,
       kube-state-metrics and Node Exporter. Provision credentials outside Git.
-- [ ] Expose only the agreed browser ports: Grafana `.16:3000`, Prometheus
+- [x] Expose only the agreed browser ports: Grafana `.16:3000`, Prometheus
       `.16:9090`, Alertmanager `.16:9093`. Keep exporter/operator endpoints
       internal. Configure native URLs/redirects for IP-and-port access.
-- [ ] Confirm loaded dashboards, useful node/application/Argo CD/Traefik
+- [x] Confirm loaded dashboards, useful node/application/Argo CD/Traefik
       metrics and alerts identify DEV/STAGE correctly. Agree any external
       alert destination before enabling delivery; do not treat API acceptance
       as proof of notification receipt. Synthetic notification tests are not
@@ -532,55 +536,59 @@ remains a separate Phase 9.
 
 ### 8.4 — Establish PROD administration and monitoring
 
-- [ ] Apply the independent services-only kube-vip and explicit `.17` Services
+- [x] Apply the independent services-only kube-vip and explicit `.17` Services
       after nonprod functional readiness. Keep API VIP `.12` and public ingress
       unchanged; do not share election or monitoring state across clusters.
-- [ ] Expose Argo CD `.17:8080`, Adminer PROD `.17:8081`, Grafana `.17:3000`,
+- [x] Expose Argo CD `.17:8080`, Adminer PROD `.17:8081`, Grafana `.17:3000`,
       Prometheus `.17:9090` and Alertmanager `.17:9093`.
-- [ ] Install separate monitoring with explicit PROD retention/storage,
+- [x] Install separate monitoring with explicit PROD retention/storage,
       credentials, datasource identity and PROD alert rules. Confirm no
       DEV/STAGE application selectors were copied into PROD configuration.
 - [ ] Confirm ordinary readiness and browser access through Tailscale;
       record that VIP failover and local-volume recovery remain untested.
 
+Local readiness/browser/ownership checks passed. The external Tailscale
+browser confirmation in the remaining checkbox is pending; failover is untested.
+
 ### 8.5 — Install the Jenkins foundation in DEV/STAGE
 
-- [ ] Deploy one controller in namespace `jenkins`, with its own persistent
+- [x] Deploy one controller in namespace `jenkins`, with its own persistent
       `JENKINS_HOME` PVC, explicit resource budget and no controller executors.
       Reuse the proof-of-concept image/plugin/JCasC configuration wherever
       compatible. Keep existing Jenkins and its data unchanged during setup.
-- [ ] Make the controller image available to K3s using the source Dockerfile
+- [x] Make the controller image available to K3s using the source Dockerfile
       and image/plugin locks; the proof of concept's host-local image tag is
       not a pullable cluster image. Record the reviewed registry image digest
       and required pull credentials without changing Jenkins core/plugins
       merely as part of the deployment migration.
-- [ ] Expose native HTTP/login at `http://192.168.77.16:8085`, with the native
+- [x] Expose native HTTP/login at `http://192.168.77.16:8085`, with the native
       Jenkins base URL set accordingly. Do not create a PROD controller.
-- [ ] Keep build agents, trusted publisher migration, build cache and
+- [x] Keep build agents, trusted publisher migration, build cache and
       operational jobs for Phase 9. Do not activate polling, scheduled jobs,
       publication or promotion imported by JCasC/Job DSL during foundation
       startup; make this disabled initial state explicit and reviewable.
       Initially load only controller/login configuration and defer
       job-generating DSL and its publishing credentials until Phase 9.
-- [ ] Confirm controller/PVC readiness and private login, and document the
+- [x] Confirm controller/PVC readiness and private login, and document the
       exact reusable source, deferred components and Phase 9 migration inputs.
 
 ### 8.6 — Record functional completion and boundaries
 
-- [ ] Record the actual address/port/protocol map and ordinary readiness for
+- [x] Record the actual address/port/protocol map and ordinary readiness for
       both clusters, Adminer environments, monitoring and Jenkins foundation.
       Confirm no new public administrative NAT/ingress routes were introduced
       and check the new interfaces are not reachable from the public origin.
-- [ ] Record GitOps/application health after the changes; preserve existing
+- [x] Record GitOps/application health after the changes; preserve existing
       database PVCs, credentials, API VIPs and the public application path.
-- [ ] Publish the Phase 8 report with completed items and remaining limits.
+- [x] Publish the Phase 8 report with completed items and remaining limits.
       Do not claim tested failover, recovery or notification delivery. No
       stress, node-failure, reboot or failover tests are required in this phase.
 
 **Pass:** both clusters have their own useful monitoring and permanent
 IP-and-port administrative access through Tailscale; the nonprod Jenkins
 foundation is reachable with persistent storage. Working CI, failover tests,
-VM 100 retirement and legacy NAT removal are outside this phase.
+VM 100 retirement and legacy NAT removal are outside this phase. External
+Tailscale browser confirmation is the only remaining Phase 8 acceptance input.
 
 ## Phase 9 — Move promotion and CI ownership
 

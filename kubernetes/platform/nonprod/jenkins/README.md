@@ -1,4 +1,4 @@
-# Jenkins controller foundation (prepared, not deployed)
+# Jenkins controller foundation
 
 The image is the unchanged running PoC controller, published to GHCR at
 `ghcr.io/fastapi-traefik-devops/liora-jenkins-controller:phase8-b98a22e` and pinned
@@ -26,6 +26,8 @@ of old Jenkins state. Phase 9 handles consistent transfer, users/credential IDs,
 history, build agents, isolated Docker and trusted publishing. Do not restart
 legacy Docker containers or activate jobs during foundation setup.
 
-Server dry-run passed. Deployment is on hold behind the
-[Admin VIP status ownership decision](../../proposals/README.md) and the required
-NONPROD/PROD monitoring sequence. No Jenkins Pods or PVCs have been created.
+The controller is deployed and Ready, its PVC is Bound, and native browser
+login passed. The mounted plugin lock matches the preserved source. Authenticated
+API checks found zero jobs, zero agents and zero controller executors. The
+[approved status guard](../../../../docs/testreports/PHASE8_ADMIN_VIP_DECISION.md)
+protects its VIP status. Working CI/state migration remains Phase 9.

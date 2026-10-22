@@ -5,7 +5,8 @@ runbooks, manifests and reports are maintained here; additional migration
 checkouts and home-directory tool environments are no longer needed.
 
 `.local-work/` is ignored by Git. It holds machine-specific tools and generated
-output, and must be included separately in an operator backup when needed:
+output, plus private platform recovery inputs. Include required operator data
+separately in protected backups:
 
 | Path | Purpose |
 | --- | --- |
@@ -15,6 +16,15 @@ output, and must be included separately in an operator backup when needed:
 | `.local-work/tools/` | Local Gitleaks executable and scan configuration |
 | `.local-work/render/<environment>/` | Newly rendered application manifests |
 | `.local-work/acceptance/<environment>/` | New acceptance records |
+| `.local-work/private/platform/` | Active Grafana/Jenkins login recovery inputs; mode 0600; preserve separately |
+| `.local-work/phase8/evidence/` | VIP, browser, admission, preservation and routing evidence |
+| `.local-work/phase8/docker-auth/` | Private registry client credentials; protect like recovery inputs |
+
+The private platform inputs are not disposable tool caches. Preserve them in
+the protected recovery archive before moving or cleaning the local workspace.
+Never add them, registry authentication or raw private evidence to Git. See
+[runbook 16](../runbooks/16-private-platform-access.md) for Secret preservation
+and recovery boundaries.
 
 ## Prepare another operator machine
 

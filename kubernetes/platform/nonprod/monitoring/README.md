@@ -15,7 +15,7 @@ Services retain their actual selectors; the Traefik PodMonitor targets
 remain internal. Native external notification delivery is disabled pending an
 agreed destination; the old Slack secret is not imported.
 
-Apply the [approved status ownership guard](../../proposals/README.md) before
+Apply the [approved status ownership guard](../../../../docs/testreports/PHASE8_ADMIN_VIP_DECISION.md) before
 creating VIP Services, then chart values with Helm and this directory with
 kubectl. Actual sequential rollout and acceptance are in the Phase 8 report.
 

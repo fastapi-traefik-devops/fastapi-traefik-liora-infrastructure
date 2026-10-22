@@ -46,3 +46,7 @@ Run all subsequent infrastructure commands on **VM 200**. Use your PC/laptop as 
 
 12. **Publish the application over HTTPS.** Configure the dedicated edge, preserve host forwarding rules, and verify all three domains and certificates.
     - [ ] [Publish application routing and TLS](runbooks/15-publish-application.md).
+
+13. **Establish private operational access and monitoring.** Apply the approved status guard before Admin VIP Services, verify NONPROD before PROD, then install the isolated Jenkins foundation.
+    - [ ] [Private platform access and monitoring](runbooks/16-private-platform-access.md).
+    - Preserve monitoring/Jenkins PVCs and private credential inputs; fresh manifests do not restore their data. Working CI migration is a separate step.

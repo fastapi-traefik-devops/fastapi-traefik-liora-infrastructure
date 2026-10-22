@@ -3,10 +3,11 @@
 ## Admin VIP status ownership guard
 
 Status: **approved by the operator for NONPROD, then PROD**. The active manifest
-is [status-ownership.yaml](../base/admin-access/status-ownership.yaml), included
-in the shared administrative-access kustomization. NONPROD admission checks
-passed; sequential rollout and functional acceptance are recorded in the
-[Phase 8 report](../../../docs/testreports/PHASE8_REPORT.md).
+is [status-ownership.yaml](../../kubernetes/platform/base/admin-access/status-ownership.yaml),
+included in the shared administrative-access kustomization. NONPROD then PROD
+admission checks passed. Both clusters have the guard deployed; sequential
+rollout and functional acceptance are recorded in the
+[Phase 8 report](PHASE8_REPORT.md).
 
 On NONPROD K3s `v1.36.5+k3s1`, an administrative LoadBalancer class prevents
 ServiceLB DaemonSets, but ServiceLB's EndpointSlice handler still queues the

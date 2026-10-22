@@ -1,10 +1,10 @@
 # Private platform access and monitoring
 
-**Deployment hold:** the initial NONPROD installation exposed a K3s ServiceLB
-status-ownership conflict. Do not run the deployment sequence further until the
-[ownership decision](../kubernetes/platform/proposals/README.md) is resolved.
-The Phase 8 report records partial deployment; this is not a completed runbook
-acceptance claim.
+The operator approved a native status-ownership guard after the initial
+NONPROD installation exposed a K3s ServiceLB incompatibility. Apply the guard
+before VIP Services; its [decision record](../docs/testreports/PHASE8_ADMIN_VIP_DECISION.md)
+explains why class-only isolation is insufficient. See the Phase 8 report for
+actual rollout and acceptance boundaries.
 
 Phase 8 adds IP-and-port access through the existing Tailscale subnet route.
 Use this checkout and explicit kubeconfigs. The API VIPs, public Traefik,
@@ -42,9 +42,11 @@ Pinned source behavior:
 
 ## NONPROD access first
 
-Review the files and server validation before applying:
+Review the files and server validation before applying. Install the approved
+status guard first, including on a fresh recovery cluster:
 
 ```bash
+kubectl --kubeconfig="$HOME/.kube/config-dev-stage" apply -f kubernetes/platform/base/admin-access/status-ownership.yaml
 kubectl --kubeconfig="$HOME/.kube/config-dev-stage" apply --dry-run=server -k kubernetes/platform/nonprod/admin-access
 kubectl --kubeconfig="$HOME/.kube/config-dev-stage" apply -k kubernetes/platform/nonprod/admin-access
 kubectl --kubeconfig="$HOME/.kube/config-dev-stage" apply -f kubernetes/apps/liora/overlays/dev/service-adminer-private.yaml
@@ -85,12 +87,14 @@ never add them to Git. Losing this file does not rotate an existing Secret.
 Recovery with an existing Secret preserves it; a fresh cluster reuses the input
 if supplied. Reapplying manifests does not restore PVC data.
 
-Both clusters retain the PoC budget: one Prometheus (100m/512Mi requested,
+Both clusters adapt the PoC budget: one Prometheus (100m/512Mi requested,
 500m/1536Mi limit), retention 3 days/1500MB and 2Gi PVC; one Alertmanager
-(20m/64Mi, 100m/128Mi) with 256Mi PVC; Grafana (50m/128Mi, 300m/384Mi) without
+(20m/64Mi, 100m/128Mi) with 256Mi PVC; Grafana (100m/256Mi, 500m/768Mi) without
 persistent UI state. Dashboards/datasource are provisioned from Git. Node
 Exporter runs once per node; operator and kube-state-metrics use bounded source
 budgets. All PVCs use `local-path`, remain node-bound, and are not replicas.
+The original Grafana 384Mi limit caused an observed OOM kill; the larger limit
+and 15-minute startup allowance accommodate the current version on this lab.
 External alert delivery is disabled (`pending-destination` receiver) until the
 operator agrees it. Alert evaluation and the private UI remain available.
 
@@ -102,6 +106,7 @@ ingress, authentication proxy, DNS, Tailscale policy or firewall is installed.
 ## PROD after NONPROD functional readiness
 
 ```bash
+kubectl --kubeconfig="$HOME/.kube/config-prod" apply -f kubernetes/platform/base/admin-access/status-ownership.yaml
 kubectl --kubeconfig="$HOME/.kube/config-prod" apply --dry-run=server -k kubernetes/platform/prod/admin-access
 kubectl --kubeconfig="$HOME/.kube/config-prod" apply -k kubernetes/platform/prod/admin-access
 kubectl --kubeconfig="$HOME/.kube/config-prod" apply -f kubernetes/apps/liora/overlays/prod/service-adminer-private.yaml
@@ -165,3 +170,37 @@ A Jenkins manifest reapply preserves its home; a fresh home creates a new
 foundation only. Restoring working CI state belongs to the Phase 9 procedure.
 Do not claim tested failover, host/storage recovery, notification delivery or
 scheduled renewals from these functional checks.
+
+## Verify the approved guard and native UIs
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/verify-admin-vip.py --cluster nonprod --check-admission
+bash scripts/local-python.sh scripts/kubernetes/verify-platform-access.py --cluster nonprod --include-jenkins
+bash scripts/local-python.sh scripts/kubernetes/verify-admin-vip.py --cluster prod --check-admission
+bash scripts/local-python.sh scripts/kubernetes/verify-platform-access.py --cluster prod
+```
+
+[Standalone VIP/ownership verifier](../scripts/kubernetes/verify-admin-vip.py).
+[Standalone native browser verifier](../scripts/kubernetes/verify-platform-access.py).
+The VIP verifier uses only server dry-run status patches for its admission
+checks. It checks lease/Service consistency, Ready endpoints, zero NodePorts and
+absence of administrative ServiceLB DaemonSets. Add `--check-node-addresses`
+with `--known-hosts <trusted-file>` to read all three nodes' interface addresses
+through SSH and prove exactly one actual VIP owner; this is an ordinary read,
+not a failover test. Obtain host keys from existing trusted provisioning records;
+do not disable host-key verification. Browser checks do not save sessions or
+credentials, and report only a safe check name/type on error.
+
+For an existing partial installation whose monitoring status was already wiped,
+apply and verify the guard, then recreate only the three new private monitoring
+Services from `monitoring/services.yaml`. Do not delete original Services, Pods,
+PVCs or the shared VIP controller. Recreating these exposure objects lets kube-vip
+write status again; merely changing annotations need not resynchronize a cached
+service instance. Normal fresh installation does not need this repair.
+
+The guard rejects all non-owner writes to administrative Service status,
+including manual administrator patches. Removing its exact binding reverses the
+guard but reintroduces the K3s conflict. Keep the guard while these Services are
+active; before removing its controller/RBAC during rollback, remove the private
+Services first, then its binding/policy. ServiceLB denied-update log retries are
+an acknowledged compatibility cost, not an indication that the VIP disappeared.

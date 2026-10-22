@@ -35,8 +35,9 @@ now reconcile each cluster, with verified self-healing and PROD pruning disabled
 [STAGE](https://stage.liora.aprt.info) through the dedicated HAProxy edge, with
 trusted certificates and DNS-only records. Cloudflare proxy mode remains unverified.
 
-Phase 8 is in progress; NONPROD monitoring is Ready, but a ServiceLB status
-ownership conflict blocks administrative VIP acceptance and further rollout. See
+Phase 8 deployment and local browser checks are finished: both clusters have
+Admin VIP access and monitoring, and NONPROD has an isolated Jenkins foundation.
+External Tailscale browser confirmation remains pending. See
 [the progress report](docs/testreports/PHASE8_REPORT.md) and
 [private platform runbook](runbooks/16-private-platform-access.md).
 
