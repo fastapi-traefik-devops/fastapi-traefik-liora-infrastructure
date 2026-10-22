@@ -1,10 +1,11 @@
 # Phase 9 — Existing pipeline review and CI-only proposal
 
-Date: 2026-10-22. Status: **review complete; CI-only proposal approved; first attempt recorded**.
+Date: 2026-10-22. Status: **review complete; CI-only proposal approved; functional checkpoint accepted**.
 
 The operator subsequently agreed to the proposal below. The original review
 records the pre-change baseline; current execution/results belong in
-[the manual CI report](PHASE9_MANUAL_CI.md).
+[the first attempt](PHASE9_MANUAL_CI.md) and
+[successful second attempt](PHASE9_CI_RETRY.md).
 At the time of this read-only review, no pipeline source, Jenkins job/
 configuration, controller policy, credentials or application data was changed. No build, indexing, publication, promotion or scan
 was started. Only this documentation and private review artifacts were written.

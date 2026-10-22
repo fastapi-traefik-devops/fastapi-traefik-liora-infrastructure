@@ -3,6 +3,10 @@
 Date: 2026-10-22. Status: **one build stopped after a nested-network stall; full CI acceptance pending**. This is the approved
 CI-only checkpoint, not completion of Phase 9 or activation of publication.
 
+Follow-up: the operator approved the correction and one further attempt. See
+[successful build #2 and final acceptance](PHASE9_CI_RETRY.md). The observations
+below retain the original first-attempt outcome.
+
 ## Scope and source
 
 The operator approved the [reviewed proposal](PHASE9_PIPELINE_REVIEW.md).

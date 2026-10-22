@@ -600,9 +600,10 @@ The authorized legacy stop, consistent source/foundation backups and restore to
 a separate NONPROD PVC are complete. Runtime and browser checks verified the
 current K3s admin login, retained users/history/credential scopes and decryption,
 and the execution/egress hold. Both worker agents are now connected and the Docker
-build/shared-bind smoke passed. One approved manual CI attempt ran and was
-stopped at a nested-network stall; all jobs are held again and application
-publishing remains disabled. See [worker acceptance](PHASE9_WORKERS.md),
+build/shared-bind smoke passed. After correcting the observed nested Docker MTU
+mismatch, the approved second manual CI build passed all 13 functional gates
+and 96 tests. All jobs are held again and application publishing remains disabled.
+See [worker acceptance](PHASE9_WORKERS.md),
 [Phase 9 report](PHASE9_REPORT.md)
 and [runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
 
@@ -612,10 +613,11 @@ jobs and the pinned source, and found application GitHub `main` four commits
 ahead at `13aa29eb27abac01e9638cdf45f1414a4c3002a1`. No source, job, trigger or
 controller policy was changed during that read-only review. The approved
 checkpoint is one manual functional CI build without scans, publication, promotion or deployment.
-That one attempt is now recorded in [the manual CI report](PHASE9_MANUAL_CI.md):
-nine of 13 gates and 96 tests passed, but the run was stopped during image
-creation. Full functional acceptance is pending; the network correction below
-requires review before another build.
+The [first attempt](PHASE9_MANUAL_CI.md) stopped at a nested-network stall.
+The operator approved MTU alignment and one further attempt; [build #2](PHASE9_CI_RETRY.md)
+passed all 13 functional gates and 96 tests, including both runtime-image smoke
+checks. Native JSON/JUnit reporting, cleanup and hold restoration passed.
+Publication/promotion and full/release attestation remain outside this checkpoint.
 
 Operator cleanup update, 2026-10-22: `docker system prune -a --volumes`
 removed the stopped local legacy containers and images. Seven named Jenkins
@@ -693,11 +695,14 @@ were verified on 2026-10-22 after the operator updated the installation.
       hold afterward. Leave release attestation unchanged in this CI-only increment.
       Attempt #1 is ABORTED after a nested-network stall; this checkbox records
       execution of the agreed single attempt, not passing full CI acceptance.
-- [ ] Review the [observed network stall and proposed MTU alignment](PHASE9_MANUAL_CI.md)
+- [x] Review the [observed network stall and proposed MTU alignment](PHASE9_MANUAL_CI.md)
       before changing CI worker settings or requesting another build. Verify
       nested HTTPS connectivity after any agreed change, review the source-only
       report fix, then explicitly authorize one new attempt with its own receipt.
       Preserve the first request guard/history and keep all publication held.
+      Completed: both bridge MTUs are 1450, nested HTTPS probes passed, and
+      [build #2](PHASE9_CI_RETRY.md) passed all functional gates and 96 tests.
+      First-attempt history/archives and all imported job/user state are retained.
 - [x] Move CI agents, isolated build daemon and separate registry publisher
       into the nonprod CI platform with bounded resources and fresh cache.
       Both preserved labels are online with one executor each; all new PVCs

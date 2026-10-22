@@ -1,27 +1,24 @@
 # Phase 9 — Jenkins CI migration
 
-Started: 2026-10-22. Status: **state retained; both worker agents connected;
-Docker build/bind smoke passed; Jenkins jobs/publication remain held**. See the
+Started: 2026-10-22. Status: **functional CI accepted; Jenkins jobs/publication
+remain held; Phase 9 publication/promotion work remains open**. See the
 [worker report](PHASE9_WORKERS.md) and detailed
 [state restore report](PHASE9_STATE_RESTORE.md). Earlier observations below describe
 the preparation baseline; the latest decisions supersede its approval boundaries.
 
-Latest checkpoint: [one manual CI build and proposed network correction](PHASE9_MANUAL_CI.md).
-The operator approved the [pipeline proposal](PHASE9_PIPELINE_REVIEW.md).
-`migration-ci #1` ran once at application `c5ee7de`: nine functional gates and
-96 tests passed. The run was gracefully stopped at a nested-network stall during
-backend runtime image creation; result **ABORTED**, full CI acceptance pending.
-Pod/Docker bridge MTUs differ (1450/1500), and the same HTTPS fetch succeeds from
-the pod but times out inside the build network. MTU alignment is proposed,
-not applied; no automatic retry or activation is authorized by this report.
+Latest checkpoint: [MTU correction and successful manual build #2](PHASE9_CI_RETRY.md).
+The operator approved continuing after the [first aborted attempt](PHASE9_MANUAL_CI.md).
+Default and new user-defined Docker bridges now use MTU 1450; bounded nested
+HTTPS probes passed before activation. Build #2 at application `cb08cda` passed
+all 13 functional gates and 96 tests, including both runtime-image health checks.
+The formerly stalled Alpine step completed in 4.7 seconds. JSON/JUnit reporting
+and cleanup passed; build #1 and all four of its archives are preserved.
 
-A report-writer quoting defect was corrected locally at application `cb08cda`;
-11 focused tests and Jenkins syntax validation passed, but that fix was not
-installed or built. XML archives and cleanup succeeded for the first attempt;
-its native migration JSON/Jenkins test summary were not produced. All jobs are
-again disabled and quiet mode is restored; imported job/user hashes match the
-baseline. No publishing, promotion, deployment, scan or push occurred. Phase 9
-remains open.
+All jobs are again disabled, quiet mode is restored, and imported job/user hashes
+match the baseline. The current administrator and K3s PostgreSQL data remain
+unchanged; all five Argo CD applications are Synced/Healthy. No security scan,
+publication, promotion, application deployment or Git push occurred. Phase 9 remains open
+for separate review of publishing and promotion across the repository split.
 
 ## Confirmed decisions — 2026-10-22
 
