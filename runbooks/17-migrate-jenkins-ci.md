@@ -194,6 +194,37 @@ never in the runbook, manifests or Git.
 
 ## 4. Prepare cluster adaptation before running agents
 
+### Educational-project vulnerability deferral
+
+On 2026-10-22 the operator explicitly deferred vulnerability remediation and
+further vulnerability scans to complete migration/deployment first. This
+supersedes the image gate as a blocking condition for this educational-project
+increment. It does not turn a failed scan into a pass. The recovered controller
+passed; the rebuilt DinD image has High-severity `CVE-2026-111943` findings.
+The agent is not rescanned after this decision. Retain the existing Dockerfiles,
+tool locks and scan evidence; do not introduce dependency upgrades or new
+security stages during this increment. Basic deployment, login and disabled-job
+checks still apply. Remediation and a fresh complete image gate remain deferred.
+
+The optional [standalone image audit](../scripts/kubernetes/audit-jenkins-images.py)
+is available for later use; it is **not** called by the deployment helper:
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/audit-jenkins-images.py
+```
+
+[Standalone image audit](../scripts/kubernetes/audit-jenkins-images.py).
+It scans sequentially with the preserved source-built scanner at
+`.local-work/tools/trivy`, using a bounded 3Gi/1-CPU helper container, one scan
+worker and normal vulnerability/Java database updates. It does not start Jenkins
+jobs. Private timestamped JSON/logs under `.local-work/phase9/` retain scanner,
+archive and report hashes. Reports must contain a complete container-image
+result with filesystem layer IDs matching the inspected source image. Exit 0
+requires every requested image to pass; exit 1 means a finding, scanner/export
+error, missing/incomplete report or other failure; argument errors exit 2.
+An OOM or empty report never counts as a pass. It removes only its own temporary
+exports, preserving source images, operator inputs and recovery archives.
+
 - [ ] Preserve the working `host-ci` and `registry-publisher` names/labels,
       one executor each, and zero controller executors.
 - [ ] Keep existing agent/DinD image and tool locks. Review and pin trusted

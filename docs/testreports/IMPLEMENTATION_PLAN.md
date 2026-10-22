@@ -611,6 +611,12 @@ are unaffected. Legacy Docker recovery requires container recreation and private
 bind-input restoration, not restarting retained containers. Do not remove any
 remaining source volumes or archives.
 
+Vulnerability deferral, 2026-10-22: the operator explicitly accepted proceeding
+with deployment for this educational setup and deferred remediation/further
+vulnerability scanning. Preserve the failed DinD scan as a failed result and do
+not run further image audits in this increment. This does not change the
+disabled-job/promotion boundary or current-admin preservation requirement.
+
 Preserve the maximum working behavior from the application's Jenkins proof of
 concept while adapting it to the nonprod K3s foundation and repository split.
 GitOps App access and Contents/Pull requests write grants on both repositories
