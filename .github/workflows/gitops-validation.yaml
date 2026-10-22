@@ -1,0 +1,25 @@
+name: Validate application GitOps manifests
+on:
+  pull_request:
+    paths:
+    - kubernetes/apps/liora/**
+    - scripts/ci/**
+    - .github/workflows/gitops-validation.yaml
+permissions:
+  contents: read
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      with:
+        persist-credentials: false
+    - name: Install manifest validators
+      run: |
+        python3 -m pip install PyYAML==6.0.3
+        python3 scripts/ci/install-validation-tools.py "$RUNNER_TEMP/liora-validators"
+        echo "$RUNNER_TEMP/liora-validators" >> "$GITHUB_PATH"
+    - name: Render and validate every environment
+      env:
+        REQUIRE_KUBECONFORM: '1'
+      run: sh scripts/ci/validate-gitops.sh

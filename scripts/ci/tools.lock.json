@@ -1,0 +1,12 @@
+{
+  "kustomize": {
+    "version": "v5.8.2",
+    "url": "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.8.2/kustomize_v5.8.2_linux_amd64.tar.gz",
+    "sha256": "06af0a202c2b831207d0173f9c9cdb1b30abceca0747cb3fbb72792d26055c95"
+  },
+  "kubeconform": {
+    "version": "v0.8.0",
+    "url": "https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz",
+    "sha256": "9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883"
+  }
+}
