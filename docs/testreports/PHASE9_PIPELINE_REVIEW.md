@@ -1,8 +1,12 @@
 # Phase 9 — Existing pipeline review and CI-only proposal
 
-Date: 2026-10-22. Status: **review complete; proposed changes awaiting operator agreement**.
-No pipeline source, Jenkins job/configuration, controller policy, credentials or
-application data was changed. No build, indexing, publication, promotion or scan
+Date: 2026-10-22. Status: **review complete; CI-only proposal approved; first attempt recorded**.
+
+The operator subsequently agreed to the proposal below. The original review
+records the pre-change baseline; current execution/results belong in
+[the manual CI report](PHASE9_MANUAL_CI.md).
+At the time of this read-only review, no pipeline source, Jenkins job/
+configuration, controller policy, credentials or application data was changed. No build, indexing, publication, promotion or scan
 was started. Only this documentation and private review artifacts were written.
 
 ## Sources and current state
@@ -87,7 +91,7 @@ cron and controller GitHub access. That changes more of the restored setup and
 is unnecessary for a single initial CI build. Preserve its history and settings
 until the later multibranch activation review.
 
-Proposed application-owned changes, **not applied**:
+Approved application-owned changes (original proposal):
 
 | File | Proposed change |
 | --- | --- |
@@ -119,7 +123,7 @@ full/release behavior as inactive code; skipped checks must be reported as
 deferred, not passed. Archive JUnit/coverage and a migration-only source/result
 record. Do not create release `gates.json` or publishable image tarballs.
 
-Proposed infrastructure/operator changes, **not applied**:
+Approved infrastructure/operator changes (original proposal):
 
 - Add a small guarded operator helper to install the reviewed job **disabled**,
   recording the source SHA/definition hash and baseline controller/job state.
@@ -178,5 +182,5 @@ the existing 90-minute pipeline timeout initially.
   paths and broader promotion activation remain later work.
 
 Current admin credentials and K3s PostgreSQL data remain unchanged. Vulnerability
-remediation and further security scans remain deferred. **Await agreement on
-the CI-only proposal before editing pipeline sources or enabling any job.**
+remediation and further security scans remain deferred. Operator agreement was
+received before editing sources or enabling the one manual job.

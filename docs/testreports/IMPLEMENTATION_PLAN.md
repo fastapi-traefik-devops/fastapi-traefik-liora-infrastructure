@@ -600,17 +600,22 @@ The authorized legacy stop, consistent source/foundation backups and restore to
 a separate NONPROD PVC are complete. Runtime and browser checks verified the
 current K3s admin login, retained users/history/credential scopes and decryption,
 and the execution/egress hold. Both worker agents are now connected and the Docker
-build/shared-bind smoke passed; no migrated Jenkins job or application publishing
-has been activated. See [worker acceptance](PHASE9_WORKERS.md),
+build/shared-bind smoke passed. One approved manual CI attempt ran and was
+stopped at a nested-network stall; all jobs are held again and application
+publishing remains disabled. See [worker acceptance](PHASE9_WORKERS.md),
 [Phase 9 report](PHASE9_REPORT.md)
 and [runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
 
 The [pipeline review](PHASE9_PIPELINE_REVIEW.md) is complete as a technical
-inspection; operator agreement on changes is pending. It checked live disabled
+inspection; the operator approved its CI-only proposal. It checked live disabled
 jobs and the pinned source, and found application GitHub `main` four commits
 ahead at `13aa29eb27abac01e9638cdf45f1414a4c3002a1`. No source, job, trigger or
-controller policy was changed. The proposed next checkpoint is one manual
-functional CI build without scans, publication, promotion or deployment.
+controller policy was changed during that read-only review. The approved
+checkpoint is one manual functional CI build without scans, publication, promotion or deployment.
+That one attempt is now recorded in [the manual CI report](PHASE9_MANUAL_CI.md):
+nine of 13 gates and 96 tests passed, but the run was stopped during image
+creation. Full functional acceptance is pending; the network correction below
+requires review before another build.
 
 Operator cleanup update, 2026-10-22: `docker system prune -a --volumes`
 removed the stopped local legacy containers and images. Seven named Jenkins
@@ -675,17 +680,24 @@ were verified on 2026-10-22 after the operator updated the installation.
       Verify the existing password in API/browser and check credential decryption.
       Keep all private state outside Git and diagnostics. Preserve original
       Job DSL/pipeline sources without executing them or redesigning promotion.
-- [ ] Review the preserved Job DSL/pipelines and settings with the operator
+- [x] Review the preserved Job DSL/pipelines and settings with the operator
       before adapting old repository targets or enabling their behavior. Required
       runtime plumbing is allowed; promotion behavior changes remain deferred.
       Findings and the proposed minimal CI-only path are recorded in
-      [the review](PHASE9_PIPELINE_REVIEW.md); await agreement before implementation.
-- [ ] After agreement, prepare the reviewed CI-only source/profile and manually
+      [the review](PHASE9_PIPELINE_REVIEW.md); operator agreement received.
+- [x] After agreement, prepare the reviewed CI-only source/profile and manually
       trigger one build on `host-ci`, keeping every imported job and all polling,
       schedules, publication/promotion and legacy direct STAGE pushes disabled.
       Preserve existing admin login and K3s PostgreSQL content. Record exact source,
       functional test/build outcomes and deferred checks; restore the execution
       hold afterward. Leave release attestation unchanged in this CI-only increment.
+      Attempt #1 is ABORTED after a nested-network stall; this checkbox records
+      execution of the agreed single attempt, not passing full CI acceptance.
+- [ ] Review the [observed network stall and proposed MTU alignment](PHASE9_MANUAL_CI.md)
+      before changing CI worker settings or requesting another build. Verify
+      nested HTTPS connectivity after any agreed change, review the source-only
+      report fix, then explicitly authorize one new attempt with its own receipt.
+      Preserve the first request guard/history and keep all publication held.
 - [x] Move CI agents, isolated build daemon and separate registry publisher
       into the nonprod CI platform with bounded resources and fresh cache.
       Both preserved labels are online with one executor each; all new PVCs

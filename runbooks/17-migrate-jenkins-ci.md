@@ -662,3 +662,9 @@ are not PASS. No `gates.json` or publisher-eligible tarball is generated. Tests
 use their existing disposable Docker database; do not mount or modify K3s
 PostgreSQL data. Preserve the 90-minute pipeline timeout and current resources
 for this first observation; report failures before changing bounds or retrying.
+
+A zero helper exit means monitoring and hold verification completed; it does
+not mean CI passed. Inspect `build-result.json` and the archived reports. The
+[first attempt report](../docs/testreports/PHASE9_MANUAL_CI.md) records an aborted
+network stall and a source-only reporting fix; do not delete its request guard
+or rerun it to obtain a green result.

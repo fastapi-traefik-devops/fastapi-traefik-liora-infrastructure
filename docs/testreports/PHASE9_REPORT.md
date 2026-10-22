@@ -6,12 +6,22 @@ Docker build/bind smoke passed; Jenkins jobs/publication remain held**. See the
 [state restore report](PHASE9_STATE_RESTORE.md). Earlier observations below describe
 the preparation baseline; the latest decisions supersede its approval boundaries.
 
-Latest review: [existing jobs/pipelines and proposed CI-only checkpoint](PHASE9_PIPELINE_REVIEW.md).
-Read-only inspection confirmed the execution hold and found newer upstream
-repository-rename changes than the pinned source. A dedicated manual-only job
-reusing existing functional steps is proposed; no pipeline modification or job
-activation has been performed. Await operator agreement before the one requested
-CI build without publication/deployment. Vulnerability scans remain deferred.
+Latest checkpoint: [one manual CI build and proposed network correction](PHASE9_MANUAL_CI.md).
+The operator approved the [pipeline proposal](PHASE9_PIPELINE_REVIEW.md).
+`migration-ci #1` ran once at application `c5ee7de`: nine functional gates and
+96 tests passed. The run was gracefully stopped at a nested-network stall during
+backend runtime image creation; result **ABORTED**, full CI acceptance pending.
+Pod/Docker bridge MTUs differ (1450/1500), and the same HTTPS fetch succeeds from
+the pod but times out inside the build network. MTU alignment is proposed,
+not applied; no automatic retry or activation is authorized by this report.
+
+A report-writer quoting defect was corrected locally at application `cb08cda`;
+11 focused tests and Jenkins syntax validation passed, but that fix was not
+installed or built. XML archives and cleanup succeeded for the first attempt;
+its native migration JSON/Jenkins test summary were not produced. All jobs are
+again disabled and quiet mode is restored; imported job/user hashes match the
+baseline. No publishing, promotion, deployment, scan or push occurred. Phase 9
+remains open.
 
 ## Confirmed decisions — 2026-10-22
 
