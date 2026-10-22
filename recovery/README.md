@@ -43,6 +43,42 @@ belong under `application_credentials`; transient `TAILSCALE_AUTH_KEY` belongs
 only in the provisioning shell, not the persistent recovery file. All other
 unsupported names, including old Terraform input names, are also warned about.
 
+## Display browser passwords
+
+Run this helper from any directory with Python 3 and `kubectl` available:
+
+```sh
+python3 recovery/show_passwords.py
+```
+
+It explicitly warns that plaintext passwords will be printed and asks `y/n` on
+standard error before reading any Secrets, then reads the answer from standard
+input. This works in SSH sessions without requiring `/dev/tty` or an allocated
+pseudo-terminal. Only `y` (case-insensitive) continues; any other answer or EOF
+cancels. There is no flag to skip confirmation; piped input is read as an answer.
+The helper performs read-only Kubernetes queries on every invocation and does
+not create files, cache credentials, modify Secrets, or authenticate to services.
+It prints a tab-separated table for PROD/STAGE/DEV, including Application,
+Argo CD, Grafana, Prometheus, Alertmanager and Adminer, plus shared NONPROD Jenkins.
+The service addresses describe the current Admin VIP deployment.
+
+Defaults are `~/.kube/config-dev-stage` and `~/.kube/config-prod`; override them
+with `--nonprod-kubeconfig PATH` and `--prod-kubeconfig PATH`. The operator needs
+read access to the referenced ConfigMaps and Secrets. No Python packages beyond
+the standard library are required; the single script can be copied to a server.
+
+The table contains real plaintext credentials. Terminal scrollback, recording,
+redirected output and pipes can retain them; do not put this output in Git.
+Argo CD uses the initial-admin Secret, which may be stale after password rotation
+or absent after deletion. Application and database passwords also reflect stored
+Secrets, without verifying the actual login. Shared DEV/STAGE interfaces repeat
+the same credentials. Prometheus and Alertmanager have no separate authentication.
+
+Exit `0` means the table was printed or the operator cancelled; `1` means a
+resource/field read failed; `2` means invalid arguments or unreadable standard input;
+`130` means interruption. Failed collection prints no partial table; diagnostics
+exclude kubectl response bodies and secret values.
+
 ## `.env`
 
 Use one `NAME=value` or `export NAME=value` assignment per line. Blank lines and
