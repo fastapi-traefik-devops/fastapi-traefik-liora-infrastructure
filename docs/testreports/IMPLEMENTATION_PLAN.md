@@ -711,6 +711,14 @@ were verified on 2026-10-22 after the operator updated the installation.
       passed again. Docker deployment details are adapted for K3s without giving
       application builds deployment credentials or using a host Docker socket.
       The operator accepted the existing privileged DinD requirement explicitly.
+- [x] Review the retained publisher/promotion implementation for the repository
+      split. [Findings and proposed changes](PHASE9_PUBLICATION_REVIEW.md) identify
+      required artifact evidence, separate Git histories and human-reviewed PRs.
+      Current jobs, credentials, policies and publication remain held.
+- [ ] Agree the explicit functional-artifact admission mode and proposed local
+      implementation before editing pipelines. Implement and test with two
+      independent fixture repositories and mocked remote APIs before requesting
+      any artifact build, publication, Git push or PR activation.
 - [ ] After pipeline review, verify application build/publication credential
       separation, artifact provenance, SHA image tags and existing CI gates in
       controlled execution. Image vulnerability handling follows the explicit

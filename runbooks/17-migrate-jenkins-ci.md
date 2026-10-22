@@ -586,6 +586,11 @@ and restoration of missing bind-source paths after the operator cleanup.
 
 ## 6. Resolve promotion before activation
 
+The [publisher/repository-split review](../docs/testreports/PHASE9_PUBLICATION_REVIEW.md)
+records current blockers and the proposed local-only implementation checkpoint.
+Build #2 is functional acceptance, not publication evidence. Keep jobs and
+controller egress held until the separately reviewed activation steps.
+
 > [!IMPORTANT]
 > The old publisher writes STAGE to the former repository's main branch.
 > Do not run it unchanged. Preserve the verified-artifact and trusted

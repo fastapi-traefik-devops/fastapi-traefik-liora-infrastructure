@@ -6,7 +6,11 @@ remain held; Phase 9 publication/promotion work remains open**. See the
 [state restore report](PHASE9_STATE_RESTORE.md). Earlier observations below describe
 the preparation baseline; the latest decisions supersede its approval boundaries.
 
-Latest checkpoint: [MTU correction and successful manual build #2](PHASE9_CI_RETRY.md).
+Latest review: [publisher and promotion repository split](PHASE9_PUBLICATION_REVIEW.md).
+The review is complete; its proposed local implementation awaits agreement.
+No publisher or promotion code/job/policy was changed or activated.
+
+Latest execution checkpoint: [MTU correction and successful manual build #2](PHASE9_CI_RETRY.md).
 The operator approved continuing after the [first aborted attempt](PHASE9_MANUAL_CI.md).
 Default and new user-defined Docker bridges now use MTU 1450; bounded nested
 HTTPS probes passed before activation. Build #2 at application `cb08cda` passed
