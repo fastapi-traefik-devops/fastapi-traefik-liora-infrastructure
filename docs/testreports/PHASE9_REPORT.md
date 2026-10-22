@@ -6,6 +6,13 @@ Docker build/bind smoke passed; Jenkins jobs/publication remain held**. See the
 [state restore report](PHASE9_STATE_RESTORE.md). Earlier observations below describe
 the preparation baseline; the latest decisions supersede its approval boundaries.
 
+Latest review: [existing jobs/pipelines and proposed CI-only checkpoint](PHASE9_PIPELINE_REVIEW.md).
+Read-only inspection confirmed the execution hold and found newer upstream
+repository-rename changes than the pinned source. A dedicated manual-only job
+reusing existing functional steps is proposed; no pipeline modification or job
+activation has been performed. Await operator agreement before the one requested
+CI build without publication/deployment. Vulnerability scans remain deferred.
+
 ## Confirmed decisions — 2026-10-22
 
 The operator approved the existing privileged DinD approach for the initial K3s
