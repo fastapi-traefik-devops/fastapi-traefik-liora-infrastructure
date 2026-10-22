@@ -3,8 +3,9 @@
 Implementation update: **2026-10-22**. Phases 0–7 are complete within their
 recorded acceptance boundaries. Phase 8 is deployed in both clusters and local
 functional/browser checks passed, including the NONPROD Jenkins foundation.
-The approved status guard resolved the ServiceLB incompatibility. Independent
-external Tailscale browser confirmation remains pending; Phase 8 is not closed.
+The approved status guard resolved the ServiceLB incompatibility. The operator
+confirmed that all interfaces work through Tailscale and all passwords succeed
+on 2026-10-22. **Phase 8 is complete.**
 See [the Phase 8 report](PHASE8_REPORT.md).
 
 ## Target architecture
@@ -45,7 +46,8 @@ existing Tailscale router. Use browser access by IP and port, with no private
 ingress, DNS records, additional reverse proxy, SSH tunnel or manual
 port-forward. The operator confirms `.16` and `.17` are available and assigns
 them to this purpose. Both are now deployed and locally verified; external
-Tailscale browser confirmation remains separate.
+Tailscale browser access and passwords were confirmed by the operator on
+2026-10-22.
 
 ```mermaid
 flowchart LR
@@ -479,11 +481,11 @@ other admin interfaces behind Tailscale or equivalent private access.
 
 ## Phase 8 — Add monitoring and operational access
 
-Status: **deployment and local acceptance complete; external Tailscale browser
-confirmation pending**. NONPROD then PROD were verified with the operator-approved
-[status guard](PHASE8_ADMIN_VIP_DECISION.md). Both monitoring stacks and the
-NONPROD Jenkins foundation work. See the [Phase 8 report](PHASE8_REPORT.md).
-Working CI migration remains a separate Phase 9.
+Status: **complete on 2026-10-22**. NONPROD then PROD were verified with the
+operator-approved [status guard](PHASE8_ADMIN_VIP_DECISION.md). Both monitoring
+stacks and the NONPROD Jenkins foundation work. The operator confirmed all
+interfaces and passwords through Tailscale. See the [Phase 8 report](PHASE8_REPORT.md).
+Working CI migration remains a separate Phase 9 and has not started.
 
 ### 8.1 — Prepare manifests and ownership
 
@@ -509,13 +511,13 @@ Working CI migration remains a separate Phase 9.
       existing API kube-vip and public Traefik/ServiceLB unchanged.
 - [x] Expose Argo CD at `.16:8080`, Adminer DEV at `.16:8081` and Adminer
       STAGE at `.16:8082` using the native service protocols and logins.
-- [ ] Check ordinary readiness, one agreed VIP owner, the separate service
+- [x] Check ordinary readiness, one agreed VIP owner, the separate service
       lease, correct Service status and no ServiceLB administrative workloads.
       Confirm browser access from a Tailscale client without a tunnel or
       manual port-forward. This is a functional check, not a failover test.
 
-Local readiness/browser/ownership checks passed. The external Tailscale
-browser confirmation in the remaining checkbox is pending; failover is untested.
+Local readiness/browser/ownership checks passed. The operator confirmed external
+Tailscale browser access and passwords on 2026-10-22; failover is untested.
 
 ### 8.3 — Install DEV/STAGE monitoring
 
@@ -544,11 +546,11 @@ browser confirmation in the remaining checkbox is pending; failover is untested.
 - [x] Install separate monitoring with explicit PROD retention/storage,
       credentials, datasource identity and PROD alert rules. Confirm no
       DEV/STAGE application selectors were copied into PROD configuration.
-- [ ] Confirm ordinary readiness and browser access through Tailscale;
+- [x] Confirm ordinary readiness and browser access through Tailscale;
       record that VIP failover and local-volume recovery remain untested.
 
-Local readiness/browser/ownership checks passed. The external Tailscale
-browser confirmation in the remaining checkbox is pending; failover is untested.
+Local readiness/browser/ownership checks passed. The operator confirmed external
+Tailscale browser access and passwords on 2026-10-22; failover is untested.
 
 ### 8.5 — Install the Jenkins foundation in DEV/STAGE
 
@@ -587,8 +589,8 @@ browser confirmation in the remaining checkbox is pending; failover is untested.
 **Pass:** both clusters have their own useful monitoring and permanent
 IP-and-port administrative access through Tailscale; the nonprod Jenkins
 foundation is reachable with persistent storage. Working CI, failover tests,
-VM 100 retirement and legacy NAT removal are outside this phase. External
-Tailscale browser confirmation is the only remaining Phase 8 acceptance input.
+VM 100 retirement and legacy NAT removal are outside this phase. The operator
+confirmed external Tailscale browser access and passwords; Phase 8 is closed.
 
 ## Phase 9 — Move promotion and CI ownership
 

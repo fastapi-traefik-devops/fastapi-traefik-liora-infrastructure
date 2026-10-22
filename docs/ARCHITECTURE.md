@@ -8,8 +8,9 @@ Agreement on a design does not establish its operational readiness or tested ava
 The implemented application, GitOps and public HTTPS topology is documented in
 the Phase 0–7 reports. Phase 8 has deployed separate Admin VIP controllers and
 monitoring in both clusters and a persistent, isolated Jenkins foundation in
-NONPROD. Native browser/API checks passed from the execution host; independent
-browser confirmation through Tailscale remains pending. See the
+NONPROD. Native browser/API checks passed from the execution host, and the
+operator confirmed all interfaces and passwords through Tailscale on 2026-10-22.
+Phase 8 is complete. See the
 [Phase 8 report](testreports/PHASE8_REPORT.md) and
 [implementation plan](testreports/IMPLEMENTATION_PLAN.md).
 
@@ -211,7 +212,7 @@ path remains optional follow-up and was not part of this DNS-only acceptance.
 
 ## Permanent private administrative access
 
-**Status: Implemented; external Tailscale browser confirmation pending.**
+**Status: Implemented; external Tailscale access confirmed on 2026-10-22.**
 
 Both Admin VIPs serve the agreed endpoints. Argo/Grafana/Jenkins native logins,
 all Adminer database logins, Prometheus/Alertmanager browser UIs and all four
@@ -235,8 +236,8 @@ flowchart LR
   ProdServices --> ProdPods[Pods in PROD K3s]
 ```
 
-All endpoints below are deployed and locally verified. This is separate from
-operator confirmation of the external Tailscale browser path.
+All endpoints below are deployed and locally verified. The operator also
+confirmed the external Tailscale browser path and working passwords.
 
 | Interface | DEV/STAGE | PROD |
 | --- | --- | --- |

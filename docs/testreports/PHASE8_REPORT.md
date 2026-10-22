@@ -1,8 +1,8 @@
 # Phase 8 — Operational access and monitoring
 
 Updated: 2026-10-22. Deployment: 2026-10-21, followed by read-only readiness and
-browser checks on 2026-10-22. Status: **implementation and local functional
-acceptance complete; independent Tailscale browser confirmation pending**.
+browser checks on 2026-10-22. Status: **complete**, including operator confirmation of external Tailscale
+browser access and working passwords on 2026-10-22.
 Phase 9 has not started. The operator approved the status-ownership guard for
 NONPROD first, then PROD; that sequence was followed.
 
@@ -22,7 +22,9 @@ NONPROD first, then PROD; that sequence was followed.
 These browser checks ran from the execution host on the private network, without
 SSH tunnels or port-forward. They do not prove the independent external
 Tailscale browser path. The operator was asked to check all deployed URLs;
-that answer is still pending. Argo uses its native self-signed certificate;
+on 2026-10-22 the operator confirmed all interfaces work and all passwords succeed.
+This operator result completes the independent Tailscale acceptance. Argo uses
+its native self-signed certificate;
 trusted browser TLS for Admin VIPs was not added or promised.
 
 Both clusters have three Ready nodes. All five existing Argo Applications remain
@@ -176,11 +178,22 @@ review, public-routing inspection and HTTPS health results. Credentials and
 registry auth are protected operator data outside Git. Work remains in the
 original infrastructure checkout; no temporary working clone/worktree was used.
 
-## Remaining acceptance boundary
+## Final acceptance and next phase
 
-Only the operator's independent external Tailscale browser result remains
-unconfirmed. Keep that explicit in the plan and do not close Phase 8 yet. Failover,
-reboot, host/storage recovery, stress/load tests and external notification delivery
-were not performed and are not gates for this increment. Phase 9 promotion and
-working CI migration require their separate start; VM100/legacy NAT cleanup is
-not part of this report's completion.
+On 2026-10-22 the operator confirmed that every interface works through Tailscale
+and all passwords succeed. **Phase 8 is complete; no acceptance items remain.**
+The operator also added `recovery/show_passwords.py` in commit `322b82a`;
+runbooks link to this read-only, explicitly confirmed browser credential helper.
+It reports stored credentials, with documented bootstrap/rotation limitations.
+No live credential values were added to documentation or this report.
+
+Phase 9 has not started. Its next work is to inventory and consistently back up
+legacy Jenkins state, preserve jobs/users/history/credential IDs, adapt the
+existing CI agents, isolated build daemon and trusted publisher to K3s, and
+perform a controlled cutover. Promotion details remain under discussion; adapt
+the existing behavior deliberately rather than inventing a new workflow.
+
+Failover, reboot, host/storage recovery, stress/load tests and external
+notification delivery were not performed and are not gates for this increment.
+VM100/legacy NAT cleanup stays outside this phase and remains operator work
+after working CI migration. No push was performed during phase finalization.
