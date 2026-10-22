@@ -83,7 +83,7 @@ Expected boundaries:
 | Identity | Required scope | Current verified result |
 | --- | --- | --- |
 | CI App / `github-ci-app` | Application contents/PR read and commit statuses write | Granted on application repository |
-| GitOps App / `gitops-app` | Infrastructure contents write; PR write for reviewed promotion | Not installed on infrastructure; PR write not granted |
+| GitOps App / `gitops-app` | Infrastructure contents write; PR write for reviewed promotion | Verified on both repositories: Contents write, Pull requests write, Metadata read |
 | Trusted publisher / `ghcr-write` | Publish immutable GHCR images | Existing PoC identity preserved; fresh publish check pending |
 
 > [!NOTE]
@@ -91,10 +91,43 @@ Expected boundaries:
 > verified; it does not prove the repository is absent. CI builds do
 > not need infrastructure write or registry publishing credentials.
 
-### If automated promotion PRs are chosen
+### Configure or recover the fastapi-gitops GitHub App
 
-- [ ] Arrange GitOps App access to the infrastructure repository with
-      Pull requests: Read and write. Recheck the actual grants afterward.
+These are operator GitHub settings, not Kubernetes Secret changes. Reuse the
+existing **fastapi-gitops** App; keep its App ID, existing private key and Jenkins
+credential ID `gitops-app`. Repository access is configured on the installation,
+while requested permissions are configured on the App itself.
+
+1. As an App owner, open GitHub **Settings → Developer settings → GitHub Apps →
+   fastapi-gitops → Permissions & events**. For an organization-owned App, start
+   from the owning organization's GitHub App settings instead.
+2. Set repository permissions to **Contents: Read and write**, **Pull requests:
+   Read and write**, and **Metadata: Read-only** (required automatically by
+   GitHub). Save the settings. No Actions, administration or organization write
+   permissions are required for the planned digest-update PRs.
+3. Open the organization's installed GitHub Apps settings, find **fastapi-gitops**
+   and select **Configure**. Under **Repository access**, select these repositories:
+   - `fastapi-traefik-devops/fastapi-traefik-liora-application`
+   - `fastapi-traefik-devops/fastapi-traefik-liora-infrastructure`
+4. Save repository selection and approve the installation's new permission
+   request if GitHub presents one. Merely editing requested App permissions is
+   not evidence that the installation has accepted them.
+5. Run the read-only access helper above. Require HTTP 200 for **gitops** on both
+   repositories, with `contents=write`, `pull_requests=write`, `metadata=read`.
+   A repository selector alone is insufficient; record the actual granted result.
+6. Keep the CI App's existing application-only contents/PR read and status write
+   scope. Do not give the build identity infrastructure writes or move publishing
+   keys onto the untrusted CI agent. No branch-protection bypass is needed for a
+   human-reviewed promotion PR, and this App change does not authorize direct
+   main-branch pushes or determine the unresolved promotion workflow.
+
+The operator completed steps 1–4 on 2026-10-22. The read-only helper subsequently
+verified both **gitops** installation grants with all three expected permissions.
+No App settings were changed by the verification script. It does not prove a
+future PR write or protected-branch merge will succeed; those are later controlled
+workflow checks. Keep App keys in private operator inputs/Jenkins credentials,
+never in the runbook, manifests or Git.
+
 
 ## 4. Prepare cluster adaptation before running agents
 

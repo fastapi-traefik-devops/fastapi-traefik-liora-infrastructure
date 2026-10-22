@@ -182,3 +182,14 @@ field, formats/types/boundaries, strict warning exits, unknown-field preservatio
 parser attacks and redaction on success and failure. API coverage uses mocks and
 a disposable local HTTPS server, including redirect rejection; no live credentials
 or infrastructure changes are needed.
+
+## Jenkins GitHub App installation recovery
+
+Restoring a GitHub App key does not restore its repository selection or granted
+permissions. Recover the existing `fastapi-gitops` installation with access to
+both the application and infrastructure repositories, **Contents: Read and write**,
+**Pull requests: Read and write**, and **Metadata: Read-only**. Keep the CI App
+application-only with contents/PR read and commit-status write. Follow the
+[GitHub App setup and verification procedure](../runbooks/17-migrate-jenkins-ci.md#configure-or-recover-the-fastapi-gitops-github-app)
+and its standalone read-only checker. Verify actual installation grants before
+resuming promotion; never place App private keys or installation tokens in Git.

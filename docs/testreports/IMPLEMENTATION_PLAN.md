@@ -602,8 +602,9 @@ and [runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
 
 Preserve the maximum working behavior from the application's Jenkins proof of
 concept while adapting it to the nonprod K3s foundation and repository split.
-GitOps App infrastructure installation/PR permissions and final promotion details
-remain pending; they do not block independent migration preparation.
+GitOps App access and Contents/Pull requests write grants on both repositories
+were verified on 2026-10-22 after the operator updated the installation. Final
+promotion details remain pending; independent migration preparation continues.
 
 - [ ] Inventory and privately back up the existing Jenkins home, jobs,
       plugin versions, build history/artifacts, encryption keys and required

@@ -59,21 +59,24 @@ CI/publisher workspaces and disposable Docker cache are excluded. The reviewed
 procedure calls for recreating cache on cluster storage and taking a final
 consistent home/input snapshot after a drained, explicitly coordinated stop.
 
-## GitHub App installation gap
+## GitHub App installation access
 
 Read-only GET checks using in-memory App JWTs from the existing runtime keys found:
 
 | Identity | Application repository | Infrastructure repository |
 | --- | --- | --- |
 | CI App | Contents read, PR read, statuses write verified | Installation access not verified (404); not needed for application builds |
-| GitOps App | Contents write and metadata read verified | Installation access not verified (404); needed for infrastructure promotion |
+| GitOps App | Contents write, PR write and metadata read verified | Contents write, PR write and metadata read verified |
 
-The GitOps App currently has no PR write grant. For automated reviewed promotion,
-the operator was asked to install the existing App on the infrastructure repo and
-grant Pull requests: Read and write alongside Contents: Read and write. Actual
-access must be rechecked after any change. No App settings, repository access,
-tokens or GitHub resources were created or changed by these checks. A 404 at the
-installation endpoint is not a claim that a repository does not exist.
+Initial checks found missing infrastructure installation access and no PR write
+grant. On 2026-10-22 the operator added both repository selections and granted
+Contents/Pull requests write with Metadata read. A subsequent GET-only check
+verified HTTP 200 and all expected permissions on both repositories. This closes
+the installation permission gap. The CI App retains application-only access.
+The exact GitHub setup/acceptance steps are in runbook 17 and linked from recovery
+documentation. No keys were rotated or exposed, and no App settings, repository
+contents, PRs or GitHub resources were changed by the checker. Actual future PR
+creation/branch-protection behavior still needs controlled workflow verification.
 
 The old trusted publisher still hardcodes the former monolithic repository and
 direct STAGE pushes. It cannot be activated unchanged. Promotion remains under
@@ -115,7 +118,8 @@ agent/daemon image availability and checks, consistent final backup, isolated
 state restore, jobs/users/history validation, controlled CI and trusted publisher
 activation, reviewed promotion/rollback and old-source retirement after acceptance.
 
-The operator's GitHub access answer and promotion details are pending. A concrete
+The GitOps App access prerequisite is verified; promotion details remain pending.
+A concrete
 quiesce/stop window is needed for the final consistent backup/cutover; preparation
 has not paused jobs or claimed permission for an unannounced outage.
 No cluster resources, application checkout files, GitHub repository contents,
