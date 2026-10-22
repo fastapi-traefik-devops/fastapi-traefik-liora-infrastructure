@@ -12,7 +12,9 @@ in the Deployment by digest. Its `/usr/share/jenkins/ref/plugins.txt` SHA-256
 matches `../../upstream/infra/jenkins-host/plugins.lock.txt`:
 `bdd7ac49ab8d0d82aecefb51e80005c08d3d9a3c8d705d44de10d93c73cca214`.
 The preserved Dockerfile and locks remain the rebuild source; no Jenkins core
-or plugin upgrade was performed. The old controller/containers/home are intact.
+or plugin upgrade was performed. Legacy named volumes and private backups remain;
+the operator's later Docker prune removed stopped containers/local images, so
+legacy recovery requires container recreation as described in runbook 17.
 
 Minimal JCasC retains the source security realm/matrix, with zero executors,
 no nodes/clouds/jobs, disabled inbound-agent listener and native URL `.16:8085`.
@@ -61,3 +63,21 @@ and external API/registry calls. Administrative replies to allowed incoming
 connections remain usable. Jobs, multibranch scanning and Pipeline resume remain
 disabled. The old source, schedules and promotion pipeline must not be activated
 unchanged; follow [runbook 17](../../../../runbooks/17-migrate-jenkins-ci.md).
+
+## Pinned publisher source
+
+The separate publisher still expects the application's `ci/` files at
+`/opt/phase1-ci`. Prepare that input with
+[`prepare-jenkins-publisher-source.py`](../../../../scripts/kubernetes/prepare-jenkins-publisher-source.py)
+using `--output` for a new local JSON path. It reads all 17 files from Git
+objects at application commit `b98a22e48527c256193ed65c10307eb574b27ab6`,
+verifies object hashes and produces an immutable ConfigMap named
+`jenkins-publisher-ci-b98a22e48527` in `jenkins-publisher`. It neither executes
+those helpers nor applies the bundle. The application checkout is read-only;
+mutable working-tree changes are excluded. The reviewed source commit and bundle
+hash are recorded in annotations. Existing output is never overwritten.
+
+Mount this bundle read-only for the publisher, never from an untrusted build
+checkout. Its presence does not authorize executing the preserved legacy
+promotion workflow. The deployment helper prepares the same bundle directly
+and retains a private copy alongside the deployment evidence.
