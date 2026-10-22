@@ -829,14 +829,15 @@ bash scripts/local-python.sh scripts/kubernetes/phase9-live-cycle.py poll
 ```
 
 On checkpoint failure, `hold` enters quiet mode, disables jobs/removes triggers,
-cancels queued requests and aborts checkpoint main/publisher/bootstrap PR #62
-executions. It preserves build records and application state; it does not roll
+cancels queued requests and aborts checkpoint main/publisher executions. Pass
+`--pr NUMBER` for each related bootstrap/checkpoint PR that must also be stopped;
+unrelated PR executions are not added to the abort list. It preserves build records and application state; it does not roll
 back a deployed application automatically. Preserve console/native JSON evidence
 before making another controlled request. The helper does not change branch rules
 or App permissions, install observers, enable DEV/PROD or run scans.
 
 ```bash
-bash scripts/local-python.sh scripts/kubernetes/phase9-live-cycle.py hold
+bash scripts/local-python.sh scripts/kubernetes/phase9-live-cycle.py hold --pr 62
 ```
 
 Bootstrap PR #62 is a related one-time prerequisite for the required real
@@ -848,3 +849,28 @@ never fabricate the status or run the obsolete main pipeline. Keep original
 main/publisher build records and artifacts with Jenkins keep-forever before
 allowing their configured retention policies to run. Once the PR is normally
 merged, disable its job again and continue the same existing main/publisher.
+
+
+### Repair imported Declarative bookkeeping if required
+
+The first controlled main run exposed an imported
+`DeclarativeJobPropertyTrackerAction` whose trigger set was null. This fails
+before agent allocation even though the reviewed Jenkinsfile validates and runs
+successfully in a newly created PR job. Back up main/publisher `config.xml`
+privately and restore the execution hold before repair.
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/phase9-live-cycle.py repair-tracker
+```
+
+This idempotent command only removes the broken bookkeeping action from the two
+held existing jobs; it preserves actual job properties, definitions, credentials
+and all build records. Healthy bookkeeping is retained. Jenkins recreates the
+removed action on the next run. The offline staging helper now omits this
+job-level action when disabling triggers, while copying build records unchanged.
+A failed pre-agent request must remain recorded; use a new build number for retry.
+
+For follow-up PR discovery, the existing branch property's suppress-index/event-
+build setting prevents discovery from requesting duplicate main builds. It does
+not replace the main job's normal SCM polling. Keep orphan pruning disabled,
+run only the related PR gate, and disable that PR job after its check completes.

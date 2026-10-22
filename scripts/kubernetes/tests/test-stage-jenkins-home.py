@@ -23,7 +23,7 @@ class StagingTests(unittest.TestCase):
     def invoke(self, alteration=None, stopped=False, missing_admin=False, wrong_admin=False, encrypted_admin=False):
         files = {
             'config.xml': b'<hudson><numExecutors>2</numExecutors><slaveAgentPort>50000</slaveAgentPort><clouds><cloud/></clouds><securityRealm>keep</securityRealm></hudson>',
-            'jobs/ci/config.xml': b'<flow-definition><disabled>false</disabled><properties><pipeline><triggers><timer>schedule</timer></triggers></pipeline></properties></flow-definition>',
+            'jobs/ci/config.xml': b'<flow-definition><actions><org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction><triggers><string>timer</string></triggers></org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction><retainedAction>keep</retainedAction></actions><disabled>false</disabled><properties><pipeline><triggers><timer>schedule</timer></triggers></pipeline></properties></flow-definition>',
             'jobs/branches/config.xml': b'<org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject><triggers><timer/></triggers></org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject>',
             'jobs/trusted/config.xml': b'<com.cloudbees.hudson.plugins.folder.Folder><credentials>keep</credentials></com.cloudbees.hudson.plugins.folder.Folder>',
             'secrets/master.key': SECRET.encode(),
@@ -122,6 +122,8 @@ class StagingTests(unittest.TestCase):
                         self.assertEqual(config.findtext('disabled'), 'true')
                     if config.tag == 'flow-definition':
                         self.assertIsNotNone(config.find('properties/org.jenkinsci.plugins.workflow.job.properties.DisableResumeJobProperty'))
+                        self.assertIsNone(config.find('.//org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction'))
+                        self.assertEqual(config.findtext('actions/retainedAction'), 'keep')
                 elif stopped and name == 'users/admin/config.xml':
                     self.assertEqual(output[name], admin_bytes)
                     self.assertNotIn(SECRET.encode(), output[name])

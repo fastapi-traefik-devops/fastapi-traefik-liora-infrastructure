@@ -48,9 +48,12 @@ def edit_config(data, controller=False):
     if not controller and root.tag not in JOB_TYPES | {FOLDER}:
         raise ValueError('Unreviewed job type')
     # Both folder scanning and workflow timer/SCM triggers must remain inactive.
+    # Drop obsolete job-level Declarative bookkeeping too: deleting its nested
+    # triggers set leaves a null field that crashes the next Pipeline startup.
+    # Build records are copied unchanged and never pass through this function.
     for parent in root.iter():
         for child in list(parent):
-            if child.tag == 'triggers':
+            if child.tag in {'triggers', 'org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction'}:
                 parent.remove(child)
     if controller:
         for name in ('clouds', 'slaves'):

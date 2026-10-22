@@ -34,7 +34,10 @@ def script(request, text):
     return HELPER['script'](request, text)
 
 
-def hold(request):
+def hold(request, related_prs=()):
+    if any(type(number) is not int or number < 1 for number in related_prs):
+        raise ValueError('Related PR numbers must be positive integers')
+    jobs = ['app-ci/main', 'trusted/publish'] + [f'app-ci/PR-{number}' for number in related_prs]
     # Preserve history; stop only new checkpoint execution, never unrelated workloads.
     return script(request, '''
 import jenkins.model.Jenkins
@@ -48,27 +51,49 @@ j.getAllItems(Job.class).each { job ->
  job.save()
 }
 j.queue.items.each { j.queue.cancel(it) }
-['app-ci/main','trusted/publish','app-ci/PR-62'].each { name ->
+CHECKPOINT_JOBS.each { name ->
  j.getItemByFullName(name)?.builds?.findAll { it.isBuilding() }?.each { b ->
   b.getExecutor()?.interrupt(Result.ABORTED)
   b.getExecution()?.interrupt(Result.ABORTED)
  }
 }
 println 'Checkpoint execution hold restored'
-''')
+'''.replace('CHECKPOINT_JOBS', json.dumps(jobs)))
 
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('action', choices=['status', 'hold', 'start', 'poll'])
+    p.add_argument('action', choices=['status', 'hold', 'repair-tracker', 'start', 'poll'])
+    p.add_argument('--pr', type=int, action='append', default=[], help='Related checkpoint PR to abort during hold; repeat as needed')
     args = p.parse_args()
+    if args.pr and args.action != 'hold':
+        p.error('--pr is only valid with hold')
     request = client()
     if args.action == 'hold':
-        print(hold(request).decode().strip())
+        print(hold(request, args.pr).decode().strip())
     elif args.action == 'status':
         state = HELPER['inspect'](request)
         print(json.dumps({'quiet': state['quiet'], 'executors': state['executors'], 'queue': state['queue'],
                           'running': state['running'], 'jobs': state['jobs']}))
+    elif args.action == 'repair-tracker':
+        print(script(request, """
+import groovy.json.JsonOutput
+import org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction
+def j=jenkins.model.Jenkins.get()
+assert j.isQuietingDown() && j.queue.items.size()==0
+assert j.getAllItems(hudson.model.Job.class).every{it.isDisabled() && !it.builds.any{b->b.isBuilding()}}
+def repaired=[]
+['app-ci/main','trusted/publish'].each{name->
+ def job=j.getItemByFullName(name)
+ def action=job.getAction(DeclarativeJobPropertyTrackerAction.class)
+ if(action!=null){
+  def broken=false
+  try{action.getTriggers()}catch(NullPointerException e){broken=true}
+  if(broken){job.removeAction(action);job.save();repaired.add(name)}
+ }
+}
+println JsonOutput.toJson([repaired:repaired,historyPreserved:true])
+""").decode().strip())
     elif args.action == 'start':
         result = script(request, '''
 import jenkins.model.Jenkins

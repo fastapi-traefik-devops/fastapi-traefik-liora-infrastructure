@@ -21,7 +21,32 @@ Controller DNS/public HTTPS connectivity and the reviewed immutable publisher
 bundle `jenkins-publisher-ci-d87b3c9599c5` are installed. The publisher definition
 was validated and installed disabled with explicit ACTION/SOURCE_JOB/CI_BUILD
 parameters. No observer resources were activated; PROD remains blocked.
-Results of the PR, main/publisher and polling cycles are pending.
+PR #62 check #2 passed all 13 functional gates and 96 tests; GitHub received
+`continuous-integration/jenkins/pr-merge=success` from the expected CI App. The
+normal merge produced `38a7f2aae320f3607b20ae1a5d14b8fa64768eca`; local application
+main was fast-forwarded without rewriting history.
+
+Controlled main #13 failed before agent allocation in
+`DeclarativeJobPropertyTrackerAction.getTriggers`: the restored job-level
+bookkeeping had a null trigger set. The execution hold was restored immediately;
+no functional gate or publication ran. Private pre-repair configs and console/
+native JSON remain preserved. The same corruption was confirmed on the publisher.
+The repair removed only broken job-level bookkeeping on those two held jobs;
+Jenkins recreates it from the reviewed definition. Original build records and
+credentials remain intact. The offline staging helper now drops that obsolete
+bookkeeping instead of deleting a nested field and leaving an invalid action;
+12 staging regression tests and the live-client credential test passed.
+Controlled retry main #14 is now running against `38a7f2a`; publisher #33 is its
+next intended trusted build, with polling still off.
+
+The meaningful follow-up is documentation commit `ce4b8fa` in
+[PR #63](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/pull/63),
+clarifying manual archive export versus normal publication. It must pass the
+existing required check before normal merge. One-time indexing now uses the
+standard suppress-index/event-build branch property so discovery cannot request
+extra main builds; main SCM polling remains a separate, initially disabled
+trigger. No recurring indexing or webhook was added. Main/publisher and polling
+cycle results are still pending.
 
 Historical first-attempt status: **blocked before Jenkins activation**. The operator explicitly authorized
 reviewed GitHub pushes, existing-job/helper installation, necessary controller
