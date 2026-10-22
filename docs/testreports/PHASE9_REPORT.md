@@ -1,9 +1,80 @@
 # Phase 9 — Jenkins CI migration
 
-Started: 2026-10-22. Status: **preparation in progress; no cutover or job activation**.
-The operator authorized preparation after Phase 8 acceptance. The old Docker
-controller, agents/publisher, build daemon, jobs, data and schedules remain intact.
-The new K3s controller remains the isolated Phase 8 foundation.
+Started: 2026-10-22. Status: **migration in progress; legacy stop authorized;
+no target state restore or migrated job activation**. The new K3s controller
+remains the isolated Phase 8 foundation. Earlier observations below describe
+the preparation baseline; the latest decisions supersede its approval boundaries.
+
+## Confirmed decisions — 2026-10-22
+
+The operator approved the existing privileged DinD approach for the initial K3s
+migration, with a separate trusted publisher, bounded resources and a recreated
+disposable build cache. Preserve required users, jobs, build records, retained
+artifacts, credential IDs and encryption material **except legacy administrator
+login data**: the current K3s admin account/password must remain authoritative.
+
+Migrate current settings and pipeline sources without changing DEV/STAGE/PROD
+promotion behavior in this increment. Preserve originals and keep imported jobs
+inactive pending operator review. The desired later target is main CI/publication
+followed by a human-reviewed STAGE PR, and release-tag PROD promotion reusing
+the STAGE-verified digest pair. These targets do not authorize running the
+current publisher's legacy direct push or changing its source now. Gradual
+activation remains the intended sequence after state verification.
+
+The operator explicitly authorized immediately stopping the local kind cluster
+and the full legacy Jenkins stack, while retaining everything for recovery.
+This does not authorize container/volume deletion, VM100 retirement, Proxmox NAT
+changes or stopping either remote K3s cluster.
+
+## Authorized legacy shutdown and stopped-source backup
+
+Executed the [standalone stop helper](../../scripts/kubernetes/stop-legacy-ci.py)
+with `--stop-active`, matching the immediate-stop authorization. It privately
+preserved all Jenkins bind inputs, including both agent connection secrets and
+trusted publisher helpers, and full container inspection metadata. It entered
+quiet mode and preserved queue details before canceling queued requests. At the
+final stop boundary the queue was empty and 17 in-flight executor entries,
+including Pipeline flyweight entries, remained. These are recorded privately;
+**work was not fully drained and interrupted builds are not claimed successful**.
+
+| Retained container | Stopped exit code |
+| --- | --- |
+| `host-jenkins` | 143 (SIGTERM) |
+| `host-jenkins-agent` | 143 |
+| `host-jenkins-publisher` | 143 |
+| `host-jenkins-docker` | 0 |
+| `fastapi-dev-control-plane` | 130 |
+
+None was OOM-killed. No container or volume was deleted. The existing controller
+image was used for a networkless, read-only volume-copy helper with all
+capabilities dropped; its exited container is also retained. All local Docker
+containers are now stopped, including the original kind node. The legacy
+controller home and disposable cache remain in their original named volumes.
+
+The completed private recovery directory is
+`.local-work/private/phase9/stopped-20261022T101922Z/`: original stopped home,
+all mounted Jenkins runtime inputs, original-path mappings, in-flight execution
+metadata, pre/post-stop container records and a per-archive hash manifest.
+Required configuration and encryption members were validated. The source copy
+contains 30 job configurations, 139 build records and three user configurations;
+the home archive is 375,082,528 bytes. All 14 archive hashes and private
+directory/file modes were independently rechecked. The source copy is
+**consistent=true, restore_tested=false**: this means a stopped-filesystem
+snapshot, not that interrupted builds completed or that restore is proven.
+The original legacy admin data remains in this recovery archive only; exclude
+it from the migrated target while retaining the current K3s admin login.
+
+Two stop-helper fixture tests passed: the immediate-stop path retains in-flight
+metadata and stops only named containers without deletion, and forced controller
+termination cannot produce a clean-backup manifest. The existing eight staging
+and four online-backup tests also pass. No fixture secret appeared in output.
+
+Both remote clusters were checked read-only after the legacy stop: all six
+nodes Ready, K3s Jenkins available 1/1, all five Argo CD applications
+Synced/Healthy. The target foundation has not been restored or modified.
+Rollback still requires reconstructing missing original bind-source paths from
+private archives before starting old containers; do not blindly restart them.
+Source archives and partial/earlier preparation receipts have been retained.
 
 ## Verified source and runtime inventory
 
@@ -138,17 +209,17 @@ These archive checks do not substitute for a real restore or CI acceptance.
 
 ## Remaining work and boundaries
 
-No Phase 9 checkbox is complete yet: the inventory/preliminary preservation is
-finished, but the first combined item also requires a consistent backup and
-cutover preparation. Remaining work includes the reviewed cluster adaptations,
-agent/daemon image availability and checks, consistent final backup, isolated
+The inventory and consistent stopped-source backup are complete. The first
+combined plan item remains open pending executable target transfer/rollback
+preparation; no target migration acceptance is claimed. Remaining work includes
+the reviewed cluster adaptations, agent/daemon image availability and checks, isolated
 state restore, jobs/users/history validation, controlled CI and trusted publisher
 activation, reviewed promotion/rollback and old-source retirement after acceptance.
 
-The GitOps App access prerequisite is verified; promotion details remain pending.
-A concrete
-quiesce/stop window is needed for the final consistent backup/cutover; preparation
-has not paused jobs or claimed permission for an unannounced outage.
-No cluster resources, application checkout files, GitHub repository contents,
-GHCR packages, credentials or live schedules were changed during this preparation.
-No push or VM100/NAT cleanup was performed. Phase 9 remains open.
+The GitOps App access prerequisite is verified. The latest operator decisions
+authorize the immediate legacy stop and define the desired later promotion
+target, while deferring pipeline behavior changes to review. State transfer and
+target activation remain unverified. No remote K3s resources, application
+checkout files, GitHub repository contents, GHCR packages or credentials were
+changed during this preparation. No push, deletion, VM100 retirement or NAT
+cleanup was performed. Phase 9 remains open.

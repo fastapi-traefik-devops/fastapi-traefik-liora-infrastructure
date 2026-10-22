@@ -3,11 +3,12 @@
 **Where:** Original infrastructure checkout and read-only application source.
 
 > [!IMPORTANT]
-> **Status: Phase 9 preparation only.** No old jobs have been paused, no
-> state has been restored, and no migrated agents, builds, or publishing
-> have been activated. The operator authorized preparation after Phase 8.
-> Promotion behavior and final cutover require the review below. Do not
-> retire VM 100 or change NAT.
+> **Phase 9 authorization update, 2026-10-22:** the operator approved existing
+> DinD, preserving state except the legacy admin login, recreating the cache,
+> migrating pipeline/settings sources without behavior changes, and immediate
+> stopping of the local legacy kind/Jenkins stack. No migrated pipeline or
+> promotion is authorized for automatic activation. Retain the current K3s admin
+> credentials. Do not retire VM 100, delete containers/volumes or change NAT.
 
 ## 1. Inventory before mutation
 
@@ -216,8 +217,49 @@ Proposed placement, pending implementation review:
 
 ## 5. Review the final consistent backup and cutover procedure
 
+### Authorized legacy stop and stopped-source preservation
+
+The following helper is a **mutation**: run only under the recorded stop
+authorization. It affects these local Docker containers only: `host-jenkins`,
+`host-jenkins-agent`, `host-jenkins-publisher`, `host-jenkins-docker`, and
+`fastapi-dev-control-plane`. It does not call either remote K3s API.
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/stop-legacy-ci.py --stop-active
+```
+
+[Standalone legacy stop helper](../scripts/kubernetes/stop-legacy-ci.py).
+
+It first preserves full container metadata and **every Jenkins bind mount**
+(including agent secrets and trusted publisher helpers) privately. It enters
+quiet mode and records queued requests before canceling them. `--stop-active`
+matches the operator's immediate-stop instruction: record in-flight executions
+and stop without claiming they drained or passed. Without that flag, wait up to
+ten minutes for active executors. Stop the five containers with a 120-second stop
+timeout each. Retain containers, named volumes, old cache, sources and all
+backups. A networkless, read-only, capability-free helper using the existing
+controller image copies the stopped home; its exited container is retained too.
+The script validates encryption/configuration members,
+checks no running container uses the old home, and writes a hash manifest.
+Stopped-home consistency is recorded only after those checks; it is not a
+restore test or evidence that interrupted builds completed. A forced controller
+termination cannot pass the clean-backup check. Outputs are mode 0600 under a
+mode-0700 private directory.
+
+Exit 0 means stop and backup completed; exit 1 means a failed operation or
+validation. Errors omit private diagnostics. A failed run can leave the
+controller quiet or some containers stopped: inspect the private records and
+actual container state before retrying. Never assume it rolled back. Canceled
+queue requests are recorded for review, not automatically replayed.
+
+Rollback must first reconstruct missing original bind sources from the preserved
+archives and inspect metadata. Do not issue `docker start` blindly: retained
+containers still refer to paths absent from the host. No files or volumes are
+deleted by this procedure. The online staging helper currently accepts only its
+preview format; the stopped archive must not be relabeled as an online copy.
+
 > [!IMPORTANT]
-> **Review plan only.** The online helper does not implement the mutation
+> **Remaining transfer plan only.** The online helper does not implement the mutation
 > steps below. Prepare standalone helpers and review their exact affected
 > containers and PVCs before execution. These numbered items are not
 > authorized cutover commands.
@@ -226,13 +268,14 @@ Proposed placement, pending implementation review:
       evidence, and record the affected containers/PVCs before seeking
       cutover approval.
 
-### Proposed cutover sequence (not yet executable)
+### Transfer sequence (remaining steps need implementation)
 
 1. Back up the new foundation home as well as old controller inputs. Record both
    controller image/plugin hashes, job/build counts, users and credential scopes.
-2. Agree a window; quiet old Jenkins, prevent new scan/timer work, and wait for
-   every active CI/publisher executor and queue item to drain. Record their states.
-   Do not interrupt an active publish or merely check a single idle sample.
+2. Quiet old Jenkins, prevent new execution, and record queue/executor states.
+   The operator authorized immediate stopping, including in-flight work;
+   preserve those records without claiming completed builds. An alternative
+   fully drained window must verify every CI/publisher executor and queue item.
 3. Stop the old controller cleanly, preserving its container, named volume and
    runtime bind mounts. Take the final consistent home archive and matching
    encryption/secret inputs from the stopped state with a verified manifest.
@@ -243,9 +286,13 @@ Proposed placement, pending implementation review:
 5. Sanitize only the migration copy: no imported job DSL, no active agents,
    disable all jobs and scan/timer triggers, and enforce startup quiet mode before
    starting with the same plugin set. Preserve original configs in the backup.
+   Keep the current K3s admin account/password and omit legacy admin account data.
+   Preserve the remaining users. Identify admin's user directory through the
+   Jenkins user map; do not assume its directory is literally named `admin`.
    Old encrypted credentials require old encryption keys; do not combine them
-   with a fresh controller key or copy only credentials XML. Existing users may
-   supersede the foundation login; resolve JCasC user ownership deliberately.
+   with a fresh controller key or copy only credentials XML. The migrated users
+   must not overwrite the current K3s admin login; verify its existing password
+   and preserve other users deliberately.
 6. Start the target without executable agents; verify quiet state, all job/user/
    history counts, credential IDs/scopes and private access. Do not run a job to
    prove credentials while polling/publication can still target the old repo.
@@ -274,7 +321,11 @@ Proposed placement, pending implementation review:
 > repository.
 
 - [ ] Agree branch triggers, digest selection/reuse, PR review, and PROD
-      release behavior before enabling publisher promotion.
+      release behavior before enabling publisher promotion. The desired target
+      is automatic reviewed STAGE PR creation after main CI/publication, followed
+      by release-tag PROD promotion reusing the STAGE-verified digests. Pipeline
+      behavior changes are deferred by the operator; preserve current sources
+      and keep their execution disabled until that review.
 - [ ] Confirm the final tested image will be reused, not rebuilt at release.
 - [ ] Record each later PR, package publish, deployment, and rollback
       check in the Phase 9 report when performed.

@@ -594,18 +594,42 @@ confirmed external Tailscale browser access and passwords; Phase 8 is closed.
 
 ## Phase 9 — Move promotion and CI ownership
 
-Status: **in progress; preparation authorized on 2026-10-22**. Runtime inventory,
+Status: **in progress; migration decisions and legacy stop authorized on 2026-10-22**. Runtime inventory,
 read-only GitHub App checks and a private online preservation copy are complete.
-An inactive offline copy has also been prepared and its retained files checked;
-neither copy is consistent or restore-tested. No jobs, agents,
-publishing or cutover have been activated. See [Phase 9 report](PHASE9_REPORT.md)
+An inactive offline preview has also been prepared and its retained files checked;
+that preview is not consistent or restore-tested. The authorized legacy stop
+and stopped-source preservation are recorded in the report. No migrated jobs,
+agents or publishing have been activated. See [Phase 9 report](PHASE9_REPORT.md)
 and [runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
 
 Preserve the maximum working behavior from the application's Jenkins proof of
 concept while adapting it to the nonprod K3s foundation and repository split.
 GitOps App access and Contents/Pull requests write grants on both repositories
-were verified on 2026-10-22 after the operator updated the installation. Final
-promotion details remain pending; independent migration preparation continues.
+were verified on 2026-10-22 after the operator updated the installation.
+
+### Confirmed migration scope and activation boundary
+
+- Keep the existing DinD approach with a privileged daemon alongside the CI
+  agent; keep the trusted publisher separate. Measure resource/storage needs.
+  Recreate the disposable Docker cache; preserve build history and artifacts.
+- Preserve required Jenkins state, credential IDs and encryption keys, and other
+  users, but **exclude the legacy `admin` login/account data**. Retain the current
+  K3s administrator account and password; verify it after transfer.
+- Migrate current Jenkins settings/pipeline sources without redesigning DEV,
+  STAGE or PROD behavior in this increment. Adapt only required runtime plumbing;
+  retain originals. Imported jobs remain disabled pending operator review. Do not
+  execute the legacy publisher's old direct-push promotion as a migration check.
+- Desired later behavior: main CI publishes images and opens a reviewed STAGE
+  PR; PROD uses a release tag and the same STAGE-verified digest pair, without
+  rebuilding. DEV behavior and pipeline changes are deferred to operator review.
+  The promotion checklist below describes that later target, not authorization
+  to change pipeline behavior now.
+- The operator authorized immediate stopping of the local legacy kind cluster
+  and its Jenkins stack. Preserve containers, volumes, all recovery inputs and
+  source; do not delete anything or change Proxmox NAT/VMs or remote K3s.
+- Activate gradually after state verification: manual inert smoke, CI, then
+  reviewed publication/promotion and finally polling/schedules. Preserving
+  pipeline source does not authorize executing its old promotion behavior.
 
 - [ ] Inventory and privately back up the existing Jenkins home, jobs,
       plugin versions, build history/artifacts, encryption keys and required
@@ -613,7 +637,8 @@ promotion details remain pending; independent migration preparation continues.
       without losing or duplicating active work. Keep source copies intact
       until the replacement is accepted.
 - [ ] Migrate reusable Job DSL/JCasC and required private state into the new
-      controller. Preserve credential IDs/scopes, users and permissions; adapt
+      controller. Preserve credential IDs/scopes, non-admin users and permissions;
+      retain the new K3s admin login instead of importing the legacy admin. Adapt
       old host paths and repository URLs deliberately. Keep all live secrets
       and Jenkins encryption material outside Git and diagnostic output.
 - [ ] Move CI agents, isolated build daemon and separate registry publisher
