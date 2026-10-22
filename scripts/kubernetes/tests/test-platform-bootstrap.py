@@ -16,7 +16,8 @@ ROOT = SCRIPT.parents[2]
 
 
 class BootstrapTests(unittest.TestCase):
-    def invoke(self, component, existing=False, failure=False):
+    def invoke(self, component, existing=False, failure=False, pull_exists=False,
+               registry_input=True):
         sentinel = 'FIXTURE-SECRET-ONLY-DO-NOT-PRINT-' + 'x' * 32
         calls = []
         with tempfile.TemporaryDirectory(dir=ROOT / '.local-work') as directory:
@@ -26,15 +27,18 @@ class BootstrapTests(unittest.TestCase):
             credential = private / ('nonprod-' + component + '.json')
             credential.write_text(json.dumps({'username': 'fixture-admin', 'password': sentinel}))
             credential.chmod(0o600)
+            original_input = credential.read_bytes()
             recovery = root / 'recovery'
             recovery.mkdir()
-            (recovery / '.env').write_text('GHCR_REGISTRY=ghcr.io\nGHCR_USERNAME=fixture-user\nGHCR_TOKEN=' + sentinel + '\n')
+            if registry_input:
+                (recovery / '.env').write_text('GHCR_REGISTRY=ghcr.io\nGHCR_USERNAME=fixture-user\nGHCR_TOKEN=' + sentinel + '\n')
 
             def command(arguments, input=None, **kwargs):
                 calls.append((arguments, input))
                 if 'create' in arguments and failure:
                     return subprocess.CompletedProcess(arguments, 1, sentinel, sentinel)
-                output = 'secret/existing' if existing and 'get' in arguments else ''
+                present = pull_exists if 'ghcr-pull-secret' in arguments else existing
+                output = 'secret/existing' if present and 'get' in arguments else ''
                 return subprocess.CompletedProcess(arguments, 0, output, '')
 
             output = io.StringIO()
@@ -47,6 +51,7 @@ class BootstrapTests(unittest.TestCase):
                     status = error.code
             self.assertNotIn(sentinel, output.getvalue(), 'Fixture credential leaked to output')
             self.assertEqual(credential.stat().st_mode & 0o777, 0o600)
+            self.assertEqual(credential.read_bytes(), original_input, 'Private login input changed')
             return status, calls
 
     def test_success_creates_login_without_logging_credentials(self):
@@ -66,6 +71,18 @@ class BootstrapTests(unittest.TestCase):
             with self.subTest(component=component):
                 status, _ = self.invoke(component, failure=True)
                 self.assertEqual(status, 1)
+
+    def test_jenkins_missing_pull_secret_does_not_rotate_existing_login(self):
+        status, calls = self.invoke('jenkins', existing=True)
+        self.assertEqual(status, 0)
+        created = [json.loads(data)['items'] for arguments, data in calls if 'create' in arguments]
+        self.assertEqual([[item['metadata']['name'] for item in group] for group in created],
+                         [['ghcr-pull-secret']])
+
+    def test_existing_jenkins_secrets_need_no_registry_file(self):
+        status, calls = self.invoke('jenkins', existing=True, pull_exists=True, registry_input=False)
+        self.assertEqual(status, 0)
+        self.assertFalse(any('create' in arguments for arguments, _ in calls))
 
 
 if __name__ == '__main__':

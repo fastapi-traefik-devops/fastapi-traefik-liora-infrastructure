@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Provision Phase 8 logins without printing credentials or rotating live Secrets."""
+"""Provision platform Secrets without printing credentials or rotating live logins.
+
+Repair a missing Jenkins registry pull Secret independently of its existing login.
+When both Secrets exist, registry inputs are not required and nothing is rotated.
+"""
 
 import argparse
 import base64
@@ -37,26 +41,27 @@ def main():
     # Look up namespace and Secret without dumping objects or values.
     run(['apply', '-f', '-'], json.dumps({'apiVersion': 'v1', 'kind': 'Namespace', 'metadata': {'name': namespace}}))
     existing = run(['-n', namespace, 'get', 'secret', name, '--ignore-not-found', '-o', 'name']).strip()
-    if existing:
-        print('Existing login Secret preserved; no credentials were rotated.')
-        return 0
-    if credentials.exists():
-        if credentials.stat().st_mode & 0o077:
-            raise ValueError('Private input permissions must be 0600')
-        entry = json.loads(credentials.read_text())
-    else:
-        entry = {'username': 'admin007@liora.aprt.info' if namespace == 'monitoring' else 'admin',
-                 'password': secrets.token_urlsafe(32)}
-        with os.fdopen(os.open(credentials, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w') as stream:
-            json.dump(entry, stream)
-            stream.write('\n')
-    if not entry.get('username') or len(entry.get('password', '')) < 32:
-        raise ValueError('Invalid private login input')
-    data = ({'admin-user': entry['username'], 'admin-password': entry['password']}
-            if namespace == 'monitoring' else {'jenkins-admin-password': entry['password']})
-    objects = [{'apiVersion': 'v1', 'kind': 'Secret', 'metadata': {'name': name, 'namespace': namespace},
-                'type': 'Opaque', 'stringData': data}]
-    if namespace == 'jenkins':
+    objects = []
+    if not existing:
+        if credentials.exists():
+            if credentials.stat().st_mode & 0o077:
+                raise ValueError('Private input permissions must be 0600')
+            entry = json.loads(credentials.read_text())
+        else:
+            entry = {'username': 'admin007@liora.aprt.info' if namespace == 'monitoring' else 'admin',
+                     'password': secrets.token_urlsafe(32)}
+            with os.fdopen(os.open(credentials, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), 'w') as stream:
+                json.dump(entry, stream)
+                stream.write('\n')
+        if not entry.get('username') or len(entry.get('password', '')) < 32:
+            raise ValueError('Invalid private login input')
+        data = ({'admin-user': entry['username'], 'admin-password': entry['password']}
+                if namespace == 'monitoring' else {'jenkins-admin-password': entry['password']})
+        objects.append({'apiVersion': 'v1', 'kind': 'Secret', 'metadata': {'name': name, 'namespace': namespace},
+                        'type': 'Opaque', 'stringData': data})
+    pull_exists = (run(['-n', namespace, 'get', 'secret', 'ghcr-pull-secret', '--ignore-not-found', '-o', 'name']).strip()
+                   if namespace == 'jenkins' else True)
+    if not pull_exists:
         # Reuse the existing recovery registry identity, without shell evaluation.
         registry = {}
         for line in (root / 'recovery/.env').read_text().splitlines():
@@ -70,15 +75,19 @@ def main():
             raise ValueError('Unexpected registry')
         auth = base64.b64encode((registry['GHCR_USERNAME'] + ':' + registry['GHCR_TOKEN']).encode()).decode()
         config = {'auths': {'ghcr.io': {'auth': auth}}}
-        pull_exists = run(['-n', namespace, 'get', 'secret', 'ghcr-pull-secret', '--ignore-not-found', '-o', 'name']).strip()
-        if not pull_exists:
-            objects.append({'apiVersion': 'v1', 'kind': 'Secret',
-                            'metadata': {'name': 'ghcr-pull-secret', 'namespace': namespace},
-                            'type': 'kubernetes.io/dockerconfigjson',
-                            'stringData': {'.dockerconfigjson': json.dumps(config)}})
+        objects.append({'apiVersion': 'v1', 'kind': 'Secret',
+                        'metadata': {'name': 'ghcr-pull-secret', 'namespace': namespace},
+                        'type': 'kubernetes.io/dockerconfigjson',
+                        'stringData': {'.dockerconfigjson': json.dumps(config)}})
+    if not objects:
+        print('Existing platform Secrets preserved; no credentials were rotated.')
+        return 0
     # Create only: an existing Secret appearing concurrently must never be overwritten.
     run(['create', '-f', '-'], json.dumps({'apiVersion': 'v1', 'kind': 'List', 'items': objects}))
-    print('Platform Secrets created; private recovery input: ' + str(credentials))
+    if existing:
+        print('Missing registry Secret created; existing login preserved without rotation.')
+    else:
+        print('Platform Secrets created; private recovery input: ' + str(credentials))
     return 0
 
 
