@@ -599,8 +599,10 @@ read-only GitHub App checks and a private online preservation copy are complete.
 The authorized legacy stop, consistent source/foundation backups and restore to
 a separate NONPROD PVC are complete. Runtime and browser checks verified the
 current K3s admin login, retained users/history/credential scopes and decryption,
-and the execution/egress hold. No migrated jobs, agents or publishing have been
-activated. See [Phase 9 report](PHASE9_REPORT.md)
+and the execution/egress hold. Both worker agents are now connected and the Docker
+build/shared-bind smoke passed; no migrated Jenkins job or application publishing
+has been activated. See [worker acceptance](PHASE9_WORKERS.md),
+[Phase 9 report](PHASE9_REPORT.md)
 and [runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
 
 Operator cleanup update, 2026-10-22: `docker system prune -a --volumes`
@@ -669,13 +671,18 @@ were verified on 2026-10-22 after the operator updated the installation.
 - [ ] Review the preserved Job DSL/pipelines and settings with the operator
       before adapting old repository targets or enabling their behavior. Required
       runtime plumbing is allowed; promotion behavior changes remain deferred.
-- [ ] Move CI agents, isolated build daemon and separate registry publisher
-      into the nonprod CI platform with bounded resources. Preserve the
-      existing separation of build and publication credentials, verified
-      artifacts, SHA image tags and existing gates. Adapt Docker deployment
-      details for K3s without giving application builds deployment credentials
-      or using a host Docker socket. Review the build daemon's existing
-      privilege requirement explicitly before enabling it in the cluster.
+- [x] Move CI agents, isolated build daemon and separate registry publisher
+      into the nonprod CI platform with bounded resources and fresh cache.
+      Both preserved labels are online with one executor each; all new PVCs
+      are Bound, helper source matches the reviewed commit and the Docker
+      build/bind smoke passed. Current admin API/browser login and retained state
+      passed again. Docker deployment details are adapted for K3s without giving
+      application builds deployment credentials or using a host Docker socket.
+      The operator accepted the existing privileged DinD requirement explicitly.
+- [ ] After pipeline review, verify application build/publication credential
+      separation, artifact provenance, SHA image tags and existing CI gates in
+      controlled execution. Image vulnerability handling follows the explicit
+      educational-project deferral above; no further scans in this increment.
 - [ ] Keep build/test and image publication in the application repository.
       Change promotion tooling to propose reviewed digest updates to this
       infrastructure repository rather than its former `deploy/overlays/`.

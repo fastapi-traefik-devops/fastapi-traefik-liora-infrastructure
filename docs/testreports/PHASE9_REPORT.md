@@ -1,7 +1,8 @@
 # Phase 9 — Jenkins CI migration
 
-Started: 2026-10-22. Status: **state restored and verified under an execution hold;
-CI agents/builds/publication remain inactive**. See the detailed
+Started: 2026-10-22. Status: **state retained; both worker agents connected;
+Docker build/bind smoke passed; Jenkins jobs/publication remain held**. See the
+[worker report](PHASE9_WORKERS.md) and detailed
 [state restore report](PHASE9_STATE_RESTORE.md). Earlier observations below describe
 the preparation baseline; the latest decisions supersede its approval boundaries.
 
@@ -235,19 +236,27 @@ controller image was recovered from the complete audit export made before
 cleanup. Agent/DinD registry tags were unavailable, so bounded rebuilds use the
 unchanged preserved Dockerfiles and tool locks. These are new builds, not a
 claim of byte-identical recovery: existing APK upgrade/install steps resolve
-current packages. Scan gates remain required before publishing/deployment.
+current packages. The later operator vulnerability deferral superseded the
+blocking scan requirement for this increment; see the worker report.
 Remaining operator data is preserved; no further pruning was performed.
 
 Inventory, consistent source/foundation backups, concrete retained-home rollback
-preparation and held state restore/acceptance are complete. The first two plan
-items are complete. Remaining work includes the reviewed cluster adaptations,
-agent/daemon image availability and checks, controlled CI and trusted publisher
+preparation, held state restore/acceptance and bounded worker deployment are
+complete. Both image digests were published and the two original agent labels are
+online, with publisher source hashes and Docker build/bind smoke verified.
+The unchanged admin password passed API/browser again; jobs remain disabled and
+no Jenkins job or application publish ran. Vulnerability remediation and further
+image scans were explicitly deferred by the operator; failed findings were not
+relabeled as passes. Remaining work includes pipeline/settings review,
+controlled application CI and trusted publisher
 activation, reviewed promotion/rollback and old-source retirement after acceptance.
 
 The GitOps App access prerequisite is verified. The latest operator decisions
 authorize the immediate legacy stop and define the desired later promotion
 target, while deferring pipeline behavior changes to review. Target CI activation
-remains unverified. Only NONPROD Jenkins storage/configuration and its selected
-hold policy changed. Application files, GitHub repository contents, GHCR packages
-and credential values were not changed. No push, source-data deletion, VM100 retirement or NAT
+remains unverified. Changes are confined to NONPROD Jenkins/controller and worker
+resources, their private inputs and published infrastructure images. Application
+files, application GHCR images, GitHub repository contents, current PostgreSQL
+data and administrator credential values were not changed. No Git push,
+source-data deletion by the migration helpers, VM100 retirement or NAT
 cleanup was performed. Phase 9 remains open.

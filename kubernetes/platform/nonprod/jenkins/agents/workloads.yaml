@@ -1,0 +1,375 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jenkins-ci
+  labels:
+    liora.aprt.info/component: jenkins-agents
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ci-work
+  namespace: jenkins-ci
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: docker-cache
+  namespace: jenkins-ci
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: host-ci
+  namespace: jenkins-ci
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: host-ci
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: host-ci
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      imagePullSecrets:
+      - name: ghcr-pull-secret
+      containers:
+      - name: agent
+        image: ghcr.io/fastapi-traefik-devops/liora-jenkins-agent@sha256:9c4e2acf5ce2637353ccb3c0d00928c8af521a2f4c0effd4f85f9994afb608c6
+        args:
+        - -url
+        - http://jenkins-admin.jenkins.svc.cluster.local:8085/
+        - -name
+        - host-ci
+        - -secret
+        - '@/run/secrets/agent-secret'
+        - -webSocket
+        - -workDir
+        - /home/jenkins/agent
+        env:
+        - name: JAVA_TOOL_OPTIONS
+          value: -Xms32m -Xmx160m
+        - name: DOCKER_HOST
+          value: tcp://localhost:2376
+        - name: DOCKER_TLS_VERIFY
+          value: '1'
+        - name: DOCKER_CERT_PATH
+          value: /certs/client
+        resources:
+          requests:
+            cpu: 100m
+            memory: 192Mi
+          limits:
+            cpu: 500m
+            memory: 384Mi
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: work
+          mountPath: /home/jenkins/agent
+        - name: connection
+          mountPath: /run/secrets
+          readOnly: true
+        - name: client-certs
+          mountPath: /certs/client
+          readOnly: true
+        readinessProbe:
+          exec:
+            command:
+            - docker
+            - info
+          timeoutSeconds: 10
+          periodSeconds: 15
+          failureThreshold: 3
+      - name: docker
+        image: ghcr.io/fastapi-traefik-devops/liora-jenkins-dind@sha256:8a1438a15d85154fc53aa500782707780dd0d0ce7f8bc256ac200eb47c2787fc
+        args:
+        - --storage-driver=overlay2
+        env:
+        - name: DOCKER_TLS_CERTDIR
+          value: /certs
+        securityContext:
+          privileged: true
+          runAsUser: 0
+        resources:
+          requests:
+            cpu: 250m
+            memory: 1Gi
+          limits:
+            cpu: 1500m
+            memory: 2560Mi
+        volumeMounts:
+        - name: work
+          mountPath: /home/jenkins/agent
+        - name: cache
+          mountPath: /var/lib/docker
+        - name: client-certs
+          mountPath: /certs/client
+        - name: server-certs
+          mountPath: /certs/server
+        - name: ca-certs
+          mountPath: /certs/ca
+        startupProbe:
+          exec:
+            command:
+            - docker
+            - --host=unix:///var/run/docker.sock
+            - info
+          timeoutSeconds: 10
+          periodSeconds: 10
+          failureThreshold: 60
+        readinessProbe:
+          exec:
+            command:
+            - docker
+            - --host=unix:///var/run/docker.sock
+            - info
+          timeoutSeconds: 10
+          periodSeconds: 15
+          failureThreshold: 3
+      volumes:
+      - name: work
+        persistentVolumeClaim:
+          claimName: ci-work
+      - name: connection
+        secret:
+          secretName: jenkins-inbound
+          defaultMode: 288
+      - name: cache
+        persistentVolumeClaim:
+          claimName: docker-cache
+      - name: client-certs
+        emptyDir: {}
+      - name: server-certs
+        emptyDir: {}
+      - name: ca-certs
+        emptyDir: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ci-boundaries
+  namespace: jenkins-ci
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress: []
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: jenkins
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: jenkins
+    ports:
+    - protocol: TCP
+      port: 8080
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+        - 127.0.0.0/8
+        - 169.254.0.0/16
+        - 100.64.0.0/10
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jenkins-publisher
+  labels:
+    liora.aprt.info/component: jenkins-agents
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: publisher-work
+  namespace: jenkins-publisher
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: registry-publisher
+  namespace: jenkins-publisher
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: registry-publisher
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: registry-publisher
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      imagePullSecrets:
+      - name: ghcr-pull-secret
+      containers:
+      - name: agent
+        image: ghcr.io/fastapi-traefik-devops/liora-jenkins-agent@sha256:9c4e2acf5ce2637353ccb3c0d00928c8af521a2f4c0effd4f85f9994afb608c6
+        args:
+        - -url
+        - http://jenkins-admin.jenkins.svc.cluster.local:8085/
+        - -name
+        - registry-publisher
+        - -secret
+        - '@/run/secrets/publisher-secret'
+        - -webSocket
+        - -workDir
+        - /home/jenkins/agent
+        env:
+        - name: JAVA_TOOL_OPTIONS
+          value: -Xms32m -Xmx160m
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: work
+          mountPath: /home/jenkins/agent
+        - name: connection
+          mountPath: /run/secrets
+          readOnly: true
+        - name: helpers
+          mountPath: /opt/phase1-ci
+          readOnly: true
+      volumes:
+      - name: work
+        persistentVolumeClaim:
+          claimName: publisher-work
+      - name: connection
+        secret:
+          secretName: jenkins-inbound
+          defaultMode: 288
+      - name: helpers
+        configMap:
+          name: jenkins-publisher-ci-b98a22e48527
+          defaultMode: 365
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ci-boundaries
+  namespace: jenkins-publisher
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress: []
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+      podSelector:
+        matchLabels:
+          k8s-app: kube-dns
+    ports:
+    - protocol: TCP
+      port: 53
+    - protocol: UDP
+      port: 53
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: jenkins
+      podSelector:
+        matchLabels:
+          app.kubernetes.io/name: jenkins
+    ports:
+    - protocol: TCP
+      port: 8080
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 10.0.0.0/8
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+        - 127.0.0.0/8
+        - 169.254.0.0/16
+        - 100.64.0.0/10
+    ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443

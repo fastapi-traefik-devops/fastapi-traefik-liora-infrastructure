@@ -14,8 +14,10 @@ Phase 8 is complete. See the
 [Phase 8 report](testreports/PHASE8_REPORT.md) and
 [implementation plan](testreports/IMPLEMENTATION_PLAN.md).
 Phase 9 has restored Jenkins state to a separate NONPROD home while retaining
-the current administrator login. The controller remains held with disabled jobs
-and no agents; working CI is not active. See the [Phase 9 report](testreports/PHASE9_REPORT.md).
+the current administrator login. The CI/DinD worker and separate publisher are
+connected; a Docker build/bind-path smoke passed. The controller remains quiet
+with imported jobs disabled; application CI/publication is not active. See the
+[Phase 9 report](testreports/PHASE9_REPORT.md).
 
 ## Host and private network
 
@@ -334,7 +336,7 @@ notification receipt is not yet verified.
 
 ## Jenkins and CI
 
-**Current state: Jenkins state restored in K3s under an execution hold; working CI inactive.**
+**Current state: Jenkins state and worker agents in K3s; application jobs held.**
 
 The legacy Jenkins ran in Docker on VM 100 at private address
 `192.168.77.100:8085`. Its source configuration is in the application repository
@@ -361,7 +363,8 @@ Native browser/API login passed, credential IDs/scopes and decryption were check
 and original encryption/user-directory keys were retained. It requests 100m/512Mi,
 limits 1 CPU/768Mi and caps its heap at 384Mi. No PROD controller is planned.
 Jobs, multibranch scanning and Pipeline resume are disabled; controller executors,
-agents, running builds and queued work are zero. A startup hook enters quiet mode
+running builds and queued work are zero. Two agents are connected, each with
+one executor and its preserved label. A startup hook enters quiet mode
 and a selected egress NetworkPolicy blocks controller outbound connections.
 An init check prevents the restored-state overlay from starting on an incomplete
 home. The original foundation PVC and a consistent foundation backup are retained.
@@ -380,12 +383,26 @@ Migration is staged:
 
 Controller resources and image provenance are tracked in
 `kubernetes/platform/nonprod/jenkins/`. Its default overlay supports a fresh
-foundation; `held/` selects the restored home and execution guard. Do not apply
+foundation; `held/` selects the restored home and zero-agent execution guard,
+and the current `agents/` overlay adds the connected workers. Do not apply
 the foundation overlay over the restored controller as routine reconciliation.
-Agent/build-daemon migration, trusted publisher activation and pipeline/promotion
-review remain **in development** for Phase 9. The existing DinD approach with a
-privileged daemon and separate publisher is approved for initial migration;
-the disposable cache will be recreated. Stored publisher/App credentials have
+The CI Pod in `jenkins-ci` co-locates the original `host-ci` agent with privileged
+DinD, sharing a 5Gi work PVC at `/home/jenkins/agent` and using a fresh 20Gi cache
+PVC. Its limits are 500m/384Mi for the agent and 1500m/2560Mi for DinD.
+The separate `registry-publisher` Pod in `jenkins-publisher` has a 5Gi work PVC,
+500m/512Mi limit and read-only immutable helper source from the reviewed application
+commit. Neither worker mounts an API token or host Docker socket. Only the CI Pod
+receives generated Docker TLS certificates; basic network policies retain the
+build/publication separation. Both agents connect by WebSocket, with no new
+browser or daemon Service. Native admin login and retained state passed again;
+the Docker smoke did not execute a Jenkins job or publish application images.
+
+The recovered worker images are published to GHCR and pinned by digest. The
+operator deferred vulnerability remediation and further image scans for this
+educational deployment; the failed DinD result remains recorded as a failure.
+See the [worker report](testreports/PHASE9_WORKERS.md) for provenance and checks.
+Application CI, trusted publication activation and pipeline/promotion review
+remain **in development** for Phase 9. Stored publisher/App credentials have
 been restored, but publication is inactive and imported Job DSL is not executed.
 Live credentials, encryption keys and home archives remain private operator data
 outside Git. Successful state restore does not establish CI or promotion readiness.

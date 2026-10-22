@@ -10,9 +10,11 @@
 > promotion is authorized for automatic activation. Retain the current K3s admin
 > credentials. Do not retire VM 100, delete containers/volumes or change NAT.
 
-Latest checkpoint: the held state restore passed API/browser checks with the
-unchanged current admin login. Agents, builds and publication remain inactive.
-See the [restore evidence](../docs/testreports/PHASE9_STATE_RESTORE.md).
+Latest checkpoint: both worker agents are online, the Docker build/bind smoke
+passed, and API/browser checks again verified the unchanged current admin login.
+The controller remains quiet; imported jobs and application publication remain
+inactive. See the [worker evidence](../docs/testreports/PHASE9_WORKERS.md) and
+[restore evidence](../docs/testreports/PHASE9_STATE_RESTORE.md).
 
 > [!IMPORTANT]
 > **Operator cleanup, 2026-10-22:** a subsequent local
@@ -26,6 +28,12 @@ See the [restore evidence](../docs/testreports/PHASE9_STATE_RESTORE.md).
 > restore missing bind inputs, and recover or rebuild images before starting.
 > Never assume a removed container can be restarted. Do not prune remaining
 > volumes, private archives or operator inputs during migration.
+> The old kind node's anonymous data volume was also removed, confirmed against
+> its preserved mount metadata. Jenkins archives do not restore that cluster's
+> state. Recreating the legacy kind cluster is separate from Jenkins recovery.
+> The operator confirmed that kind held only default application database data;
+> no application/database transfer is required. Keep the current K3s PostgreSQL
+> data without replacement or reseeding. Jenkins state is preserved separately.
 
 ## 1. Inventory before mutation
 
@@ -235,17 +243,17 @@ exports, preserving source images, operator inputs and recovery archives.
 > trusted pipeline/helper code from an untrusted build checkout or mutable
 > host bind mount.
 
-Proposed placement, pending implementation review:
+Implemented worker budgets (idle observations are not application CI load tests):
 
 | Component | Placement | Request / limit | Storage / access |
 | --- | --- | --- | --- |
 | Controller | Existing `jenkins` namespace | Existing 100m/512Mi; 1 CPU/768Mi | Existing 5Gi home; assess actual expanded state size before transfer |
-| CI agent | `jenkins-ci`, one Pod with DinD | Proposed 100m/192Mi; 500m/384Mi | Shared agent work volume; agent connection Secret only |
-| DinD | Sidecar in CI Pod | Proposed 250m/1Gi; 1500m/2560Mi | Proposed 20Gi local-path cache and 5Gi shared work; private generated TLS client/server volumes |
-| Publisher | `jenkins-publisher`, separate Pod | Proposed 100m/256Mi; 500m/512Mi | Proposed 5Gi work; no build-daemon certificates or Docker socket |
+| CI agent | `jenkins-ci`, one Pod with DinD | 100m/192Mi; 500m/384Mi | Shared 5Gi work volume; agent connection Secret only |
+| DinD | Sidecar in CI Pod | 250m/1Gi; 1500m/2560Mi | Fresh 20Gi local-path cache and shared work; generated TLS volumes |
+| Publisher | `jenkins-publisher`, separate Pod | 100m/256Mi; 500m/512Mi | Separate 5Gi work; no build-daemon certificates or Docker socket |
 
 - [ ] Check node allocatable resources and existing workloads against the
-      **proposed**, not yet created, PVCs and budgets.
+      implemented PVCs and budgets before recovery/redeployment.
 - [ ] Review the source's privileged DinD requirement before enabling it
       in K3s. Keep service-account tokens and the host Docker socket absent.
 - [ ] Define a precise network policy before activation so the publisher
@@ -264,6 +272,45 @@ Proposed placement, pending implementation review:
 > [!NOTE]
 > Old DinD data was about 9.6GiB; the execution host had about 6.4GiB
 > free before the preservation copy.
+
+### Prepare pinned publisher helpers and worker images
+
+The application checkout remains read-only. The helper below reads `ci/` from
+Git objects at the reviewed application commit
+`b98a22e48527c256193ed65c10307eb574b27ab6`, verifies the blobs and prepares an
+immutable ConfigMap for `jenkins-publisher`. It does not use mutable working-tree
+files, execute pipelines, or apply anything to Kubernetes. It preserves all 17
+source files for the publisher's existing `/opt/phase1-ci` path.
+
+```bash
+mkdir -p .local-work/phase9
+bash scripts/local-python.sh scripts/kubernetes/prepare-jenkins-publisher-source.py --output .local-work/phase9/publisher-source.json
+```
+
+[Standalone publisher-source preparation](../scripts/kubernetes/prepare-jenkins-publisher-source.py).
+Exit 0 means a mode-0600 bundle was created; exit 1 means a missing/unexpected
+repository, missing or changed Git object, unsupported entry or existing output;
+argument errors exit 2. It never overwrites a reviewed bundle or prints source
+contents/private diagnostics. Keep the reviewed commit available for recovery.
+
+If worker images must be recovered after pruning, rebuild from the preserved
+Dockerfiles and tool locks:
+
+```bash
+bash scripts/kubernetes/rebuild-jenkins-agents.sh
+```
+
+[Standalone bounded worker-image rebuild](../scripts/kubernetes/rebuild-jenkins-agents.sh).
+It creates/reuses the named isolated BuildKit builder, bounded to 3Gi and 1.5 CPU
+with one build step at a time, and writes logs/image IDs under
+`.local-work/phase9/`. It does not change the default builder, start Jenkins
+jobs, publish images, or delete existing images/volumes. Exit 0 means both
+images loaded; a nonzero exit means an operation failed and partial build
+cache/images may remain. Existing APK upgrade/install steps resolve current
+packages, so rebuilding does not promise the former image digest. Publish with
+the operator's private registry login and pin the actual resulting GHCR digests
+in `jenkins/agents/workloads.yaml` before deployment. Follow the vulnerability
+deferral above; do not start another scan in this increment.
 
 ## 5. Review the final consistent backup and cutover procedure
 
@@ -390,6 +437,77 @@ GitHub/GHCR. It also checks that the baseline public-IP egress probe is blocked.
 That probe supports the controller hold check; it is not a general network
 penetration test. Exit 0 writes private `runtime-acceptance.json`; exit 1 fails
 without printing secret-bearing errors. Success does not mean CI/promotion is active.
+
+### Deploy workers while retaining disabled jobs
+
+Use the accepted state-restore receipt directory. This **changes NONPROD only**:
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/deploy-jenkins-agents.py "$RESTORE_DIRECTORY"
+```
+
+[Standalone worker deployment](../scripts/kubernetes/deploy-jenkins-agents.py).
+The `jenkins/agents` overlay extends `held/`: the migrated home, current admin
+profile, zero controller executors, startup quiet hook and controller egress hold
+remain. JCasC declares only the two preserved static nodes and contains no admin
+password reset or Job DSL. The helper authenticates with the current login and
+requires quiet mode, disabled jobs and an empty queue before and after deployment.
+It records the original controller/configuration and acceptance inputs privately,
+checks pinned images, creates owned worker namespaces, server-validates manifests,
+and copies only the registry pull Secret for kubelet use. It refuses an unrelated
+namespace or a different pre-existing target Secret. Agent connection identities
+come from authenticated JNLP metadata; values are never printed. No publisher or
+App credentials are mounted into the CI Pod. The daemon has no Service or host
+Docker socket; its generated TLS client certificates stay in the CI Pod.
+
+CI and DinD share the same `/home/jenkins/agent` PVC path for nested Docker bind
+mounts. The publisher has its own work PVC and immutable helper ConfigMap, without
+daemon certificates. Basic network policies retain this separation: private
+controller/DNS access and public HTTP(S) egress, no worker ingress. DinD remains
+privileged as approved; this does not provide isolation from the worker kernel.
+
+Private evidence is `.local-work/private/phase9/agents-<UTC>/`, mode 0700,
+files 0600. Exit 0 means Deployments became ready, both agents connected and the
+execution hold remained intact, **not** that a pipeline ran or promotion is
+accepted. Exit 1 means a failed precondition/operation; argument errors exit 2.
+A failure may leave namespaces,
+PVCs or workers deployed: inspect that evidence and Kubernetes events, retain
+data, and resolve the cause before retrying. No automatic rollback or deletion.
+
+For full current-login/state checks with the two expected agents connected, set
+`AGENT_EVIDENCE_DIRECTORY` to the returned private directory:
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/verify-jenkins-migration.py --connected-agents "$AGENT_EVIDENCE_DIRECTORY"
+```
+
+[Standalone runtime verification](../scripts/kubernetes/verify-jenkins-migration.py).
+This mode requires both original labels, one executor each and online connections,
+while checking disabled jobs, current admin API/browser login and retained state.
+It never schedules a build. A successful receipt is created once; preserve it.
+The earlier zero-agent acceptance remains unchanged in its original directory.
+
+Verify the new daemon and the nested Docker bind path without scheduling any
+Jenkins job or building/publishing application images:
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/smoke-jenkins-docker.py
+```
+
+[Standalone Docker/workspace smoke](../scripts/kubernetes/smoke-jenkins-docker.py).
+It uses an isolated timestamped directory in the CI work PVC, resolves the small
+BusyBox image to a digest, builds a trivial local image, and compares a copied
+file with its read-only nested bind mount. Its test container has no network.
+Success removes only that helper's image and two workspace files; failure retains
+the isolated workspace for inspection. No Pipeline, credentials, application
+image publication or Git write occurs. Exit 0 means build/bind checks passed;
+exit 1 reports failure without printing private command diagnostics.
+
+To return to the zero-agent held configuration, first scale `host-ci` in
+`jenkins-ci` and `registry-publisher` in `jenkins-publisher` to zero, then apply
+`kubernetes/platform/nonprod/jenkins/held` and restart the controller to load
+its zero-node JCasC. Retain all worker PVCs, source bundles and private evidence.
+Foundation rollback remains a separate procedure below.
 
 ### Roll back to the retained K3s foundation
 

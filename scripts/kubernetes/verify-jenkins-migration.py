@@ -60,6 +60,8 @@ def lock = new File('/usr/share/jenkins/ref/plugins.txt').readLines().findAll { 
 def lockedIds = lock.collect { it.split(':', 2)[0] }
 println JsonOutput.toJson([
   quiet: j.isQuietingDown(), executors: j.numExecutors, nodes: j.nodes.size(), queue: j.queue.items.size(),
+  agent_details: j.nodes.collect { node -> [name: node.nodeName, label: node.labelString,
+    executors: node.numExecutors, offline: node.toComputer()?.isOffline()] }.sort { it.name },
   users: User.getAll().collect { it.id }.sort(), item_count: items.size(), job_count: jobs.size(),
   persisted_users: User.getAll().findAll { new File(it.rootDir, 'config.xml').isFile() }.collect { it.id }.sort(),
   jobs_disabled: jobs.every { it.isDisabled() },
@@ -86,6 +88,8 @@ def main():
     global CURRENT_CHECK
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('restore_directory', type=Path)
+    parser.add_argument('--connected-agents', action='store_true',
+                        help='Expect the two migrated agents online while jobs remain disabled')
     args = parser.parse_args()
     directory = args.restore_directory
     expected = json.loads((directory / 'expected-files.json').read_text())
@@ -115,10 +119,14 @@ def main():
     with os.fdopen(os.open(directory / 'runtime-inspection.json', os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), 'w') as stream:
         json.dump(report, stream)
     CURRENT_CHECK = 'execution-hold'
-    if not (report['quiet'] and report['executors'] == 0 and report['nodes'] == 0 and report['queue'] == 0
+    if not (report['quiet'] and report['executors'] == 0 and report['nodes'] == (2 if args.connected_agents else 0) and report['queue'] == 0
             and report['jobs_disabled'] and report['resume_disabled'] and report['multibranch_disabled']
             and report['running_builds'] == 0 and report['failed_plugins'] == 0):
         raise RuntimeError('Restored execution hold is not verified')
+    if args.connected_agents and report.get('agent_details') != [
+            {'name': name, 'label': name, 'executors': 1, 'offline': False}
+            for name in ('host-ci', 'registry-publisher')]:
+        raise RuntimeError('Expected migrated agents online with their original labels and executors')
     CURRENT_CHECK = 'state-counts'
     if report['item_count'] != expected_items or report['builds'] != expected_builds or len(report['persisted_users']) != expected_users:
         raise RuntimeError('Restored state counts differ')

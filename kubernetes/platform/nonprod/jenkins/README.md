@@ -1,7 +1,8 @@
 # Jenkins controller foundation
 
 The default overlay remains the Phase 8 foundation for fresh bootstrap. The
-current Phase 9 controller uses the [`held/`](held/kustomization.yaml) overlay;
+current Phase 9 controller uses the [`agents/`](agents/kustomization.yaml) overlay,
+which extends [`held/`](held/kustomization.yaml) with the two connected workers;
 do not apply the default overlay over that controller as routine reconciliation.
 It would switch back to the retained foundation home. The foundation manifests
 are now under `base/`; image, resources and initial-login behavior are unchanged.
@@ -81,3 +82,20 @@ Mount this bundle read-only for the publisher, never from an untrusted build
 checkout. Its presence does not authorize executing the preserved legacy
 promotion workflow. The deployment helper prepares the same bundle directly
 and retains a private copy alongside the deployment evidence.
+
+## Connected workers under the hold
+
+The `agents/` overlay keeps the restored controller quiet and jobs disabled,
+adding only the original two static nodes and their bounded workloads. CI and
+privileged DinD share a work PVC; the publisher has its own PVC and pinned helper
+bundle. The daemon has no Service; agents use the existing controller Service via
+WebSocket. `deploy-jenkins-agents.py` provisions their private connection Secrets,
+checks readiness and online status, and verifies mounted source hashes.
+
+The Docker build/bind smoke and current admin API/browser checks passed with
+both agents online. Application pipelines, publishing and schedules remain
+inactive pending review. The operator deferred vulnerability remediation and
+further image scans for this educational deployment. See the
+[worker report](../../../../docs/testreports/PHASE9_WORKERS.md) and
+[runbook 17](../../../../runbooks/17-migrate-jenkins-ci.md) for recovery, execution
+and the retained zero-agent/foundation rollback boundaries.

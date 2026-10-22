@@ -20,7 +20,7 @@ SECRET = 'FAKE-VERIFIER-SECRET-ONLY-d04d'
 
 
 class VerificationTests(unittest.TestCase):
-    def invoke(self, invalid_response=False, changed_admin=False):
+    def invoke(self, invalid_response=False, changed_admin=False, connected_agents=False, offline_agent=False):
         with tempfile.TemporaryDirectory(dir=SCRIPT.parents[2] / '.local-work') as directory:
             root = Path(directory)
             admin = ('<user><id>admin</id><passwordHash>' + SECRET + '</passwordHash></user>').encode()
@@ -38,6 +38,10 @@ class VerificationTests(unittest.TestCase):
                               {'scope': 'app-ci', 'id': 'github-ci-app', 'private_key_present': True},
                               {'scope': 'trusted', 'id': 'gitops-app', 'private_key_present': True},
                               {'scope': 'trusted', 'id': 'ghcr-write', 'password_present': True}])
+            if connected_agents:
+                report['nodes'] = 2
+                report['agent_details'] = [dict(name=name, label=name, executors=1, offline=offline_agent)
+                                          for name in ('host-ci', 'registry-publisher')]
 
             def command(arguments, **kwargs):
                 if 'secret' in arguments:
@@ -69,15 +73,15 @@ class VerificationTests(unittest.TestCase):
             with patch('subprocess.run', side_effect=command), \
                     patch('urllib.request.build_opener', return_value=opener), \
                     patch('playwright.sync_api.sync_playwright', playwright), \
-                    patch.object(sys, 'argv', [str(SCRIPT), str(root)]), redirect_stdout(stdout), redirect_stderr(stderr):
+                    patch.object(sys, 'argv', [str(SCRIPT), str(root)] + (['--connected-agents'] if connected_agents else [])), redirect_stdout(stdout), redirect_stderr(stderr):
                 status = 0
                 try:
                     runpy.run_path(str(SCRIPT), run_name='__main__')
                 except SystemExit as result:
                     status = result.code
             self.assertNotIn(SECRET, stdout.getvalue() + stderr.getvalue())
-            self.assertEqual(status, 1 if invalid_response or changed_admin else 0)
-            self.assertEqual((root / 'runtime-acceptance.json').exists(), not (invalid_response or changed_admin))
+            self.assertEqual(status, 1 if invalid_response or changed_admin or offline_agent else 0)
+            self.assertEqual((root / 'runtime-acceptance.json').exists(), not (invalid_response or changed_admin or offline_agent))
 
     def test_success_does_not_print_credentials(self):
         self.invoke()
@@ -87,6 +91,12 @@ class VerificationTests(unittest.TestCase):
 
     def test_admin_hash_change_cannot_pass(self):
         self.invoke(changed_admin=True)
+
+    def test_online_agents_preserve_execution_hold_and_current_admin(self):
+        self.invoke(connected_agents=True)
+
+    def test_offline_agents_cannot_pass_connected_acceptance(self):
+        self.invoke(connected_agents=True, offline_agent=True)
 
 
 if __name__ == '__main__':

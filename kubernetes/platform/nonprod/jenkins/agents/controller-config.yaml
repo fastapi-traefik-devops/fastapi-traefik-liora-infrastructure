@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jenkins-migration-hold
+  namespace: jenkins
+data:
+  jenkins.yaml: |
+    jenkins:
+      systemMessage: Migrated state with CI agents connected. Quiet mode and disabled
+        jobs retained for review.
+      numExecutors: 0
+      mode: EXCLUSIVE
+      clouds: []
+      nodes:
+      - permanent:
+          name: host-ci
+          remoteFS: /home/jenkins/agent
+          labelString: host-ci
+          numExecutors: 1
+          mode: EXCLUSIVE
+          launcher:
+            inbound:
+              workDirSettings:
+                disabled: false
+                workDirPath: /home/jenkins/agent
+      - permanent:
+          name: registry-publisher
+          remoteFS: /home/jenkins/agent
+          labelString: registry-publisher
+          numExecutors: 1
+          mode: EXCLUSIVE
+          launcher:
+            inbound:
+              workDirSettings:
+                disabled: false
+                workDirPath: /home/jenkins/agent
+      securityRealm:
+        local:
+          allowsSignup: false
+      authorizationStrategy:
+        globalMatrix:
+          entries:
+          - user:
+              name: admin
+              permissions:
+              - Overall/Administer
+      remotingSecurity:
+        enabled: true
+      slaveAgentPort: -1
+    unclassified:
+      location:
+        url: http://192.168.77.16:8085/
