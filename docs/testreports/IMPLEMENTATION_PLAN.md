@@ -631,14 +631,90 @@ do not perform that cleanup as part of this implementation.
 
 ## Phase 10 — Replace temporary components incrementally
 
+Status: **direction agreed; detailed scope and execution plan pending**. The
+items below describe future work, not authorization to select unspecified
+parameters or start implementation automatically after Phase 9.
+
+### Before starting Phase 10 — Refine and approve the scope
+
+- [ ] After Phase 9, reconcile the deferred ADR backlog with the working
+      system, including accepted replacements and completed improvements.
+      Identify which remaining changes are still needed.
+- [ ] Agree the order, resource budget and concrete parameters for the
+      selected work: CloudNativePG, R2 backup/restore and retention, logging,
+      external uptime checks, alert delivery, HPA/PDB, Secret encryption and
+      the recovery kit. Record deferred items without silently dropping them.
+- [ ] Expand the selected work into explicit subphases with prerequisites,
+      acceptance criteria and recovery procedures. Present the updated plan
+      to the operator and obtain confirmation before implementation.
+
+### Planned implementation areas — Subject to the scope review above
+
 - [ ] Test database backup and restore before replacing the current
       PostgreSQL Deployment. Introduce CloudNativePG one environment at a
       time, beginning with DEV.
-- [ ] Add per-cluster Secret encryption and recovery keys, certificate
-      automation, and dedicated ingress addresses in separate changes.
+- [ ] Add per-cluster Secret encryption and recovery keys and dedicated
+      ingress addresses in separate changes. Retain the working Certbot
+      automation until the final Phase 11 certificate migration.
       Check each on DEV, then STAGE, then PROD.
 - [ ] Remove Adminer and other lab-only resources only after a replacement
       operational path works. Recheck both clusters' recovery procedures.
 
 **Pass:** target services replace the initial stack without losing data,
 access, or a tested recovery path.
+
+## Phase 11 — Доведення до ідеалу або полірування
+
+Status: **planned final phase, after the working platform and preceding
+migrations**. Refine the detailed procedure before implementation; this work
+does not block the current deployment phases.
+
+### Kubernetes-native certificate management
+
+The agreed later improvement is to replace edge Certbot issuance and the
+management VM's SSH/systemd certificate-distribution pipeline with a separate
+cert-manager installation in each K3s cluster. This makes certificate lifecycle
+management declarative and cluster-local, reduces custom integration and
+removes renewal/distribution dependence on the management VM. The existing
+Certbot solution remains the working implementation until migration.
+
+Cloudflare API credentials will be supplied in an agreed local, Git-ignored
+secret file and provisioned into the required Kubernetes Secret references.
+The exact file and supported fields must be documented before implementation;
+no credential values belong in tracked manifests or logs. Use credentials
+scoped to the required DNS zone and permissions.
+
+cert-manager will obtain certificates from Let's Encrypt through ACME and
+complete **DNS-01** validation by publishing TXT records through the Cloudflare
+DNS API. Planned Cloudflare protection/Access for DEV and STAGE will restrict
+unauthenticated HTTP access. Once that protection blocks the public HTTP-01
+challenge path, the current webroot validation cannot work without an exception.
+DNS-01 removes that HTTP-path dependency; Cloudflare proxying alone is not a
+claim that HTTP-01 is impossible.
+
+- [ ] Prepare independent cert-manager/issuer configuration for both clusters
+      and the Cloudflare API credential provisioning/recovery procedure.
+- [ ] Migrate DEV, then STAGE, then PROD, with one active writer for each TLS
+      Secret. Coordinate ownership with the legacy distribution helper rather
+      than letting both mechanisms overwrite the same Secret.
+- [ ] Verify issuance, renewal and the certificates served by Traefik before
+      retiring the corresponding legacy automation. Establish DNS-01 before
+      enabling DEV/STAGE protection that blocks HTTP-01 validation.
+- [ ] Retire the superseded Certbot/distribution components once migration is
+      complete, and update architecture, runbooks and recovery documentation.
+
+### DHCP and static address alignment
+
+The current Proxmox DHCP range `.201`–`.241` overlaps statically configured
+cluster and edge VM addresses. Its correction is deferred to this final
+polishing phase; it is not a prerequisite for the current static deployment.
+
+- [ ] Inventory static addresses and actual DHCP use, then agree a
+      non-overlapping allocation or disable unused DHCP service as appropriate.
+      Preserve the existing static VM addresses and API/Admin VIP assignments.
+- [ ] Apply the reviewed DHCP correction and update network/address
+      documentation with the resulting allocation.
+
+**Pass:** public application certificate issuance and renewal use per-cluster
+cert-manager with Cloudflare DNS-01, superseded certificate automation is
+retired, and the documented DHCP allocation no longer overlaps static addresses.
