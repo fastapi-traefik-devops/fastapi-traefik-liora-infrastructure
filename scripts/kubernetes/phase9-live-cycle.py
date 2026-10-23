@@ -3,6 +3,7 @@
 import argparse
 import base64
 import http.cookiejar
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -63,7 +64,7 @@ println 'Checkpoint execution hold restored'
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('action', choices=['status', 'hold', 'repair-tracker', 'start', 'poll'])
+    p.add_argument('action', choices=['status', 'hold', 'repair-tracker', 'approve-publisher', 'start', 'poll'])
     p.add_argument('--pr', type=int, action='append', default=[], help='Related checkpoint PR to abort during hold; repeat as needed')
     args = p.parse_args()
     if args.pr and args.action != 'hold':
@@ -75,6 +76,25 @@ def main():
         state = HELPER['inspect'](request)
         print(json.dumps({'quiet': state['quiet'], 'executors': state['executors'], 'queue': state['queue'],
                           'running': state['running'], 'jobs': state['jobs']}))
+    elif args.action == 'approve-publisher':
+        definition = subprocess.check_output(['git', '-C', str(ROOT.parent / 'fastapi-traefik-liora-application'),
+                                               'show', 'HEAD:Jenkinsfile.promote'])
+        expected = hashlib.sha256(definition).hexdigest()
+        print(script(request, """
+import groovy.json.JsonOutput
+import org.jenkinsci.plugins.scriptsecurity.scripts.ScriptApproval
+import org.jenkinsci.plugins.scriptsecurity.scripts.languages.GroovyLanguage
+def j=jenkins.model.Jenkins.get();def job=j.getItemByFullName('trusted/publish')
+assert j.isQuietingDown() && job.isDisabled() && !job.builds.any{it.isBuilding()}
+def body=job.definition.script
+def hash=java.security.MessageDigest.getInstance('SHA-256').digest(body.getBytes('UTF-8')).encodeHex().toString()
+assert hash=='EXPECTED_HASH'
+def approval=ScriptApproval.get()
+def pending=approval.pendingScripts.find{it.script==body}
+if(pending!=null){approval.approveScript(pending.hash)}
+assert approval.isScriptApproved(body,GroovyLanguage.get())
+println JsonOutput.toJson([publisherApproved:true,definitionSha256:hash,otherScriptsApproved:false])
+""".replace('EXPECTED_HASH', expected)).decode().strip())
     elif args.action == 'repair-tracker':
         print(script(request, """
 import groovy.json.JsonOutput

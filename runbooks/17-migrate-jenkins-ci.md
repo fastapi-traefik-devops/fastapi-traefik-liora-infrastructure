@@ -813,8 +813,20 @@ bash scripts/local-python.sh scripts/kubernetes/phase9-live-cycle.py status
 
 After installing the reviewed existing main/publisher definitions and helper pin,
 merging the bootstrap through the application's existing PR/check rules, and
-restoring the hold with all other jobs disabled, `start` requests one existing
-main build and enables its trusted publisher. It installs no polling trigger.
+restoring the hold with all other jobs disabled, approve the exact reviewed
+trusted publisher definition before requesting a build:
+
+```bash
+bash scripts/local-python.sh scripts/kubernetes/phase9-live-cycle.py approve-publisher
+```
+
+The command compares the installed script SHA-256 with the committed application
+checkout's `Jenkinsfile.promote`, then approves only that matching pending script.
+It requires a held, disabled, idle publisher; it does not approve other scripts
+or signatures. Review the application checkout and installed definition first.
+
+Then `start` requests one existing main build and enables its trusted publisher.
+It installs no polling trigger.
 
 ```bash
 bash scripts/local-python.sh scripts/kubernetes/phase9-live-cycle.py start
@@ -874,3 +886,10 @@ For follow-up PR discovery, the existing branch property's suppress-index/event-
 build setting prevents discovery from requesting duplicate main builds. It does
 not replace the main job's normal SCM polling. Keep orphan pruning disabled,
 run only the related PR gate, and disable that PR job after its check completes.
+
+A hold can pause Pipeline finalization in quiet mode. With all jobs disabled,
+triggers removed and the queue empty, cancel quiet mode temporarily to let
+interrupted cleanup settle, then restore the hold. Wait for completed results;
+a transient SUCCESS while `building=true` is not a publishable result. Never
+relabel an interrupted build: retry CI under a new build number if it finishes
+ABORTED. Preserve its artifacts and diagnostics.

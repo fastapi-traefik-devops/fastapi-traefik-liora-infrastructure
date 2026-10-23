@@ -1,4 +1,4 @@
-# Phase 9 — Authorized live cycle: application integration blocked
+# Phase 9 — Authorized live cycle: execution in progress
 
 Latest continuation: the owner pushed `migration/phase9-k3s-bootstrap` and
 opened application [PR #62](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/pull/62)
@@ -132,3 +132,19 @@ source and outside the activation path.
 
 See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). This is a blocker report,
 not another readiness approval requirement or a completed live checkpoint.
+
+## Publisher approval correction and controlled retry (2026-10-23)
+
+Main #14 passed all functional gates and exported images, but publisher #33
+failed before Pipeline execution: the installed unsandboxed trusted definition
+required Jenkins script approval. No registry or GitOps write occurred. The hold
+was restored and the exact reviewed definition was approved by its SHA-256
+`babb16963e2f30df72b54546484206cfa34e5f820860b20d8e3c862913817f98`;
+no other script or signature was approved. The live helper and runbook now make
+this prerequisite explicit.
+
+Quiet mode paused interrupted finalization. With every job/trigger disabled and
+the queue empty, canceling quiet mode allowed it to settle: main #14 and PR #63
+#1 finalized ABORTED. Their records/artifacts are retained, without relabeling
+their results. Main #15 is the controlled retry against `38a7f2a`; it must finish
+SUCCESS before trusted publisher #34 may use its artifacts. Polling stays off.
