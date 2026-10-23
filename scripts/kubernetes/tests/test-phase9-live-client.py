@@ -40,5 +40,21 @@ class LiveClientTests(unittest.TestCase):
         self.assertTrue(all(r.full_url.startswith('http://192.168.77.16:8085/') for r in requests))
 
 
+class ScriptResultTests(unittest.TestCase):
+    def test_completed_script_preserves_only_its_actual_output(self):
+        helper = MODULE['script'].__globals__['HELPER']
+        with patch.dict(helper, {'script': lambda request, text: b'{"ok":true}\n\nPHASE9_SCRIPT_COMPLETED\n'}):
+            self.assertEqual(MODULE['script'](object(), "println 'ok'"), b'{"ok":true}\n')
+
+    def test_http_200_script_failure_is_rejected_without_diagnostic_leak(self):
+        helper = MODULE['script'].__globals__['HELPER']
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with patch.dict(helper, {'script': lambda request, text: ('Assertion failed: ' + SECRET).encode()}), \
+             redirect_stdout(stdout), redirect_stderr(stderr):
+            with self.assertRaises(RuntimeError) as error:
+                MODULE['script'](object(), 'assert false')
+        self.assertNotIn(SECRET, str(error.exception) + stdout.getvalue() + stderr.getvalue())
+
+
 if __name__ == '__main__':
     unittest.main()

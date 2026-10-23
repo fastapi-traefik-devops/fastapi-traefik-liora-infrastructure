@@ -806,6 +806,9 @@ The reviewed standalone helper
 [phase9-live-cycle.py](../scripts/kubernetes/phase9-live-cycle.py) authenticates
 with the existing K3s administrator Secret in memory; it does not rotate or print
 credentials. `status` works during activation as well as under the hold.
+Jenkins can return HTTP 200 for a failed Groovy assertion; the helper requires a
+completion marker and exits unsuccessfully if execution did not finish. It never
+echoes a failed server response, which could contain sensitive diagnostics.
 
 ```bash
 bash scripts/local-python.sh scripts/kubernetes/phase9-live-cycle.py status

@@ -32,7 +32,14 @@ def client():
 
 
 def script(request, text):
-    return HELPER['script'](request, text)
+    # Jenkins scriptText returns HTTP 200 even for compilation/assertion failures.
+    # Accept output only if execution reached our final marker; never echo a
+    # failed Groovy response, which can contain credential-bearing diagnostics.
+    marker = b'\nPHASE9_SCRIPT_COMPLETED\n'
+    result = HELPER['script'](request, text + "\nprintln '\\nPHASE9_SCRIPT_COMPLETED'")
+    if not result.endswith(marker):
+        raise RuntimeError('Jenkins script did not complete; operation result rejected')
+    return result[:-len(marker)]
 
 
 def hold(request, related_prs=()):
