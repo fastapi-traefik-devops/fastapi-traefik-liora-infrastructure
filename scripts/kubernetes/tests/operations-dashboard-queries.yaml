@@ -1,0 +1,110 @@
+evaluation_interval: 1m
+tests:
+- name: Absent request telemetry must not become zero
+  interval: 1m
+  input_series: []
+  promql_expr_test:
+  - expr: Request rate
+    eval_time: 5m
+    exp_samples: []
+- name: Observed idle request counters legitimately produce zero throughput but no error ratio
+  interval: 1m
+  input_series:
+  - series: traefik_service_requests_total{service="app-dev-backend-80@kubernetes",code="200"}
+    values: "10x10"
+  promql_expr_test:
+  - expr: Request rate
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 0
+  - expr: HTTP 5xx
+    eval_time: 5m
+    exp_samples: []
+- name: No 5xx series with observed successful traffic means a zero error fraction
+  interval: 1m
+  input_series:
+  - series: traefik_service_requests_total{service="app-dev-backend-80@kubernetes",code="200"}
+    values: "0+60x10"
+  promql_expr_test:
+  - expr: HTTP 5xx
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 0
+- name: Server errors remain a fraction rather than a percentage multiplied twice
+  interval: 1m
+  input_series:
+  - series: traefik_service_requests_total{service="app-dev-backend-80@kubernetes",code="200"}
+    values: "0+60x10"
+  - series: traefik_service_requests_total{service="app-dev-backend-80@kubernetes",code="500"}
+    values: "0+60x10"
+  promql_expr_test:
+  - expr: HTTP 5xx
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 0.5
+- name: No alerts can mean zero only while Prometheus self-scrape is healthy
+  interval: 1m
+  input_series:
+  - series: up{job="monitoring-prometheus",endpoint="http-web"}
+    values: "1x10"
+  promql_expr_test:
+  - expr: Critical
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 0
+- name: Missing self-scrape and absent alert series cannot imply no incidents
+  interval: 1m
+  input_series: []
+  promql_expr_test:
+  - expr: Critical
+    eval_time: 5m
+    exp_samples: []
+- name: Missing available-replica telemetry counts observed desired replicas as unavailable
+  interval: 1m
+  input_series:
+  - series: kube_deployment_spec_replicas{namespace="app-dev",deployment="backend"}
+    values: "2x10"
+  - series: kube_deployment_spec_replicas{namespace="app-dev",deployment="frontend"}
+    values: "1x10"
+  - series: kube_deployment_status_replicas_available{namespace="app-dev",deployment="frontend"}
+    values: "1x10"
+  - series: argocd_app_info{name="app-dev"}
+    values: "1x10"
+  promql_expr_test:
+  - expr: Replica gap
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 2
+- name: Incomplete desired-deployment inventory must not produce healthy zero
+  interval: 1m
+  input_series:
+  - series: kube_deployment_spec_replicas{namespace="app-dev",deployment="backend"}
+    values: "1x10"
+  - series: kube_deployment_status_replicas_available{namespace="app-dev",deployment="backend"}
+    values: "1x10"
+  - series: argocd_app_info{name="app-dev"}
+    values: "1x10"
+  promql_expr_test:
+  - expr: Replica gap
+    eval_time: 5m
+    exp_samples: []
+- name: A known node with missing Ready telemetry lowers readiness
+  interval: 1m
+  input_series:
+  - series: kube_node_info{node="a"}
+    values: "1x10"
+  - series: kube_node_info{node="b"}
+    values: "1x10"
+  - series: kube_node_status_condition{node="a",condition="Ready",status="true"}
+    values: "1x10"
+  promql_expr_test:
+  - expr: Nodes Ready
+    eval_time: 5m
+    exp_samples:
+    - labels: '{}'
+      value: 0.5
