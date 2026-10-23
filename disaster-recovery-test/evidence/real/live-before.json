@@ -1,0 +1,1005 @@
+{
+  "timestamp_utc": "2026-10-23T23:38:57.802047+00:00",
+  "clusters": {
+    "dev-stage": {
+      "nodes": [
+        {
+          "namespace": null,
+          "name": "k3s-1-01",
+          "uid": "34c9dd25-aa87-4c64-9000-b9f723f3dd9d",
+          "ready": "True"
+        },
+        {
+          "namespace": null,
+          "name": "k3s-1-02",
+          "uid": "b4e5d2e6-4821-4d22-8964-f70b5d88bc9c",
+          "ready": "True"
+        },
+        {
+          "namespace": null,
+          "name": "k3s-1-03",
+          "uid": "318a34e7-9bcc-4b44-9d61-efa5bffcc653",
+          "ready": "True"
+        }
+      ],
+      "deployments.apps": [
+        {
+          "namespace": "app-dev",
+          "name": "adminer",
+          "uid": "bc4f31a9-f5fe-4265-910b-891967c6a18f",
+          "replicas": 1,
+          "images": [
+            "adminer:4.8.1"
+          ]
+        },
+        {
+          "namespace": "app-dev",
+          "name": "backend",
+          "uid": "4d87b067-c109-43ce-8a23-7f3ace823a16",
+          "replicas": 1,
+          "images": [
+            "ghcr.io/fastapi-traefik-devops/fastapi-backend:sha-3303e93b753e8282dc7b461c583fb8ace43574a1@sha256:ea2d0aaf163f15f1bf749ee69822ebe33e619d2a00a5813d348732936b56f00b"
+          ]
+        },
+        {
+          "namespace": "app-dev",
+          "name": "frontend",
+          "uid": "0047a13f-931e-4635-9949-8a9a4e63df27",
+          "replicas": 1,
+          "images": [
+            "ghcr.io/fastapi-traefik-devops/fastapi-frontend:sha-3303e93b753e8282dc7b461c583fb8ace43574a1@sha256:a8d07b6be8ae8c76cc8133c885ba8ec3c095ded005db251aaf6a190e88426f82"
+          ]
+        },
+        {
+          "namespace": "app-stage",
+          "name": "adminer",
+          "uid": "97854a47-a9e0-44e6-80a9-862426aa9997",
+          "replicas": 1,
+          "images": [
+            "adminer:4.8.1"
+          ]
+        },
+        {
+          "namespace": "app-stage",
+          "name": "backend",
+          "uid": "b0a6f705-674e-419a-a8f0-66b6bb6bdad3",
+          "replicas": 1,
+          "images": [
+            "ghcr.io/fastapi-traefik-devops/fastapi-backend:sha-3459d5a4f1d39473fd845674dfc7f591bee81059@sha256:cc32c4e72a58a5b1b579e1909d9c31c455ebee3cba0a431bd957ecf51e9c2d0c"
+          ]
+        },
+        {
+          "namespace": "app-stage",
+          "name": "frontend",
+          "uid": "ee5bbcc9-2a35-4c36-8c58-dcd1e0d42ef0",
+          "replicas": 1,
+          "images": [
+            "ghcr.io/fastapi-traefik-devops/fastapi-frontend:sha-3459d5a4f1d39473fd845674dfc7f591bee81059@sha256:87acf879741853a6e3d43c766ad0d93d488adf12b4e89891b9295739d6f6b0b5"
+          ]
+        },
+        {
+          "namespace": "argocd",
+          "name": "argocd-applicationset-controller",
+          "uid": "e95dd27e-2343-4407-b7b1-4aece9100f55",
+          "replicas": 1,
+          "images": [
+            "quay.io/argoproj/argocd:v3.5.6"
+          ]
+        },
+        {
+          "namespace": "argocd",
+          "name": "argocd-dex-server",
+          "uid": "e61e3842-11ca-43f4-a1e3-63e6ea9cd6b9",
+          "replicas": 1,
+          "images": [
+            "ghcr.io/dexidp/dex:v2.45.1"
+          ]
+        },
+        {
+          "namespace": "argocd",
+          "name": "argocd-notifications-controller",
+          "uid": "eda78b95-c4df-4fd0-a4e2-df6b0b445182",
+          "replicas": 1,
+          "images": [
+            "quay.io/argoproj/argocd:v3.5.6"
+          ]
+        },
+        {
+          "namespace": "argocd",
+          "name": "argocd-redis",
+          "uid": "521d02eb-6765-418d-91b5-2aac0109e2e9",
+          "replicas": 1,
+          "images": [
+            "public.ecr.aws/docker/library/redis:8.2.3-alpine"
+          ]
+        },
+        {
+          "namespace": "argocd",
+          "name": "argocd-repo-server",
+          "uid": "f039a7d7-e63f-4b12-a83a-2dd1c86bcfe5",
+          "replicas": 1,
+          "images": [
+            "quay.io/argoproj/argocd:v3.5.6"
+          ]
+        },
+        {
+          "namespace": "argocd",
+          "name": "argocd-server",
+          "uid": "fdf6f4c7-dd80-4381-abb7-d80e977a18e4",
+          "replicas": 1,
+          "images": [
+            "quay.io/argoproj/argocd:v3.5.6"
+          ]
+        },
+        {
+          "namespace": "cert-manager",
+          "name": "cert-manager",
+          "uid": "5575f96d-12a3-48ce-b802-631c68be6bde",
+          "replicas": 1,
+          "images": [
+            "quay.io/jetstack/cert-manager-controller:v1.21.2@sha256:70f532fd9cfde0b09d55687200942399d89838bc2d5d5b45152eb799a15912b8"
+          ]
+        },
+        {
+          "namespace": "cert-manager",
+          "name": "cert-manager-cainjector",
+          "uid": "9c6833c8-9758-4236-97fb-fc8c21420b28",
+          "replicas": 1,
+          "images": [
+            "quay.io/jetstack/cert-manager-cainjector:v1.21.2@sha256:c85268c64f2e0e76684bf5fe8906caff34b82523561c6affe0fae3546bd87562"
+          ]
+        },
+        {
+          "namespace": "cert-manager",
+          "name": "cert-manager-webhook",
+          "uid": "a5a12abc-4249-4769-9c32-9f39782034c6",
+          "replicas": 1,
+          "images": [
+            "quay.io/jetstack/cert-manager-webhook:v1.21.2@sha256:a60e2dac46dbb8a7f3df95c54ce941012f54c2fe022f0ee55aaa1ab40ed957ae"
+          ]
+        },
+        {
+          "namespace": "cnpg-system",
+          "name": "barman-cloud",
+          "uid": "2fe3c337-0784-4557-af6e-1d33a0daf410",
+          "replicas": 1,
+          "images": [
+            "ghcr.io/cloudnative-pg/plugin-barman-cloud:v0.15.1@sha256:c75acad19a36e8176cfe2885761ff1b836c6ef977d7257e298c99a28b5c302ef"
+          ]
+        },
+        {
+          "namespace": "cnpg-system",
+          "name": "cnpg-controller-manager",
+          "uid": "7a7a9edb-4552-44aa-9ffe-bcf8ab1d7a7b",
+          "replicas": 1,
+          "images": [
+            "ghcr.io/cloudnative-pg/cloudnative-pg:1.30.1@sha256:923c267ec29636db3bee20f993d0ec4973fa22998e1adad37da79e4d32b5bc07"
+          ]
+        },
+        {
+          "namespace": "jenkins",
+          "name": "jenkins",
+          "uid": "dd5f9a21-be12-415e-b6ea-ae22c9d11a02",
+          "replicas": 1,
+          "images": [
+            "ghcr.io/fastapi-traefik-devops/liora-jenkins-controller@sha256:7c7e8f8806b7c6aba679aee7cfaec51c0b40475cf536958be8146885e7b310ad"
+          ]
+        },
+        {
+          "namespace": "jenkins-acceptance",
+          "name": "stage-observer",
+          "uid": "392baf15-931b-4f91-bfa6-00487f8e3012",
+          "replicas": 1,
+          "images": [
+            "ghcr.io/fastapi-traefik-devops/liora-jenkins-agent@sha256:9c4e2acf5ce2637353ccb3c0d00928c8af521a2f4c0effd4f85f9994afb608c6"
+          ]
+        },
+        {
+          "namespace": "jenkins-ci",
+          "name": "host-ci",
+          "uid": "b5054080-e52f-4dd4-80cd-21a1f9b0b672",
+          "replicas": 1,
+          "images": [
+            "ghcr.io/fastapi-traefik-devops/liora-jenkins-agent@sha256:9c4e2acf5ce2637353ccb3c0d00928c8af521a2f4c0effd4f85f9994afb608c6",
+            "ghcr.io/fastapi-traefik-devops/liora-jenkins-dind@sha256:8a1438a15d85154fc53aa500782707780dd0d0ce7f8bc256ac200eb47c2787fc"
+          ]
+        },
+        {
+          "namespace": "jenkins-publisher",
+          "name": "registry-publisher",
+          "uid": "05045267-5925-44e7-9253-bccf9352c211",
+          "replicas": 1,
+          "images": [
+            "ghcr.io/fastapi-traefik-devops/liora-jenkins-agent@sha256:9c4e2acf5ce2637353ccb3c0d00928c8af521a2f4c0effd4f85f9994afb608c6"
+          ]
+        },
+        {
+          "namespace": "kube-system",
+          "name": "coredns",
+          "uid": "14ff9e80-cc50-4fae-827c-ebb6ea478e35",
+          "replicas": 1,
+          "images": [
+            "rancher/mirrored-coredns-coredns:1.14.7"
+          ]
+        },
+        {
+          "namespace": "kube-system",
+          "name": "local-path-provisioner",
+          "uid": "3083a295-5195-4357-bf15-ac6f5d62bc24",
+          "replicas": 1,
+          "images": [
+            "rancher/local-path-provisioner:v0.0.37"
+          ]
+        },
+        {
+          "namespace": "kube-system",
+          "name": "metrics-server",
+          "uid": "d460abe3-0dea-41a4-b98b-88c514519b70",
+          "replicas": 1,
+          "images": [
+            "rancher/mirrored-metrics-server:v0.9.0"
+          ]
+        },
+        {
+          "namespace": "kube-system",
+          "name": "traefik",
+          "uid": "ab60141d-45bb-4609-a927-5704c51ef3de",
+          "replicas": 1,
+          "images": [
+            "rancher/mirrored-library-traefik:3.7.13"
+          ]
+        },
+        {
+          "namespace": "monitoring",
+          "name": "monitoring-grafana",
+          "uid": "fc89f3c4-b089-4137-b38f-89b90bed75a4",
+          "replicas": 1,
+          "images": [
+            "quay.io/kiwigrid/k8s-sidecar:2.14.1",
+            "docker.io/grafana/grafana:13.2.3-distroless"
+          ]
+        },
+        {
+          "namespace": "monitoring",
+          "name": "monitoring-kube-state-metrics",
+          "uid": "f529a457-7cfa-47c1-bec0-9e7ad6729870",
+          "replicas": 1,
+          "images": [
+            "registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.20.0"
+          ]
+        },
+        {
+          "namespace": "monitoring",
+          "name": "monitoring-operator",
+          "uid": "1e0b6dc0-deb0-438d-869a-6c23cff9ffaa",
+          "replicas": 1,
+          "images": [
+            "quay.io/prometheus-operator/prometheus-operator:v0.94.1"
+          ]
+        }
+      ],
+      "statefulsets.apps": [
+        {
+          "namespace": "argocd",
+          "name": "argocd-application-controller",
+          "uid": "7afab270-5c98-40a4-ad51-2dae4ee7ca21",
+          "replicas": 1,
+          "images": [
+            "quay.io/argoproj/argocd:v3.5.6"
+          ]
+        },
+        {
+          "namespace": "monitoring",
+          "name": "alertmanager-monitoring-alertmanager",
+          "uid": "e2497c11-dec1-4051-b035-ff047d1c3759",
+          "replicas": 1,
+          "images": [
+            "quay.io/prometheus/alertmanager:v0.34.1",
+            "quay.io/prometheus-operator/prometheus-config-reloader:v0.94.1"
+          ]
+        },
+        {
+          "namespace": "monitoring",
+          "name": "prometheus-monitoring-prometheus",
+          "uid": "4bad2f4e-80d1-480c-9ff1-1d629ac62278",
+          "replicas": 1,
+          "images": [
+            "quay.io/prometheus/prometheus:v3.15.0-distroless",
+            "quay.io/prometheus-operator/prometheus-config-reloader:v0.94.1"
+          ]
+        }
+      ],
+      "persistentvolumeclaims": [
+        {
+          "namespace": "app-dev",
+          "name": "liora-db-1",
+          "uid": "1456433e-96e9-43e2-b26a-1805e2647ac2",
+          "volume": "pvc-1456433e-96e9-43e2-b26a-1805e2647ac2",
+          "phase": "Bound"
+        },
+        {
+          "namespace": "app-stage",
+          "name": "liora-db-1",
+          "uid": "fb36ea1a-1bae-444b-b3af-b95b85a2a880",
+          "volume": "pvc-fb36ea1a-1bae-444b-b3af-b95b85a2a880",
+          "phase": "Bound"
+        },
+        {
+          "namespace": "jenkins",
+          "name": "jenkins-home",
+          "uid": "14110420-720d-40b4-a51b-fa345ca72605",
+          "volume": "pvc-14110420-720d-40b4-a51b-fa345ca72605",
+          "phase": "Bound"
+        },
+        {
+          "namespace": "jenkins",
+          "name": "jenkins-home-migrated",
+          "uid": "7d150cdc-1fb4-424f-a9e6-ff30fe7c6288",
+          "volume": "pvc-7d150cdc-1fb4-424f-a9e6-ff30fe7c6288",
+          "phase": "Bound"
+        },
+        {
+          "namespace": "jenkins-ci",
+          "name": "ci-work",
+          "uid": "51d7bbd9-dadd-463a-b957-a2808e2cdf21",
+          "volume": "pvc-51d7bbd9-dadd-463a-b957-a2808e2cdf21",
+          "phase": "Bound"
+        },
+        {
+          "namespace": "jenkins-ci",
+          "name": "docker-cache",
+          "uid": "60d2b284-6264-4158-9ad0-2190f6e1b215",
+          "volume": "pvc-60d2b284-6264-4158-9ad0-2190f6e1b215",
+          "phase": "Bound"
+        },
+        {
+          "namespace": "jenkins-publisher",
+          "name": "publisher-work",
+          "uid": "f4d201f2-3c20-4326-98b2-7065b206dc0b",
+          "volume": "pvc-f4d201f2-3c20-4326-98b2-7065b206dc0b",
+          "phase": "Bound"
+        },
+        {
+          "namespace": "monitoring",
+          "name": "alertmanager-monitoring-alertmanager-db-alertmanager-monitoring-alertmanager-0",
+          "uid": "47e2aed8-acfc-4680-959d-fc36a885ffc4",
+          "volume": "pvc-47e2aed8-acfc-4680-959d-fc36a885ffc4",
+          "phase": "Bound"
+        },
+        {
+          "namespace": "monitoring",
+          "name": "prometheus-monitoring-prometheus-db-prometheus-monitoring-prometheus-0",
+          "uid": "2a2d8072-295c-4782-84e8-4ee381e06a54",
+          "volume": "pvc-2a2d8072-295c-4782-84e8-4ee381e06a54",
+          "phase": "Bound"
+        }
+      ],
+      "applications.argoproj.io": [
+        {
+          "namespace": "argocd",
+          "name": "app-dev",
+          "uid": "a111eaa8-4071-4a6a-b58b-ff470e9dbde0",
+          "spec": {
+            "destination": {
+              "namespace": "app-dev",
+              "server": "https://kubernetes.default.svc"
+            },
+            "project": "fastapi",
+            "source": {
+              "path": "kubernetes/apps/liora/overlays/dev",
+              "repoURL": "https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure.git",
+              "targetRevision": "main"
+            },
+            "syncPolicy": {
+              "automated": {
+                "allowEmpty": false,
+                "enabled": true,
+                "prune": true,
+                "selfHeal": true
+              },
+              "retry": {
+                "backoff": {
+                  "duration": "15s",
+                  "factor": 2,
+                  "maxDuration": "3m"
+                },
+                "limit": 3
+              },
+              "syncOptions": [
+                "FailOnSharedResource=true",
+                "PruneLast=true"
+              ]
+            }
+          },
+          "sync": "Synced",
+          "health": "Healthy"
+        },
+        {
+          "namespace": "argocd",
+          "name": "app-stage",
+          "uid": "f914e25e-72c7-4787-9810-4ad6b9404b15",
+          "spec": {
+            "destination": {
+              "namespace": "app-stage",
+              "server": "https://kubernetes.default.svc"
+            },
+            "project": "fastapi",
+            "source": {
+              "path": "kubernetes/apps/liora/overlays/stage",
+              "repoURL": "https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure.git",
+              "targetRevision": "main"
+            },
+            "syncPolicy": {
+              "automated": {
+                "allowEmpty": false,
+                "enabled": true,
+                "prune": true,
+                "selfHeal": true
+              },
+              "retry": {
+                "backoff": {
+                  "duration": "15s",
+                  "factor": 2,
+                  "maxDuration": "3m"
+                },
+                "limit": 3
+              },
+              "syncOptions": [
+                "FailOnSharedResource=true",
+                "PruneLast=true"
+              ]
+            }
+          },
+          "sync": "Synced",
+          "health": "Progressing"
+        },
+        {
+          "namespace": "argocd",
+          "name": "liora-root-nonprod",
+          "uid": "7ffdd1d5-494d-46a8-956d-b4f0eec8ecce",
+          "spec": {
+            "destination": {
+              "namespace": "argocd",
+              "server": "https://kubernetes.default.svc"
+            },
+            "project": "liora-bootstrap",
+            "source": {
+              "path": "kubernetes/gitops/argocd/nonprod",
+              "repoURL": "https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure.git",
+              "targetRevision": "main"
+            },
+            "syncPolicy": {
+              "automated": {
+                "allowEmpty": false,
+                "enabled": true,
+                "prune": false,
+                "selfHeal": true
+              },
+              "syncOptions": [
+                "FailOnSharedResource=true"
+              ]
+            }
+          },
+          "sync": "Synced",
+          "health": "Healthy"
+        }
+      ],
+      "ingresses.networking.k8s.io": [
+        {
+          "namespace": "app-dev",
+          "name": "app-ingress",
+          "uid": "06e10bb6-72c0-40fd-8922-52929bf2433a",
+          "spec": {
+            "ingressClassName": "traefik",
+            "rules": [
+              {
+                "host": "dev.liora.aprt.info",
+                "http": {
+                  "paths": [
+                    {
+                      "backend": {
+                        "service": {
+                          "name": "backend",
+                          "port": {
+                            "number": 80
+                          }
+                        }
+                      },
+                      "path": "/api",
+                      "pathType": "Prefix"
+                    },
+                    {
+                      "backend": {
+                        "service": {
+                          "name": "frontend",
+                          "port": {
+                            "number": 80
+                          }
+                        }
+                      },
+                      "path": "/",
+                      "pathType": "Prefix"
+                    },
+                    {
+                      "backend": {
+                        "service": {
+                          "name": "backend",
+                          "port": {
+                            "number": 80
+                          }
+                        }
+                      },
+                      "path": "/docs",
+                      "pathType": "Prefix"
+                    }
+                  ]
+                }
+              }
+            ],
+            "tls": [
+              {
+                "hosts": [
+                  "dev.liora.aprt.info"
+                ],
+                "secretName": "app-tls"
+              }
+            ]
+          }
+        },
+        {
+          "namespace": "app-stage",
+          "name": "app-ingress",
+          "uid": "a41ba274-8e43-4a9b-9c58-412b0fe59d43",
+          "spec": {
+            "ingressClassName": "traefik",
+            "rules": [
+              {
+                "host": "stage.liora.aprt.info",
+                "http": {
+                  "paths": [
+                    {
+                      "backend": {
+                        "service": {
+                          "name": "backend",
+                          "port": {
+                            "number": 80
+                          }
+                        }
+                      },
+                      "path": "/api",
+                      "pathType": "Prefix"
+                    },
+                    {
+                      "backend": {
+                        "service": {
+                          "name": "frontend",
+                          "port": {
+                            "number": 80
+                          }
+                        }
+                      },
+                      "path": "/",
+                      "pathType": "Prefix"
+                    }
+                  ]
+                }
+              }
+            ],
+            "tls": [
+              {
+                "hosts": [
+                  "stage.liora.aprt.info"
+                ],
+                "secretName": "app-tls"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "prod": {
+      "nodes": [
+        {
+          "namespace": null,
+          "name": "k3s-2-01",
+          "uid": "175eac2a-8154-479b-9ada-5b92b5ad677a",
+          "ready": "True"
+        },
+        {
+          "namespace": null,
+          "name": "k3s-2-02",
+          "uid": "b7d4a005-cf9e-4c3d-b290-5d34a28603ae",
+          "ready": "True"
+        },
+        {
+          "namespace": null,
+          "name": "k3s-2-03",
+          "uid": "24bd6433-0cad-4379-ac48-7e6a29160be9",
+          "ready": "True"
+        }
+      ],
+      "deployments.apps": [
+        {
+          "namespace": "app-prod",
+          "name": "adminer",
+          "uid": "34c7b270-9128-4e07-b4bc-d0c89d658970",
+          "replicas": 1,
+          "images": [
+            "adminer:4.8.1"
+          ]
+        },
+        {
+          "namespace": "app-prod",
+          "name": "backend",
+          "uid": "f2c9b479-697a-41c7-9b53-1a1f13149b04",
+          "replicas": 2,
+          "images": [
+            "ghcr.io/fastapi-traefik-devops/fastapi-backend:sha-c375967ac5b3dd7a0a6867758e16b057c733bb2d@sha256:f1a896fbc915f1f19416882fee62bf4db275860f9225d9004ac59ba9a005dc5d"
+          ]
+        },
+        {
+          "namespace": "app-prod",
+          "name": "frontend",
+          "uid": "7a2bed25-b6bc-4418-9652-63d327503565",
+          "replicas": 2,
+          "images": [
+            "ghcr.io/fastapi-traefik-devops/fastapi-frontend:sha-c375967ac5b3dd7a0a6867758e16b057c733bb2d@sha256:7d1ac191287e0498434049d4e569aa8f8a8ed2dbd19921e20bc566c95b2a4c91"
+          ]
+        },
+        {
+          "namespace": "argocd",
+          "name": "argocd-applicationset-controller",
+          "uid": "6e8430ca-e8ed-4c54-8029-acb4ce00d7ef",
+          "replicas": 1,
+          "images": [
+            "quay.io/argoproj/argocd:v3.5.6"
+          ]
+        },
+        {
+          "namespace": "argocd",
+          "name": "argocd-dex-server",
+          "uid": "53ae2c79-6c2e-4077-bdfa-476c05251a98",
+          "replicas": 1,
+          "images": [
+            "ghcr.io/dexidp/dex:v2.45.1"
+          ]
+        },
+        {
+          "namespace": "argocd",
+          "name": "argocd-notifications-controller",
+          "uid": "c3b52dda-9d45-49f2-9aba-e0e8c33d3063",
+          "replicas": 1,
+          "images": [
+            "quay.io/argoproj/argocd:v3.5.6"
+          ]
+        },
+        {
+          "namespace": "argocd",
+          "name": "argocd-redis",
+          "uid": "742735f9-7430-43c9-b8fa-11475dcde49a",
+          "replicas": 1,
+          "images": [
+            "public.ecr.aws/docker/library/redis:8.2.3-alpine"
+          ]
+        },
+        {
+          "namespace": "argocd",
+          "name": "argocd-repo-server",
+          "uid": "0b5d61d0-65f0-40a2-a27e-b1da75c8380d",
+          "replicas": 1,
+          "images": [
+            "quay.io/argoproj/argocd:v3.5.6"
+          ]
+        },
+        {
+          "namespace": "argocd",
+          "name": "argocd-server",
+          "uid": "88faaa4d-dfc3-4585-a705-48f3798614ab",
+          "replicas": 1,
+          "images": [
+            "quay.io/argoproj/argocd:v3.5.6"
+          ]
+        },
+        {
+          "namespace": "cert-manager",
+          "name": "cert-manager",
+          "uid": "6b9da6d5-62ac-47a0-9964-f0a2ca7ad96a",
+          "replicas": 1,
+          "images": [
+            "quay.io/jetstack/cert-manager-controller:v1.21.2@sha256:70f532fd9cfde0b09d55687200942399d89838bc2d5d5b45152eb799a15912b8"
+          ]
+        },
+        {
+          "namespace": "cert-manager",
+          "name": "cert-manager-cainjector",
+          "uid": "c21a87ee-2b77-494b-8bf0-7e0e6a1a9032",
+          "replicas": 1,
+          "images": [
+            "quay.io/jetstack/cert-manager-cainjector:v1.21.2@sha256:c85268c64f2e0e76684bf5fe8906caff34b82523561c6affe0fae3546bd87562"
+          ]
+        },
+        {
+          "namespace": "cert-manager",
+          "name": "cert-manager-webhook",
+          "uid": "233e34ef-6019-479e-a98f-df2bb0c175e0",
+          "replicas": 1,
+          "images": [
+            "quay.io/jetstack/cert-manager-webhook:v1.21.2@sha256:a60e2dac46dbb8a7f3df95c54ce941012f54c2fe022f0ee55aaa1ab40ed957ae"
+          ]
+        },
+        {
+          "namespace": "cnpg-system",
+          "name": "barman-cloud",
+          "uid": "f615ea21-9daf-4227-9036-4d58995da701",
+          "replicas": 1,
+          "images": [
+            "ghcr.io/cloudnative-pg/plugin-barman-cloud:v0.15.1@sha256:c75acad19a36e8176cfe2885761ff1b836c6ef977d7257e298c99a28b5c302ef"
+          ]
+        },
+        {
+          "namespace": "cnpg-system",
+          "name": "cnpg-controller-manager",
+          "uid": "a76fc033-1f92-491f-ab33-8be1f36467e2",
+          "replicas": 1,
+          "images": [
+            "ghcr.io/cloudnative-pg/cloudnative-pg:1.30.1@sha256:923c267ec29636db3bee20f993d0ec4973fa22998e1adad37da79e4d32b5bc07"
+          ]
+        },
+        {
+          "namespace": "kube-system",
+          "name": "coredns",
+          "uid": "96199cf5-4a6a-4fea-874c-857b7b2298e6",
+          "replicas": 1,
+          "images": [
+            "rancher/mirrored-coredns-coredns:1.14.7"
+          ]
+        },
+        {
+          "namespace": "kube-system",
+          "name": "local-path-provisioner",
+          "uid": "d905eea3-6bb4-43d5-b87c-0a09c8cbb323",
+          "replicas": 1,
+          "images": [
+            "rancher/local-path-provisioner:v0.0.37"
+          ]
+        },
+        {
+          "namespace": "kube-system",
+          "name": "metrics-server",
+          "uid": "0438c05a-17b3-4383-9c7b-93e192f4dfc6",
+          "replicas": 1,
+          "images": [
+            "rancher/mirrored-metrics-server:v0.9.0"
+          ]
+        },
+        {
+          "namespace": "kube-system",
+          "name": "traefik",
+          "uid": "1ab7c3b1-d0a9-4e94-8bf0-075d4707a22f",
+          "replicas": 1,
+          "images": [
+            "rancher/mirrored-library-traefik:3.7.13"
+          ]
+        },
+        {
+          "namespace": "monitoring",
+          "name": "monitoring-grafana",
+          "uid": "84b310c2-90d0-44ce-8942-11ea5e0d381d",
+          "replicas": 1,
+          "images": [
+            "quay.io/kiwigrid/k8s-sidecar:2.14.1",
+            "docker.io/grafana/grafana:13.2.3-distroless"
+          ]
+        },
+        {
+          "namespace": "monitoring",
+          "name": "monitoring-kube-state-metrics",
+          "uid": "2b8a1457-5b05-4742-9aa9-eb751f34da1d",
+          "replicas": 1,
+          "images": [
+            "registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.20.0"
+          ]
+        },
+        {
+          "namespace": "monitoring",
+          "name": "monitoring-operator",
+          "uid": "22e78b64-d91a-438b-ac06-bae3e7a7d1cd",
+          "replicas": 1,
+          "images": [
+            "quay.io/prometheus-operator/prometheus-operator:v0.94.1"
+          ]
+        }
+      ],
+      "statefulsets.apps": [
+        {
+          "namespace": "argocd",
+          "name": "argocd-application-controller",
+          "uid": "137aeb77-1f9f-44d8-a1da-1371d7363c52",
+          "replicas": 1,
+          "images": [
+            "quay.io/argoproj/argocd:v3.5.6"
+          ]
+        },
+        {
+          "namespace": "monitoring",
+          "name": "alertmanager-monitoring-alertmanager",
+          "uid": "0a29f1b0-3577-48ae-a39d-62bfba1886bf",
+          "replicas": 1,
+          "images": [
+            "quay.io/prometheus/alertmanager:v0.34.1",
+            "quay.io/prometheus-operator/prometheus-config-reloader:v0.94.1"
+          ]
+        },
+        {
+          "namespace": "monitoring",
+          "name": "prometheus-monitoring-prometheus",
+          "uid": "7fe50d58-9a1e-44f9-95bc-e22bfd73dd0e",
+          "replicas": 1,
+          "images": [
+            "quay.io/prometheus/prometheus:v3.15.0-distroless",
+            "quay.io/prometheus-operator/prometheus-config-reloader:v0.94.1"
+          ]
+        }
+      ],
+      "persistentvolumeclaims": [
+        {
+          "namespace": "app-prod",
+          "name": "liora-db-1",
+          "uid": "e2c1f985-ca9c-4da8-80ed-741cecb854b1",
+          "volume": "pvc-e2c1f985-ca9c-4da8-80ed-741cecb854b1",
+          "phase": "Bound"
+        },
+        {
+          "namespace": "app-prod",
+          "name": "liora-db-2",
+          "uid": "aa1904ea-764e-4547-86f8-6145b68b4883",
+          "volume": "pvc-aa1904ea-764e-4547-86f8-6145b68b4883",
+          "phase": "Bound"
+        },
+        {
+          "namespace": "monitoring",
+          "name": "alertmanager-monitoring-alertmanager-db-alertmanager-monitoring-alertmanager-0",
+          "uid": "9bb0842d-b856-41c3-be62-4ff0437074e2",
+          "volume": "pvc-9bb0842d-b856-41c3-be62-4ff0437074e2",
+          "phase": "Bound"
+        },
+        {
+          "namespace": "monitoring",
+          "name": "prometheus-monitoring-prometheus-db-prometheus-monitoring-prometheus-0",
+          "uid": "a6bc4684-8004-4dbd-a35c-fefbda941a08",
+          "volume": "pvc-a6bc4684-8004-4dbd-a35c-fefbda941a08",
+          "phase": "Bound"
+        }
+      ],
+      "applications.argoproj.io": [
+        {
+          "namespace": "argocd",
+          "name": "app-prod",
+          "uid": "f70e599f-33fb-46bd-ba96-760dd28da23e",
+          "spec": {
+            "destination": {
+              "namespace": "app-prod",
+              "server": "https://kubernetes.default.svc"
+            },
+            "project": "fastapi",
+            "source": {
+              "path": "kubernetes/apps/liora/overlays/prod",
+              "repoURL": "https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure.git",
+              "targetRevision": "main"
+            },
+            "syncPolicy": {
+              "automated": {
+                "allowEmpty": false,
+                "enabled": true,
+                "prune": false,
+                "selfHeal": true
+              },
+              "retry": {
+                "backoff": {
+                  "duration": "15s",
+                  "factor": 2,
+                  "maxDuration": "3m"
+                },
+                "limit": 3
+              },
+              "syncOptions": [
+                "FailOnSharedResource=true",
+                "PruneLast=true"
+              ]
+            }
+          },
+          "sync": "Synced",
+          "health": "Healthy"
+        },
+        {
+          "namespace": "argocd",
+          "name": "liora-root-prod",
+          "uid": "2e4b7402-c771-4db3-9e48-b66b4b2d5a2a",
+          "spec": {
+            "destination": {
+              "namespace": "argocd",
+              "server": "https://kubernetes.default.svc"
+            },
+            "project": "liora-bootstrap",
+            "source": {
+              "path": "kubernetes/gitops/argocd/prod",
+              "repoURL": "https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure.git",
+              "targetRevision": "main"
+            },
+            "syncPolicy": {
+              "automated": {
+                "allowEmpty": false,
+                "enabled": true,
+                "prune": false,
+                "selfHeal": true
+              },
+              "syncOptions": [
+                "FailOnSharedResource=true"
+              ]
+            }
+          },
+          "sync": "Synced",
+          "health": "Healthy"
+        }
+      ],
+      "ingresses.networking.k8s.io": [
+        {
+          "namespace": "app-prod",
+          "name": "app-ingress",
+          "uid": "c299afa6-dbcd-44a3-bf7e-b3b8f9033747",
+          "spec": {
+            "ingressClassName": "traefik",
+            "rules": [
+              {
+                "host": "liora.aprt.info",
+                "http": {
+                  "paths": [
+                    {
+                      "backend": {
+                        "service": {
+                          "name": "backend",
+                          "port": {
+                            "number": 80
+                          }
+                        }
+                      },
+                      "path": "/api",
+                      "pathType": "Prefix"
+                    },
+                    {
+                      "backend": {
+                        "service": {
+                          "name": "frontend",
+                          "port": {
+                            "number": 80
+                          }
+                        }
+                      },
+                      "path": "/",
+                      "pathType": "Prefix"
+                    }
+                  ]
+                }
+              }
+            ],
+            "tls": [
+              {
+                "hosts": [
+                  "liora.aprt.info"
+                ],
+                "secretName": "app-tls"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "recovery_presence_only": {
+    "recovery.yaml": true,
+    ".env": true,
+    "backup-coordinator.json": true,
+    "LIORA-id_ed25519": true
+  },
+  "repo_revision": "8ff119f37667329294010492ac5826ab6b2a3fce"
+}

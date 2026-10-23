@@ -1,0 +1,11 @@
+{
+  "infrastructure": {
+    "revision": "4b0ef48eb0e5c4f9939eea475973a04097f07738",
+    "status_porcelain": ""
+  },
+  "application": {
+    "revision": "7aaf28740b227fee925e23383d6d589a3ea35336",
+    "status_porcelain": ""
+  },
+  "remote_infrastructure_revision": "8ff119f37667329294010492ac5826ab6b2a3fce"
+}

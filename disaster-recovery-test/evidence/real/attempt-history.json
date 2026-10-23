@@ -1,0 +1,8 @@
+{
+  "observed_issue": "First Chrome screenshot attempt failed under the restricted execution sandbox.",
+  "resolution": "Rerun with approved process access rendered all 11 local pages.",
+  "infrastructure_recovery_attempted": false,
+  "recovery_results_reclassified": false,
+  "visual_qa_issue": "A subtitle placeholder collision was found by inspecting the initial database screenshot.",
+  "visual_qa_resolution": "Placeholder replacement order corrected; all screenshots regenerated and database/local-results screenshots visually rechecked."
+}

@@ -1,0 +1,48 @@
+{
+  "timestamp_utc": "2026-10-23T23:39:48.875026+00:00",
+  "isolated_lab_endpoint_supplied": false,
+  "local_kvm_present": false,
+  "disk": {
+    "total_bytes": 502392610816,
+    "used_bytes": 257518960640,
+    "free_bytes": 219278278656
+  },
+  "cpu_count": 8,
+  "meminfo": {
+    "MemTotal": "7963744 kB",
+    "MemAvailable": "2566924 kB",
+    "SwapTotal": "8388600 kB",
+    "SwapFree": "5647544 kB"
+  },
+  "checks": [
+    {
+      "command": [
+        "docker",
+        "info",
+        "--format",
+        "{{json .ServerVersion}}"
+      ],
+      "exit_code": 1,
+      "stdout": "\"\"",
+      "stderr": "permission denied while trying to connect to the docker API at unix:///var/run/docker.sock"
+    },
+    {
+      "command": [
+        "virsh",
+        "-c",
+        "qemu:///session",
+        "list",
+        "--all"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "error: failed to connect to the hypervisor\nerror: Cannot create user runtime directory '/run/user/1000/libvirt': Read-only file system"
+    }
+  ],
+  "limitations": [
+    "No separate Proxmox endpoint or lab authorization profile supplied.",
+    "Existing Docker/libvirt access was inspected only; no service or permission was changed.",
+    "No R2 credentials were loaded or R2 objects accessed.",
+    "No Terraform, Ansible, Kubernetes mutation or repository recovery helper was run against infrastructure."
+  ]
+}
