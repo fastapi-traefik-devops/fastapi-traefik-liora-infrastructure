@@ -8,13 +8,15 @@ passed. Verification was manual, through the existing private HAProxy route;
 automatic acceptance is deferred and PROD remains blocked. Historical attempts
 and their original outcomes follow below.
 
-Latest continuation: the owner pushed `migration/phase9-k3s-bootstrap` and
+## Bootstrap integration history
+
+The owner pushed `migration/phase9-k3s-bootstrap` and
 opened application [PR #62](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/pull/62)
 at `827b9be`. The existing required CI App identity matches `5369826`.
 Bootstrap check `app-ci/PR-62 #2` ran the existing functional
 profile on host-ci without export/publication and succeeded. Main and trusted
 publisher were then installed for the controlled cycle; all unrelated imported
-jobs remain disabled. See the dated retry section below for current progress.
+jobs remained disabled during bootstrap. The later sections record activation.
 This continuation is covered by the existing live authorization; branch rules/permissions are unchanged.
 
 The one-time discovery changed the existing app-ci source to the application
@@ -46,16 +48,16 @@ credentials remain intact. The offline staging helper now drops that obsolete
 bookkeeping instead of deleting a nested field and leaving an invalid action;
 12 staging regression tests and the live-client credential test passed.
 Controlled retry main #14 ran against `38a7f2a`; publisher #33 failed before
-script execution as detailed below. Polling remains off.
+script execution as detailed below. Polling was off during that attempt.
 
 The meaningful follow-up is documentation commit `ce4b8fa` in
 [PR #63](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/pull/63),
-clarifying manual archive export versus normal publication. It must pass the
-existing required check before normal merge. One-time indexing now uses the
-standard suppress-index/event-build branch property so discovery cannot request
+clarifying manual archive export versus normal publication. It was required to
+pass the existing check before normal merge; that later succeeded. One-time
+indexing now uses the standard suppress-index/event-build branch property so discovery cannot request
 extra main builds; main SCM polling remains a separate, initially disabled
 trigger. No recurring indexing or webhook was added. Main/publisher and polling
-cycle results are still pending.
+results were pending at that intermediate checkpoint; final results follow below.
 
 Historical first-attempt status: **blocked before Jenkins activation**. The operator explicitly authorized
 reviewed GitHub pushes, existing-job/helper installation, necessary controller
@@ -63,14 +65,14 @@ GitHub connectivity, one controlled STAGE cycle and then main-only SCM polling.
 No new authorization is needed for those actions once the integration blocker is
 resolved. Branch rules/App permissions must not be changed or bypassed.
 
-## Preflight and outgoing source
+## Historical preflight and outgoing source
 
 Read the implementation plan, Phase 9 reports and both clean repositories.
 Fetched both remote main branches and reviewed outgoing commit subjects/bodies
 and aggregate diffs. Reused the prepared existing-agent/publisher implementation;
 observer/automatic acceptance remain deferred and PROD explicitly blocked.
 
-The existing Jenkins folder still points to the legacy application repository.
+At preflight, the Jenkins folder pointed to the legacy application repository.
 All 29 jobs were disabled, triggers zero, controller quiet, queue/running zero,
 with both existing agents online. Next existing build numbers were main #13 and
 publisher #33; neither was requested.
@@ -82,7 +84,7 @@ after manual first-cycle acceptance. The revised Jenkinsfile passed the existing
 Jenkins Declarative validator without installation. Previous functional tests
 and prepared publisher/helpers remain unchanged.
 
-## Confirmed blocker and actual pushes
+## Historical blocker and initial pushes
 
 The application `git push origin main` was rejected with **GH013**:
 
@@ -94,7 +96,8 @@ INFRASTRUCTURE has no protected branch remains valid. No branch rule or App
 permission was modified, no bypass attempted, and no required status fabricated.
 The application commits must be integrated through a PR satisfying the required
 check/review rules before the existing main CI can fetch them. That integration
-is unresolved; do not activate an obsolete remote Jenkinsfile as a workaround.
+was unresolved at that first attempt. It was later resolved through PR #62,
+without activating the obsolete remote Jenkinsfile.
 
 The shell command continued after the application rejection and successfully
 pushed the already reviewed infrastructure commits `f39f741..864f280`. This did
@@ -102,10 +105,11 @@ not meet the intended application-first order. Those infrastructure changes
 contain prepared source, documentation and optional manifests; no active app
 manifest or live resource was changed. There was no force-push/history rewrite.
 The execution stopped here, before job, helper, connectivity or polling changes.
-Application remote main remains `13aa29eb27abac01e9638cdf45f1414a4c3002a1`;
-application local main includes the preserved prepared commits and `827b9be`.
+At that point application remote main was
+`13aa29eb27abac01e9638cdf45f1414a4c3002a1`; local main included the preserved
+prepared commits and `827b9be`.
 
-## Preserved execution boundary
+## Historical first-attempt execution boundary
 
 Post-rejection verification compared the complete Jenkins snapshot against the
 preflight baseline: **identical**, including job configuration/user hashes,
@@ -114,8 +118,9 @@ No state mutation was needed to restore the hold because activation never began.
 The current admin authentication still succeeds; retained history, credentials,
 recovery inputs and K3s PostgreSQL data were not modified.
 
-No CI or publisher build ran. No image publication, STAGE promotion commit,
-new Argo deployment or STAGE acceptance is claimed. Polling remains disabled.
+No CI or publisher build ran in that rejected-push attempt. It produced no
+image publication, STAGE promotion commit, Argo deployment or STAGE acceptance;
+polling remained disabled at that checkpoint.
 Observer manifests/receipts remain outside the initial path; PROD stays blocked.
 No scans/remediation were performed. Application rollback was not required.
 
@@ -124,7 +129,10 @@ are preserved in `.local-work/private/phase9/live-cycle-20261022/`. A not-execut
 live-operation helper draft is retained there as preparation, outside tracked
 source and outside the activation path.
 
-## Resume sequence
+## Historical resume sequence — subsequently completed
+
+This was the recovery sequence for the first blocked attempt. It was completed
+by the verified live cycles below; it is not the current pending-work list.
 
 1. Resolve application PR/required-check integration through the existing rules;
    do not change/bypass permissions or activate unrelated imported jobs.
@@ -139,8 +147,9 @@ source and outside the activation path.
    a meaningful new main commit reaches STAGE automatically. Keep every other
    imported job, nightly schedule and recurring indexing disabled.
 
-See [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). This is a blocker report,
-not another readiness approval requirement or a completed live checkpoint.
+This historical section records the first blocker. The completed live results
+and current pending-work boundary are recorded below and in the
+[implementation plan](IMPLEMENTATION_PLAN.md).
 
 ## Publisher approval correction and controlled retry (2026-10-23)
 
@@ -155,8 +164,9 @@ this prerequisite explicit.
 Quiet mode paused interrupted finalization. With every job/trigger disabled and
 the queue empty, canceling quiet mode allowed it to settle: main #14 and PR #63
 #1 finalized ABORTED. Their records/artifacts are retained, without relabeling
-their results. Main #15 is the controlled retry against `38a7f2a`; it must finish
-SUCCESS before trusted publisher #34 may use its artifacts. Polling stays off.
+their results. Main #15 was the controlled retry against `38a7f2a`; it completed
+SUCCESS before trusted publisher #34 used its artifacts. Polling stayed off
+until first-cycle manual verification and the related PR check completed.
 
 ## Controlled CI and publication results
 
@@ -199,9 +209,9 @@ Manual verification completed at 2026-10-23 05:46 UTC:
 This is operator-invoked manual verification, not automatic acceptance:
 `automatic_acceptance=false`, `prod_gate_satisfied=false`. No acceptance receipt
 was committed. Observer resources remain inactive and PROD remains blocked.
-Polling remains disabled until the related PR check completes and the worker
-settles; PR #63 must pass its required check before normal merge for the later
-polling demonstration.
+After this first-cycle check, polling stayed disabled until PR #63 passed its
+required check and the worker settled. The following section records the normal
+merge, polling activation and successful automatic demonstration.
 
 ## Main-only polling activation and automatic demonstration
 
@@ -272,9 +282,10 @@ fast-forwards; no force-push, rebase or history rewrite was used.
   permission change was performed.
 
 The initial working-cycle checkpoint is complete. Phase 9's remaining target
-work is the preserved separate observer/automatic acceptance gate and expanded
-manual DEV/PROD workflows. PROD stays explicitly blocked until that automatic
-gate is implemented and verified; these manual receipts do not qualify it.
+work follows the [ordered pending checklist](IMPLEMENTATION_PLAN.md#next-pending-work--execution-order):
+restart cutover, automatic observation/receipts, serialization through acceptance,
+manual DEV, gated manual PROD, then manual rollback/obsolete-path review.
+PROD stays explicitly blocked until that automatic gate is implemented and verified; these manual receipts do not qualify it.
 Rollback remains manual and was not exercised by this checkpoint.
 
 The migration startup quiet-mode hook is still retained. After a controller

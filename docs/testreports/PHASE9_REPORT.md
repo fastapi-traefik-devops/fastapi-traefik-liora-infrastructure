@@ -30,7 +30,26 @@ The preserved optional observer remains outside the live initial path.
 The main/publisher jobs and necessary egress are active for the verified minimal
 cycle; automatic acceptance and PROD promotion remain blocked.
 
-Earlier CI-only checkpoint: [MTU correction and successful manual build #2](PHASE9_CI_RETRY.md).
+## Next pending work
+
+Follow the [ordered Phase 9 checklist](IMPLEMENTATION_PLAN.md#next-pending-work--execution-order):
+
+1. Finish the startup quiet-mode guard cutover and verify controller restart.
+2. Activate automatic STAGE observation and source/digest-bound receipts.
+3. Extend the existing serialization lock through acceptance and verify stale/
+   failed-acceptance/concurrent-update handling.
+4. Complete manual DEV promotion with the existing pipelines/helpers.
+5. Only after the automatic acceptance gate is live-verified, enable manual
+   release-tag PROD promotion of the exact accepted pair without rebuilding.
+6. Verify manual rollback before reviewing retirement of obsolete GitOps paths.
+
+Main polling and trusted publication stay active; unrelated jobs, nightly
+schedules and recurring indexing stay disabled. Scans/remediation remain
+deferred. The checks above remain pending; no new execution is claimed here.
+
+## Earlier CI-only checkpoint
+
+[MTU correction and successful manual build #2](PHASE9_CI_RETRY.md).
 The operator approved continuing after the [first aborted attempt](PHASE9_MANUAL_CI.md).
 Default and new user-defined Docker bridges now use MTU 1450; bounded nested
 HTTPS probes passed before activation. Build #2 at application `cb08cda` passed

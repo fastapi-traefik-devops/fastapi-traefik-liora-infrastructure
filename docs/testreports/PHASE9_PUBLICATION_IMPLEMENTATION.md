@@ -1,14 +1,22 @@
 # Phase 9 — Local preparation of the initial STAGE cycle
 
-Latest update: the operator authorized live activation. The
-[live execution report](PHASE9_LIVE_CYCLE.md) records successful application
-PR/check integration and the successful first controlled STAGE cycle.
-The local-only status below is the historical preparation checkpoint, not the current authorization boundary.
+Current status, last verified 2026-10-23: **minimal live cycle complete;
+Phase 9 target work remains open**. Main #15 / publisher #34 deployed
+`b8caf7e`; SCM-polled main #16 / publisher #35 deployed `59c3685` for
+application `3459d5a`. Only main SCM polling (`H/2 * * * *`) and trusted
+publication are enabled; unrelated jobs and recurring schedules stay disabled.
+The live publisher mounts `jenkins-publisher-ci-d87b3c9599c5`, and required
+controller GitHub egress is installed. Manual Argo/running-digest/HTTPS checks
+passed through the private edge route. Automatic acceptance remains deferred
+and PROD remains blocked. See [live evidence](PHASE9_LIVE_CYCLE.md) and the
+[ordered pending work](IMPLEMENTATION_PLAN.md#next-pending-work--execution-order).
 
-Date: 2026-10-22. Status: **locally implemented/tested; live activation NOT approved
-or performed; Phase 9 remains open**.
+The remaining sections preserve the **2026-10-22 local-preparation snapshot**,
+including its original test results and then-held activation boundary. Statements
+about unpushed source, old live pins or unactivated egress describe that earlier
+snapshot, not the current setup.
 
-## Current priority and preserved target
+## Historical preparation priority and preserved target
 
 The operator first approved automatic direct STAGE commits, replacing the earlier
 human-review requirement for every GitOps PR. The subsequent priority is to get
@@ -27,7 +35,8 @@ migration is introduced. Security scans/remediation remain deferred.
 
 ## Local changes
 
-Application source commits (all local, not pushed):
+At the preparation checkpoint these application source commits were local;
+they have since been preserved in the normally merged bootstrap history:
 
 - `567694b`: opt-in tested-image export and explicit functional-only admission.
 - `666aaf3`: separate source/infrastructure histories and preserved acceptance code.
@@ -46,9 +55,12 @@ Build #2 has no candidate archives and cannot be relabeled as publishable.
 The trusted initial publisher stops after immutable publication and the STAGE
 update; it does not allocate an observer or require acceptance receipts. It
 retains write-once SHA tags and checks remote digests against archive bytes.
-The main job prepares one `pollSCM('H/2 * * * *')` trigger; no nightly cron,
-webhook or recurring folder indexing is required. Imported PR/other jobs stay
-held. The obsolete `ci/publish.sh` fails closed.
+The prepared trigger declaration was removed by `827b9be` before activation:
+the operator installed the sole `H/2 * * * *` SCM trigger in job configuration
+after first-cycle verification. The Jenkinsfile has no `pollSCM` declaration.
+No nightly cron, webhook or recurring folder indexing is required. Related PR
+checks finished and are disabled again; unrelated jobs stay held. The obsolete
+`ci/publish.sh` fails closed.
 
 The shared writer checks ancestry/tags in application history and writes only
 infrastructure overlays at `kubernetes/apps/liora/overlays/`. A Jenkins lock
@@ -66,11 +78,14 @@ repository permissions do not enforce path restrictions; the pinned writer does.
 Infrastructure helper/worker references are prepared at application `d87b3c9`.
 The publisher bundle contains 27 files; the retained observer bundle contains
 only `stage_acceptance.py`. Both are immutable and verified against Git objects.
-The live publisher STILL mounts `jenkins-publisher-ci-b98a22e48527`; retain it
-for rollback. No prepared bundle or manifest was applied.
+At that preparation checkpoint the live publisher still mounted
+`jenkins-publisher-ci-b98a22e48527`; no prepared bundle had been applied.
+The later authorized activation installed the `d87b3c9599c5` bundle and retained
+the older bundle for rollback.
 
 `initial-cycle/` composes the existing agents with necessary controller DNS/public
-HTTPS egress for GitHub/App tokens. It has NOT relaxed the live egress hold.
+HTTPS egress for GitHub/App tokens. It had not relaxed the egress hold at the
+preparation checkpoint; the required controller policy is now installed.
 The separate zero-replica `acceptance/` overlay is excluded. It preserves read-only
 STAGE/Argo RBAC and observer preparation for later; no new observer node, RBAC,
 Pod or credential is needed to complete the initial cycle.
@@ -106,7 +121,9 @@ validation workflow is prepared for later and is not an initial-cycle dependency
 Read-only K3s inspection confirmed the current STAGE imageID format is the
 pullable manifest digest and Argo uses the expected infrastructure path/main.
 This is compatibility evidence, not acceptance of a newly deployed candidate.
-Neither the first live cycle nor deferred automatic acceptance has run.
+At that preparation checkpoint neither the first live cycle nor automatic
+acceptance had run. Both initial live cycles have since passed; automatic
+acceptance is still pending.
 
 ## Permissions and activation blockers
 
@@ -123,11 +140,13 @@ confirmed that it currently has no protected branch. Together with the empty
 rulesets/effective main rules, this closes the inspection blocker: no App branch
 exception or additional permission is currently needed for the initial STAGE
 writer. The 403 remains historical API evidence, not a reason to request broader
-App access. No actual push has been tested. No permission change, branch-rule
-change, push or workaround was attempted.
+App access. At that preparation checkpoint no actual push had been tested and
+no permission change, branch-rule change, push or workaround had been attempted.
+Subsequent normal pushes and compliant PR merges are recorded in the live report.
 
-Before a separately approved live checkpoint: recheck rules if changed, make the
-reviewed source available, install the reviewed existing-job definitions/pins,
+Historical activation prerequisites (subsequently authorized and completed):
+recheck rules if changed, make the reviewed source available, install the
+reviewed existing-job definitions/pins,
 set the existing app-ci SCM to the application repository/main-only discovery,
 verify scoped credentials and approve necessary controller GitHub egress.
 Use a one-time index only if needed, keep recurring indexing off, and enable
@@ -136,16 +155,16 @@ Then run/record one initial cycle and manually verify Argo, running pair and URL
 
 ## Remaining target work and preservation
 
-After that initial cycle, reuse the preserved observer/receipt helpers and
-orchestration, extend the SAME publisher lock through observation, verify the
-actual automated gate live, and only then review enabling manual PROD promotion.
-Keep immutable digest reuse/no rebuild, release-tag checks and manual rollback.
-Expanded DEV/PROD orchestration and PR workflow activation are later increments.
-No duplicate pipeline or new migration is needed. See the explicit sequence in
-[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) and
-[runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
+The initial cycle is complete. Follow the
+[ordered pending checklist](IMPLEMENTATION_PLAN.md#next-pending-work--execution-order):
+restart-guard cutover, observer/receipts with serialization through acceptance,
+manual DEV, gated manual PROD, then manual rollback/obsolete-path review.
+Reuse the preserved code and existing pipelines. PROD remains blocked until
+the automatic acceptance gate is implemented and live-verified; preserve exact
+accepted-pair reuse, release-tag checks and no rebuilds. Security scans/remediation
+remain deferred. See [runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
 
-Final read-only Jenkins check: **29 disabled jobs, zero triggers, quiet mode,
+Preparation-only final Jenkins snapshot: **29 disabled jobs, zero triggers, quiet mode,
 zero controller executors/queued/running work, 141 build records, three persisted
 users; current admin authentication succeeds**. Before/after validation/audit
 checks preserved configuration and user hashes. No login/password change,

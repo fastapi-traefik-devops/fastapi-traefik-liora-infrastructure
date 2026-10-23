@@ -640,14 +640,14 @@ Vulnerability deferral, 2026-10-22: the operator explicitly accepted proceeding
 with deployment for this educational setup and deferred remediation/further
 vulnerability scanning. Preserve the failed DinD scan as a failed result and do
 not run further image audits in this increment. This does not change the
-disabled-job/promotion boundary or current-admin preservation requirement.
+selective job activation/PROD gate or current-admin preservation requirement.
 
 Preserve the maximum working behavior from the application's Jenkins proof of
 concept while adapting it to the nonprod K3s foundation and repository split.
 GitOps App access and Contents/Pull requests write grants on both repositories
 were verified on 2026-10-22 after the operator updated the installation.
 
-### Initial working cycle — latest implementation priority
+### Initial working cycle — completed checkpoint
 
 **Minimal live cycle verified (2026-10-23).** The operator authorized reviewed
 pushes, existing-job/helper installation, controller GitHub connectivity, one
@@ -669,10 +669,10 @@ as confirmed by its owner. See the [live execution report](PHASE9_LIVE_CYCLE.md)
       publisher #34 succeeded; first STAGE manual verification
       passed at `b8caf7e`. The following SCM-polled cycle also passed at `59c3685`.
 
-Get the existing CI/CD working on K3s first, then complete the target below.
-Reuse the current agents/DinD, 13 functional gates, tested-image export and trusted
-immutable publisher. Keep the prepared split-history writer, exact-main rechecks,
-serial STAGE lock, file allowlist and concurrent-infrastructure retry behavior.
+The initial K3s CI/CD cycle is complete. Continue toward the target below using
+the same agents/DinD, 13 functional gates, tested-image export and trusted
+immutable publisher. Preserve the implemented split-history writer, exact-main
+rechecks, serial STAGE lock, file allowlist and concurrent-infrastructure retries.
 
 The first approved live cycle is application main → existing main Jenkins CI →
 immutable image publication → direct STAGE digest update in infrastructure main →
@@ -704,26 +704,53 @@ Synced/Healthy, running pair and STAGE URL. Do not call that automated acceptanc
       Argo Synced/Healthy, actual digest pair and HTTPS smoke passed again.
       All related PR jobs are disabled again; nightly schedules and recurring
       folder indexing remain disabled.
-- [ ] After that cycle, integrate the preserved separate observer, automatic
-      acceptance receipts and lock coverage through observation. Its manifests
-      and fixture-tested helpers remain outside the initial activation path;
-      no observer node, new RBAC or acceptance receipts are prerequisites now.
-- [ ] Implement AND verify the agreed automatic STAGE acceptance gate live before
-      enabling PROD. Initial publisher offers no PROD action and the writer/CLI
-      explicitly blocks it. A manual first-deployment check does not bypass this.
-- [ ] Extend manual DEV/PROD workflows incrementally after the working cycle;
-      retain immutable PROD digest reuse and manual rollback. Reuse prepared
-      helpers and the same pipelines; do not create another migration or rewrite.
-- [ ] Complete the remaining migration restart cutover. The existing startup
-      quiet-mode hook is retained; a controller restart requires deliberate
-      release from quiet mode after checking the approved job/trigger states.
-      Adapt that guard and verify restart behavior in the next operational
-      increment, preserving zero controller executors and restored-home checks.
-      Automatic recovery across controller restart is not claimed here.
+
+### Next pending work — execution order
+
+The following work remains in Phase 9. The initial cycle is complete; the whole
+phase remains open. This documentation update does not activate any pending
+component or broaden the live checkpoint. Observer integration and lock
+extension form one acceptance checkpoint; partial setup does not qualify PROD.
+
+1. [ ] **Finish controller restart cutover.** Adapt the retained startup
+   quiet-mode guard and verify restart with only main polling and trusted
+   publication enabled. Preserve zero controller executors, restored-home
+   checks, admin login and retained history. Until verified, controller restart
+   requires deliberate release from quiet mode after inspecting job/trigger
+   states; automatic continuation across restart is not claimed.
+2. [ ] **Activate automatic STAGE acceptance.** Reuse the preserved separate
+   observer and receipt helpers. Verify Argo Synced/Healthy, ready running
+   frontend/backend digests and the STAGE HTTPS smoke. Persist evidence tied
+   to application SHA, both digests and infrastructure/Argo revisions. Resolve
+   and document the observer's URL route; existing manual evidence used the
+   private HAProxy route and does not prove fresh external reachability.
+3. [ ] **Extend serialization through acceptance.** Keep the same publisher
+   lock through observation and receipt recording. Verify that stale builds,
+   failed acceptance and unrelated concurrent infrastructure changes cannot
+   qualify the wrong pair or overwrite newer evidence. Preserve exact-main
+   rechecks and the STAGE file allowlist.
+4. [ ] **Complete manual DEV promotion.** Adapt and verify the existing
+   pipelines/helpers without creating a duplicate pipeline or another migration.
+   DEV remains an explicit operator request, independent of the STAGE path.
+5. [ ] **Enable manual PROD promotion only after its gate passes.** First
+   implement AND live-verify the agreed automatic STAGE acceptance gate. Then
+   verify release-tag selection and promotion of the exact accepted pair,
+   without rebuilding. Until then the initial publisher exposes no PROD action
+   and the writer/CLI explicitly blocks it; manual smoke results and fixture
+   receipts do not satisfy the gate.
+6. [ ] **Verify manual rollback and review obsolete paths.** Exercise rollback
+   in a reviewed checkpoint, then determine which old GitOps paths can be
+   retired. Preserve recovery inputs and required history; do not delete paths
+   solely because the initial STAGE cycle works.
+
+Keep unrelated imported jobs, nightly schedules and recurring multibranch
+indexing disabled. Vulnerability scans/remediation remain deferred. Preserve the
+current Jenkins admin, K3s PostgreSQL data and private recovery inputs throughout.
 
 The earlier local-only boundary is superseded by the live authorization above.
-Live actions are authorized in the agreed order once application integration is
-resolved. Branch-rule and GitHub App permission changes remain prohibited.
+The authorized initial live actions and application integration are complete;
+the remaining work is listed above. Branch-rule and GitHub App permission
+changes remain prohibited.
 Automatic acceptance remains the agreed final architecture; its activation is
 simply deferred behind the first working cycle. See
 [implementation report](PHASE9_PUBLICATION_IMPLEMENTATION.md).
@@ -738,8 +765,9 @@ simply deferred behind the first working cycle. See
   K3s administrator account and password; verify it after transfer.
 - The original restore preserved Jenkins settings/pipeline sources. The current
   approved local adaptation changes only what the initial K3s STAGE cycle needs;
-  retain originals and useful prepared target work. Imported jobs remain disabled
-  until live approval. Never execute the obsolete publisher unchanged.
+  retain originals and useful prepared target work. Only main and the reviewed
+  trusted publisher are enabled; unrelated imported jobs stay disabled. Never
+  execute the obsolete publisher unchanged.
 - Confirmed current target (supersedes the earlier requirement for human review
   of every GitOps PR): successful CI of the resulting application `main` commit
   publishes immutable images, then automatically commits the exact digest pair
@@ -818,7 +846,8 @@ simply deferred behind the first working cycle. See
       split. [Findings and proposed changes](PHASE9_PUBLICATION_REVIEW.md) identify
       required artifact evidence and separate Git histories. Its original STAGE PR
       proposal is superseded by the confirmed direct-commit policy above.
-      Current jobs, credentials, policies and publication remain held.
+      That review held jobs/publication; the later authorized initial cycle is
+      now active as recorded above.
 - [x] Agree the explicit functional-artifact admission mode and proposed local
       implementation before editing pipelines. Operator approval includes exporting
       tested images with explicit deferred-scan evidence, adapting the trusted
@@ -843,11 +872,11 @@ simply deferred behind the first working cycle. See
 - [x] Add local checks to render all overlays and reject placeholder/mixed-source
       images. PR-validation workflow is prepared for later; not an initial-cycle
       dependency.
-- [ ] Complete live promotion validation incrementally after the first STAGE
-      cycle; DEV/PROD remain manual and PROD is blocked pending its gate.
-- [ ] Complete the reviewed manual rollback verification before retiring old
-      GitOps source paths. Automatic deployment of the reviewed pair passed in
-      both live cycles; rollback was not exercised in this checkpoint.
+
+Remaining live acceptance, manual promotion and rollback checks are tracked
+in the ordered pending-work list above; none is implied complete by the
+following initial-cutover result.
+
 - [x] Activate main-only polling and trusted publication at the reviewed
       cutover. Main #16 / publisher #35 proved build/publish/STAGE deployment
       using only K3s workers, without VM 100 agents, bind mounts or Docker
