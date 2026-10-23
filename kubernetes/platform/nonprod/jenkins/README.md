@@ -70,21 +70,24 @@ unchanged; follow [runbook 17](../../../../runbooks/17-migrate-jenkins-ci.md).
 The separate publisher still expects the application's `ci/` files at
 `/opt/phase1-ci`. Prepare that input with
 [`prepare-jenkins-publisher-source.py`](../../../../scripts/kubernetes/prepare-jenkins-publisher-source.py)
-using `--output` for a new local JSON path. The prepared pin reads all 27 files
-from Git objects at application commit `d87b3c9599c5b79dfc6b6751739a110ecbb2ba96`,
-verifies object hashes and produces an immutable ConfigMap named
-`jenkins-publisher-ci-d87b3c9599c5` in `jenkins-publisher`. It neither executes
+using `--output` for a new local JSON path. The prepared pin reads all 28 files
+from Git objects at application commit `8b584055a83c8f73be1bc3d81f085bbd0db02484`
+(PR #65, automatic STAGE acceptance), verifies object hashes and produces an
+immutable ConfigMap named `jenkins-publisher-ci-8b584055a83c` in `jenkins-publisher`. It neither executes
 those helpers nor applies the bundle. The application checkout is read-only;
 mutable working-tree changes are excluded. The reviewed source commit and bundle
 hash are recorded in annotations. Existing output is never overwritten.
 
-The authorized live cycle installed `jenkins-publisher-ci-d87b3c9599c5`;
-retain the earlier `jenkins-publisher-ci-b98a22e48527` bundle for rollback.
-`--observer` emits a separate one-file, immutable
-`jenkins-acceptance-ci-d87b3c9599c5` bundle for the zero-replica standalone
-[`acceptance/`](acceptance/kustomization.yaml) overlay. That overlay is not included
-by `agents/`; its limited STAGE read-only RBAC and future inbound node require
-explicit live approval. It never receives publisher credentials.
+The authorized live cycle installed `jenkins-publisher-ci-d87b3c9599c5`; keep it
+and the earlier `jenkins-publisher-ci-b98a22e48527` bundle for rollback until the
+`8b584055a83c` pin is live-verified. The new pin must be installed together with
+the PR #65 `Jenkinsfile.promote`: the new definition calls the observer, the old
+one does not. `--observer` emits a separate one-file, immutable
+`jenkins-acceptance-ci-8b584055a83c` bundle for the standalone
+[`acceptance/`](acceptance/kustomization.yaml) overlay (one replica). That overlay
+is not included by `agents/`; applying it, its limited STAGE read-only RBAC and
+the `stage-observer` inbound node with its `stage-observer-connection` Secret
+require explicit live approval. It never receives publisher credentials.
 
 Mount this bundle read-only for the publisher, never from an untrusted build
 checkout. Its presence does not authorize executing the preserved legacy
