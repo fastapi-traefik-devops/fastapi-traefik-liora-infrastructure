@@ -6,6 +6,7 @@ resources:
 - service-adminer-private.yaml
 components:
 - ../../components/cloudnative-pg
+- ../../components/r2-backup
 images:
 - name: backend
   newName: ghcr.io/fastapi-traefik-devops/fastapi-backend
@@ -39,3 +40,19 @@ patches:
     - op: add
       path: /spec/template/spec/containers/0/command
       value: ["fastapi", "run", "--workers", "1", "app/main.py"]
+- target:
+    group: barmancloud.cnpg.io
+    kind: ObjectStore
+    name: r2-backup
+  patch: |-
+    - op: replace
+      path: /spec/configuration/destinationPath
+      value: s3://liora-backup/stage/
+- target:
+    group: postgresql.cnpg.io
+    kind: Cluster
+    name: liora-db
+  patch: |-
+    - op: replace
+      path: /spec/plugins/0/parameters/serverName
+      value: liora-stage
