@@ -8,12 +8,15 @@ No platform Argo Application competes for the same resources.
 The values retain bounded PoC resource budgets, three-day/1500MB Prometheus
 retention with a 2Gi PVC, a 256Mi Alertmanager PVC and provisioned, ephemeral
 Grafana UI state. Both PVCs use node-local `local-path`. Every cluster uses its
-own login Secret, datasource display name, dashboards, eight rules and native
+own login Secret, datasource display name, dashboards, platform alert rules and native
 IP-and-port URLs. The datasource UID is preserved for imported panels. Argo CD
 Services retain their actual selectors; the Traefik PodMonitor targets
 `kube-system` with instance `traefik-kube-system`. Exporter/operator endpoints
-remain internal. Native external notification delivery is disabled pending an
-agreed destination; the old Slack secret is not imported.
+remain internal. Cluster-specific Slack routing and additional metric-backed rules
+are prepared in Git; deployment requires separately provisioned credentials and
+explicit approval. The old kind Slack Secret is not imported. Follow the
+[Slack alerting runbook](../../../../docs/operations/SLACK_ALERTING.md) for
+current routing, validation, rollout gates and verification status.
 
 Apply the [approved status ownership guard](../../../../docs/testreports/PHASE8_ADMIN_VIP_DECISION.md) before
 creating VIP Services, then chart values with Helm and this directory with

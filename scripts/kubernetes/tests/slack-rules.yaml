@@ -1,0 +1,124 @@
+evaluation_interval: 1m
+tests:
+- name: Node false and unknown Ready conditions alert, healthy node does not
+  interval: 1m
+  input_series:
+  - series: kube_node_status_condition{condition="Ready",status="true",node="healthy"}
+    values: "1x10"
+  - series: kube_node_status_condition{condition="Ready",status="true",node="not-ready"}
+    values: "0x10"
+  - series: kube_node_status_condition{condition="Ready",status="true",node="unknown"}
+    values: "0x10"
+  promql_expr_test:
+  - expr: KubernetesNodeNotReady
+    eval_time: 10m
+    exp_samples:
+    - labels: '{node="not-ready"}'
+      value: 0
+    - labels: '{node="unknown"}'
+      value: 0
+- name: Certificate remaining lifetime uses seconds, threshold includes expired certificates
+  interval: 1m
+  input_series:
+  - series: k3s_certificate_expiration_seconds{job="apiserver",instance="a",subject="valid",usages="ServerAuth"}
+    values: "2592001x60"
+  - series: k3s_certificate_expiration_seconds{job="apiserver",instance="a",subject="soon",usages="ServerAuth"}
+    values: "2591999x60"
+  - series: k3s_certificate_expiration_seconds{job="apiserver",instance="a",subject="expired",usages="ServerAuth"}
+    values: "-1x60"
+  promql_expr_test:
+  - expr: CertificateExpiringSoon
+    eval_time: 60m
+    exp_samples:
+    - labels: '{instance="a",subject="soon",usages="ServerAuth"}'
+      value: 2591999
+    - labels: '{instance="a",subject="expired",usages="ServerAuth"}'
+      value: -1
+- name: A disappeared readiness series is not treated as healthy
+  interval: 1m
+  input_series:
+  - series: kube_node_info{node="missing"}
+    values: "1x15"
+  - series: kube_node_info{node="healthy"}
+    values: "1x15"
+  - series: kube_node_status_condition{condition="Ready",status="true",node="healthy"}
+    values: "1x15"
+  promql_expr_test:
+  - expr: NodeReadinessMetricMissing
+    eval_time: 15m
+    exp_samples:
+    - labels: '{node="missing"}'
+      value: 1
+- name: Target endpoint failures aggregate without duplicate instance alerts
+  interval: 1m
+  input_series:
+  - series: up{job="kubelet",instance="a",endpoint="metrics"}
+    values: "1x10"
+  - series: up{job="kubelet",instance="a",endpoint="cadvisor"}
+    values: "0x10"
+  promql_expr_test:
+  - expr: PrometheusTargetDown
+    eval_time: 10m
+    exp_samples:
+    - labels: '{job="kubelet",instance="a"}'
+      value: 0
+- name: Certificate metric absent on one reachable API endpoint
+  interval: 1m
+  input_series:
+  - series: up{job="apiserver",instance="a"}
+    values: "1x65"
+  - series: up{job="apiserver",instance="b"}
+    values: "1x65"
+  - series: k3s_certificate_expiration_seconds{job="apiserver",instance="a"}
+    values: "30000000x65"
+  promql_expr_test:
+  - expr: CertificateMetricMissing
+    eval_time: 65m
+    exp_samples:
+    - labels: 'up{job="apiserver",instance="b"}'
+      value: 1
+- name: 'prod: zero available replicas alerts, partial capacity does not'
+  interval: 1m
+  input_series:
+  - series: kube_deployment_spec_replicas{namespace="app-prod",deployment="backend"}
+    values: "2x10"
+  - series: kube_deployment_status_replicas_available{namespace="app-prod",deployment="backend"}
+    values: "0x10"
+  - series: kube_deployment_spec_replicas{namespace="app-prod",deployment="frontend"}
+    values: "2x10"
+  - series: kube_deployment_status_replicas_available{namespace="app-prod",deployment="frontend"}
+    values: "1x10"
+  promql_expr_test:
+  - expr: ProductionDeploymentUnavailable
+    eval_time: 10m
+    exp_samples:
+    - labels: 'kube_deployment_status_replicas_available{namespace="app-prod",deployment="backend"}'
+      value: 0
+- name: 'prod: missing expected deployment metrics cannot imply health'
+  interval: 1m
+  input_series:
+  - series: kube_deployment_spec_replicas{namespace="app-prod",deployment="frontend"}
+    values: "1x10"
+  promql_expr_test:
+  - expr: ProductionDeploymentUnavailable
+    eval_time: 10m
+    exp_samples:
+    - labels: '{namespace="app-prod",deployment="backend"}'
+      value: 1
+    - labels: 'kube_deployment_spec_replicas{namespace="app-prod",deployment="frontend"}'
+      value: 1
+- name: 'prod: intentional scale-to-zero with present metrics does not trigger outage'
+  interval: 1m
+  input_series:
+  - series: kube_deployment_spec_replicas{namespace="app-prod",deployment="backend"}
+    values: "0x10"
+  - series: kube_deployment_status_replicas_available{namespace="app-prod",deployment="backend"}
+    values: "0x10"
+  - series: kube_deployment_spec_replicas{namespace="app-prod",deployment="frontend"}
+    values: "0x10"
+  - series: kube_deployment_status_replicas_available{namespace="app-prod",deployment="frontend"}
+    values: "0x10"
+  promql_expr_test:
+  - expr: ProductionDeploymentUnavailable
+    eval_time: 10m
+    exp_samples: []
