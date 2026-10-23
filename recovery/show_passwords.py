@@ -65,16 +65,20 @@ def collect(configs):
         for env in environments:
             namespace = f"app-{env}"
             backend_config = read(namespace, "configmap", "backend-config")
-            db_config = read(namespace, "configmap", "db-config")
             backend = read(namespace, "secret", "backend-secrets")
-            db = read(namespace, "secret", "db-secrets")
+            if backend_config.get("POSTGRES_USER") == "app_owner":
+                db = read(namespace, "secret", "cnpg-superuser")
+                db_login, db_password = field(db, "username", True), field(db, "password", True)
+            else:
+                db_config = read(namespace, "configmap", "db-config")
+                db = read(namespace, "secret", "db-secrets")
+                db_login, db_password = field(db_config, "POSTGRES_USER"), field(db, "POSTGRES_PASSWORD", True)
             hostname = "liora.aprt.info" if env == "prod" else f"{env}.liora.aprt.info"
             port = 8082 if env == "stage" else 8081
             rows = [("Application", f"https://{hostname}/", field(backend_config, "FIRST_SUPERUSER"),
                      field(backend, "FIRST_SUPERUSER_PASSWORD", True))]
             rows.extend(shared)
-            rows.append(("Adminer", f"http://{vip}:{port}", field(db_config, "POSTGRES_USER"),
-                         field(db, "POSTGRES_PASSWORD", True)))
+            rows.append(("Adminer", f"http://{vip}:{port}", db_login, db_password))
             sections.append((env.upper(), rows))
     jenkins = read_data(configs["nonprod"], "jenkins", "secret", "jenkins-foundation-login")
     sections.append(("NONPROD (shared DEV/STAGE)", [

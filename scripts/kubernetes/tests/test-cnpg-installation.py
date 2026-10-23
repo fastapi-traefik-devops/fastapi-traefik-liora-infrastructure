@@ -60,6 +60,25 @@ class InstallationTests(unittest.TestCase):
                 self.assertEqual(len(database), 2)
                 self.assertTrue(any(x['kind']=='Service' and x['metadata']['name']=='db' for x in database))
 
+    def test_password_table_uses_cnpg_administrative_credentials(self):
+        import base64
+        spec=importlib.util.spec_from_file_location('passwords', ROOT/'recovery/show_passwords.py')
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+        encoded=base64.b64encode(b'fixture-password-table-canary').decode()
+        seen=[]
+        def read(config, namespace, kind, name):
+            seen.append(name)
+            if name=='backend-config':return {'POSTGRES_USER':'app_owner','FIRST_SUPERUSER':'fake@example.invalid'}
+            if name=='backend-secrets':return {'FIRST_SUPERUSER_PASSWORD':encoded}
+            if name=='cnpg-superuser':return {'username':base64.b64encode(b'postgres').decode(),'password':encoded}
+            if name=='argocd-initial-admin-secret':return {'password':encoded}
+            if name=='monitoring-grafana-admin':return {'admin-user':base64.b64encode(b'admin').decode(),'admin-password':encoded}
+            if name=='jenkins-foundation-login':return {'jenkins-admin-password':encoded}
+            raise AssertionError('Unexpected credential resource')
+        with patch.object(module,'read_data',side_effect=read):rows=module.collect({'nonprod':'fake','prod':'fake'})
+        self.assertNotIn('db-config',seen)
+        self.assertEqual([row[2] for _, group in rows for row in group if row[0]=='Adminer'],['postgres']*3)
+
     def test_bootstrap_does_not_leak_or_overwrite_secrets(self):
         spec=importlib.util.spec_from_file_location('bootstrap', ROOT/'scripts/kubernetes/bootstrap-cnpg-secrets.py')
         module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)

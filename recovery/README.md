@@ -203,3 +203,24 @@ application-only with contents/PR read and commit-status write. Follow the
 [GitHub App setup and verification procedure](../runbooks/17-migrate-jenkins-ci.md#configure-or-recover-the-fastapi-gitops-github-app)
 and its standalone read-only checker. Verify actual installation grants before
 resuming promotion; never place App private keys or installation tokens in Git.
+
+## CloudNativePG database bootstrap
+
+The current environment manifests use `POSTGRES_SERVER=db`, database `app`
+and application owner `app_owner`. CNPG bootstrap Secret `cnpg-app` contains
+that username and the existing environment database password; `cnpg-superuser`
+contains administrative username `postgres` and the same existing password.
+`backend-secrets` and `db-secrets` values and the recovery YAML schema are
+unchanged. Recreate the two derived Secrets using
+[bootstrap-cnpg-secrets.py](../scripts/kubernetes/bootstrap-cnpg-secrets.py)
+after restoring the original application Secrets. Never track their values.
+
+Adminer retains `server=db`, database `app`, administrative user `postgres`.
+The password-table helper reads `cnpg-superuser` for CNPG environments rather
+than requiring the retired `db-config`. Existing application administrator
+credentials are reapplied only when initializing an empty database, not when
+restoring an existing account. See [runbook 18](../runbooks/18-cloudnative-pg.md).
+
+Fresh CNPG installation does not restore discarded data. R2 physical base
+backups and WAL archiving plus an isolated restoration exercise remain a
+separate task; private recovery inputs alone are not a database backup.
