@@ -34,4 +34,4 @@ patches:
       template:
         metadata:
           annotations:
-            liora.aprt.info/database: cnpg-v1
+            liora.aprt.info/database: cnpg-16.15-initialized

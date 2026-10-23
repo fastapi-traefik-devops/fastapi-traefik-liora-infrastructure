@@ -359,13 +359,15 @@ kubectl --kubeconfig="$kubeconfig" -n "$namespace" get pods,pvc
       Argo-owned environments must use their reviewed GitOps sync, not these
       manual fresh-bootstrap apply commands.
 - [ ] For the current authorized environment only, apply configuration and
-      database resources. Wait for the PVC, PostgreSQL rollout, and
-      `pg_isready`:
+      database resources. Wait for CNPG readiness and every requested instance:
 
 ```sh
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" apply -f "$render_dir/config-storage.yaml"
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" apply -f "$render_dir/database.yaml"
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" wait --for=condition=Ready cluster/liora-db --timeout=600s
+expected_instances=1
+if [ "$environment" = prod ]; then expected_instances=2; fi
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" wait --for=jsonpath='{.status.readyInstances}'="$expected_instances" cluster/liora-db --timeout=600s
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" get cluster,pvc -o wide
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" get job prestart --ignore-not-found
 ```
@@ -375,7 +377,8 @@ kubectl --kubeconfig="$kubeconfig" -n "$namespace" get job prestart --ignore-not
 > [!NOTE]
 > A Pending PVC before a database Pod exists is expected with
 > `WaitForFirstConsumer`; wait for Bound only after creating the database
-> Deployment. Local-path data is node-local and is not replicated across
+> Cluster. Local-path volume contents are node-local; CNPG streaming replication
+> provides database replication separately across
 > K3s servers.
 
 - [ ] Confirm `prestart` is absent for a fresh install. On a redeploy, review

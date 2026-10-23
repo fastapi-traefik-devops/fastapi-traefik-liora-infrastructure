@@ -67,3 +67,4 @@ patches:
       path: /spec/template/metadata/annotations
       value:
         liora.aprt.info/config-revision: https-phase7
+        liora.aprt.info/database: cnpg-16.15-initialized

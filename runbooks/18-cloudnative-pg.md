@@ -23,11 +23,10 @@ instances total request 1 CPU, 2 GiB memory and 8 GiB disk. Each operator reques
 100m CPU/128 MiB and is limited to 500m CPU/256 MiB. This is a small lab budget,
 not a capacity benchmark. Local-path claim sizes are planning requests, not
 filesystem quotas; monitor the underlying node filesystem too. WAL and data
-share the per-instance volume. Replication
-slots can retain WAL during standby trouble; monitor free space and expand before
-exhaustion. A second replica is not an off-host backup. `enablePDB: false` keeps operator-generated
-disruption budgets outside this checkpoint, as requested; no HPA/PDB rollout
-is included.
+share the per-instance volume. Replication slots can retain WAL during standby
+trouble; monitor free space and expand before exhaustion. A second replica is
+not an off-host backup. `enablePDB: false` keeps operator-generated disruption
+budgets outside this checkpoint, as requested; no HPA/PDB rollout is included.
 
 Record actual server versions, extensions, image digests, Secrets references,
 PVC/PV bindings, free capacity, Argo ownership and approved Jenkins states before
@@ -131,6 +130,41 @@ acceptance markers. Existing initialization credentials recreate application
 access. Old image rollback does not restore discarded data or undo migrations.
 If a step fails, keep deployment/promotion held, stop before the next environment
 and retain private diagnostics; do not invent a data-preserving rollback claim.
+
+### Browser CRUD with disposable-item cleanup
+
+Use the environment selection from runbook 13 and its prepared local browser
+tools. The existing checker verifies health, browser login, create, read, update,
+reload/persistence and optional deletion with both a 404 and UI absence check.
+Select the matching public hostname and the existing private HAProxy route;
+Chromium retains hostname/SNI and verifies trusted HTTPS.
+
+```sh
+acceptance_url="https://$hostname" acceptance_address=192.168.77.240 acceptance_cleanup=true bash scripts/local-python.sh scripts/kubernetes/verify-application-ui.py
+```
+
+Standalone script: [Verify application UI](../scripts/kubernetes/verify-application-ui.py).
+Keep `environment`, `namespace`, `recovery_dir` and `render_dir` exported as in
+runbook 13. This operator-invoked check does not create an automatic STAGE
+acceptance receipt or satisfy the PROD image-promotion gate. Testing through the
+private edge does not independently establish public-origin reachability.
+
+### Database restart and application connection pools
+
+Pin both the controller image and `OPERATOR_IMAGE_NAME` before provisioning
+instances. Changing the injected bootstrap image can cause CNPG to refresh
+existing Pods; allow its managed shutdown/startup to finish, then recheck every
+instance. A readiness snapshot during a managed refresh is not a completed gate.
+
+The existing application image has long-lived SQLAlchemy connections without
+pool pre-ping. After a database restart, an old pooled connection can make the
+first login fail. For this installation the final committed backend database
+revision annotation rolls the existing images after the last operator refresh;
+DEV's overlay explicitly retains that annotation. Wait for those backend
+rollouts, then repeat login/CRUD before restoring deployment automation. Keep
+future operator/database restarts coordinated with application reconnects until
+a separately reviewed application change provides automatic stale-pool handling.
+Do not rebuild application images as part of this procedure.
 
 ## Restore automation and record boundaries
 

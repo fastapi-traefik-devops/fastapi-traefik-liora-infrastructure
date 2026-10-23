@@ -35,6 +35,8 @@ class InstallationTests(unittest.TestCase):
                 candidate['resources'] = ['../../base']
                 Path(tmp, 'kustomization.yaml').write_text(yaml.safe_dump(candidate))
                 target = render(tmp)
+            backend = next(x for x in target if x['kind']=='Deployment' and x['metadata']['name']=='backend')
+            self.assertIn('liora.aprt.info/database', backend['spec']['template']['metadata']['annotations'])
             before = {x['metadata']['name']: x['spec']['template']['spec']['containers'][0]['image'] for x in live if x['kind']=='Deployment' and x['metadata']['name'] in ['backend','frontend']}
             after = {x['metadata']['name']: x['spec']['template']['spec']['containers'][0]['image'] for x in target if x['kind']=='Deployment' and x['metadata']['name'] in ['backend','frontend']}
             self.assertEqual(before, after)
