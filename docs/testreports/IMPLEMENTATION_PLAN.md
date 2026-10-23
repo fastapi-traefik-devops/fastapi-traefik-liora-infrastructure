@@ -940,17 +940,61 @@ required; full Jenkins CI/CD regression and vulnerability scans are not rerun
 for this replacement. PROD image promotion remains blocked until Phase 9's
 agreed automatic STAGE acceptance gate is implemented and verified.
 
-### 10.2 — R2 physical backup and isolated restoration
+### 10.2 — R2 physical backup and isolated PITR
 
-Next database task, separate from 10.1: supported Barman Cloud Plugin,
-PostgreSQL physical base backups plus WAL archiving to R2, separate environment
-identities/destinations, explicit schedules/retention/capacity, followed by an
-isolated restoration exercise and recovery-point checks. No buckets, credentials,
-WAL archive, backup schedules or retention are configured in 10.1. Replication
-is not a backup; backup/PITR/restoration readiness remains unproven.
+Status: **authorized; implementation in progress**. Current CNPG data is to be
+preserved; 10.1's disposable-data authorization has ended. Use the original
+checkouts and unchanged application images. No full Jenkins regression or
+Phase 9 feature work is included.
 
-- [ ] Refine and approve R2 integration parameters and recovery objectives.
-- [ ] Implement physical backup/WAL archive and verify isolated restoration.
+Confirmed configuration:
+
+- Supported, digest-pinned Barman Cloud Plugin and cert-manager in both
+  clusters. cert-manager issues only plugin internal TLS; Certbot/application
+  certificates, DNS, ingress and routing remain unchanged.
+- Private dedicated bucket `liora-backup`, destinations `dev/`, `stage/`,
+  `prod/`, one bucket-scoped S3 pair. Prefixes are not credential isolation.
+  Physical full backups and continuous WAL use lz4; no raw live-PVC copying.
+- Barman recovery windows DEV/STAGE 7d, PROD 14d, retaining the anchor backup
+  and required WAL. Do not add independent R2 age-deletion lifecycle rules.
+- VM 250 owns a recoverable systemd coordinator: daily 02:00 UTC, strict
+  PROD → STAGE → DEV order, next starts only after a terminal predecessor.
+  Global durable locking and persisted intent cover timer/manual invocations
+  and interruptions. A failed full backup alerts and advances without retry;
+  running/unknown state alerts and blocks advancement. WAL is independent.
+- Target RPO PROD 15m, DEV/STAGE 1h; target RTO PROD 1h, DEV/STAGE 4h from
+  available K3s/R2 access to usable restored application. These need measured
+  evidence. Set archive_timeout with upload-delay headroom.
+- Integrate failure, overdue-backup, WAL, telemetry and recovery conditions
+  with existing Prometheus/Alertmanager. Aggregate R2 usage warning >10 GiB
+  is informational, not a quota or deletion trigger. No daily success messages.
+  **Latest operator steering:** do not investigate/configure Slack or claim
+  Slack delivery; that work belongs to another person. Alertmanager integration
+  is this checkpoint's notification boundary. SMTP remains deferred.
+- PITR DEV → STAGE → PROD, separate temporary namespaces/Clusters, at most
+  one restored DB at a time. Include/exclude controlled markers around an
+  explicit target using base backup plus archived WAL. Never change live
+  endpoints. Restore configuration must neither archive to nor prune source.
+- Document monthly manually initiated sequential isolated PITR for all three
+  environments and after significant backup changes; no weekly restore timer.
+
+- [ ] Validate/store private R2 inputs; update checker, fake examples and
+      credentials-table helper together; verify S3 operations without leaks.
+- [ ] Install bounded pinned dependencies and configure environment archives.
+- [ ] Hold/drain conflicting deployment work, preserve data, coordinate DB
+      sidecar rolls and declarative backend reconnects, then verify live CRUD.
+- [ ] Complete full backups and verify continuous WAL and retention settings.
+- [ ] Install least-privilege VM 250 coordinator, durable locking, bounded
+      API calls and monitoring; test failure/interruption/unknown-state paths.
+- [ ] Verify isolated PITR inclusion/exclusion, ownership/schema/application
+      compatibility and measured RPO/RTO evidence in all environments.
+- [ ] Verify usage/Alertmanager integration, preserve evidence, clean only test
+      resources and restore the exact approved Argo/Jenkins automation.
+
+Procedure: [runbook 19](../../runbooks/19-cnpg-r2-backup-pitr.md).
+Results: [Phase 10.2 report](PHASE10_2_REPORT.md). Readiness requires successful
+restore checks; configured schedules alone do not prove recovery windows or
+RPO/RTO. Delegated Phase 9 work and PROD promotion gate remain separate.
 
 ### Other separately scoped improvements
 
