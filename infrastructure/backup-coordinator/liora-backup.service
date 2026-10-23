@@ -1,0 +1,21 @@
+[Unit]
+Description=Serialized Liora CNPG physical full backups
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=liora-backups
+Group=liora-backups
+StateDirectory=liora-backups
+StateDirectoryMode=0700
+ExecStart=/opt/liora-backups/venv/bin/python /opt/liora-backups/coordinator.py run
+TimeoutStartSec=8h
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+UMask=0077
+# No automatic restart/retry. Unknown work keeps its Kubernetes fence.
+MemoryMax=128M
+CPUQuota=50%

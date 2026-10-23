@@ -120,6 +120,28 @@ class CredentialsTest(unittest.TestCase):
         self.assertIn('obsolete_backup_field',self.run_check())
         self.run_check(args=('--offline','--strict-warnings'),expected=1)
 
+    def test_generated_backup_coordinator_schema(self):
+        import base64, json
+        account='a'*32
+        backup={'account_id':account,'endpoint':'https://'+account+'.r2.cloudflarestorage.com',
+                'jurisdiction':'default','region':'auto','bucket':'liora-backup',
+                'access_key_id':'b'*32,'secret_access_key':'c'*64}
+        encode=lambda value:base64.urlsafe_b64encode(json.dumps(value).encode()).rstrip(b'=').decode()
+        token=encode({'alg':'RS256'})+'.'+encode({'sub':'system:serviceaccount:cnpg-system:backup-coordinator'})+'.fixture-signature'
+        self.canaries=list(self.canaries)+[backup['access_key_id'],backup['secret_access_key'],token]
+        self.yaml_values['database_backups']=backup;self.write()
+        profile=lambda vip,admin:{'server':'https://'+vip+':6443','alertmanager':'http://'+admin+':9093','token':token,'ca_pem':self.cert}
+        data={'version':1,'state_dir':'/var/lib/liora-backups','listen':'192.168.77.250',
+              'r2':{k:backup[k] for k in ['endpoint','bucket','access_key_id','secret_access_key']},
+              'clusters':{'nonprod':profile('192.168.77.11','192.168.77.16'),'prod':profile('192.168.77.12','192.168.77.17')}}
+        path=self.directory/'backup-coordinator.json'
+        def write():path.write_text(json.dumps(data));path.chmod(0o600)
+        write();self.run_check()
+        for key in ['server','alertmanager','token','ca_pem']:
+            original=data['clusters']['prod'][key];data['clusters']['prod'][key]='fixture-invalid-secret';write();self.run_check(expected=1);data['clusters']['prod'][key]=original
+        data['clusters']['prod']['obsolete']='fixture-hidden-value';write();self.assertIn('obsolete',self.run_check())
+        self.run_check(args=('--offline','--strict-warnings'),expected=1)
+
     def test_complete_success_and_wrapper(self):
         self.run_check()
         env = dict(os.environ, RECOVERY_DIR=str(self.directory), RECOVERY_PYTHON=sys.executable)

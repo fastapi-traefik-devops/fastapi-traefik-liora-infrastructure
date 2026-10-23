@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Read-only recovery validation. Diagnostics contain locations, never values."""
 import datetime
+import base64
 import ipaddress
 import json
 import os
@@ -9,6 +10,7 @@ import re
 import ssl
 import stat
 import sys
+import warnings
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -285,6 +287,7 @@ class Check:
             self.error('recovery/recovery.yaml.schema_version', 'must be integer 1')
         if 'database_backups' in root:
             self.database_backups(root['database_backups'])
+        self.coordinator_inputs(root.get('database_backups'))
         if 'kubernetes' in root:
             kube = self.mapping(root['kubernetes'], 'kubernetes', {'nonprod'})
             if 'nonprod' in kube:
@@ -319,6 +322,52 @@ class Check:
             self.error(loc + '.bucket', 'must be the dedicated liora-backup bucket')
         if item.get('region') != 'auto':
             self.error(loc + '.region', 'must be auto for R2 S3 access')
+
+    def coordinator_inputs(self, reference):
+        raw = self.read('backup-coordinator.json', required=False)
+        if raw is None:
+            return
+        loc = 'recovery/backup-coordinator.json'
+        try:
+            data = json.loads(raw)
+        except (ValueError, UnicodeError):
+            self.error(loc, 'invalid JSON')
+            return
+        data = self.mapping(data, loc, {'version', 'state_dir', 'listen', 'r2', 'clusters'})
+        if data.get('version') != 1 or type(data.get('version')) is not int:
+            self.error(loc + '.version', 'must be integer 1')
+        if data.get('state_dir') != '/var/lib/liora-backups' or data.get('listen') != '192.168.77.250':
+            self.error(loc, 'must use the configured VM 250 listener and state directory')
+        r2 = self.mapping(data.get('r2'), loc + '.r2', {'endpoint','bucket','access_key_id','secret_access_key'})
+        if not isinstance(reference, dict) or any(r2.get(k) != reference.get(k) for k in r2):
+            self.error(loc + '.r2', 'must match database_backups recovery inputs')
+        clusters = self.mapping(data.get('clusters'), loc + '.clusters', {'nonprod','prod'})
+        for cluster, vip, admin in [('nonprod','192.168.77.11','192.168.77.16'),('prod','192.168.77.12','192.168.77.17')]:
+            path = loc + '.clusters.' + cluster
+            profile = self.mapping(clusters.get(cluster), path, {'server','token','ca_pem','alertmanager'})
+            if profile.get('server') != 'https://' + vip + ':6443' or profile.get('alertmanager') != 'http://' + admin + ':9093':
+                self.error(path, 'server or Alertmanager does not match this cluster')
+            if self.text(profile.get('ca_pem'), path + '.ca_pem'):
+                try:
+                    with warnings.catch_warnings(record=True) as recorded:
+                        warnings.simplefilter('always')
+                        x509.load_pem_x509_certificate(profile['ca_pem'].encode())
+                    if recorded:
+                        self.warn(path + '.ca_pem', 'cluster CA has a legacy X509 encoding accepted by current cryptography; retain the original CA')
+                except (ValueError, TypeError):
+                    self.error(path + '.ca_pem', 'expected a PEM cluster CA certificate')
+            if self.text(profile.get('token'), path + '.token'):
+                try:
+                    parts = profile['token'].split('.')
+                    if len(parts) != 3 or any(not re.fullmatch('[A-Za-z0-9_-]+', part) for part in parts):
+                        raise ValueError()
+                    payload = json.loads(base64.urlsafe_b64decode(parts[1] + '=' * (-len(parts[1]) % 4)))
+                    if payload.get('sub') != 'system:serviceaccount:cnpg-system:backup-coordinator':
+                        raise ValueError()
+                    if 'exp' in payload and payload['exp'] <= datetime.datetime.now(datetime.timezone.utc).timestamp():
+                        raise ValueError()
+                except (ValueError, TypeError, KeyError):
+                    self.error(path + '.token', 'expected an unexpired coordinator service-account JWT; signature checked by the API')
 
     def controllers(self, entries):
         path = 'kubernetes.nonprod.sealed_secrets_controller_keys'

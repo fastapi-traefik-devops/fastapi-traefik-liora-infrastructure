@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Liora full backup cycle at 02:00 UTC
+
+[Timer]
+OnCalendar=*-*-* 02:00:00 UTC
+AccuracySec=1s
+Persistent=true
+Unit=liora-backup.service
+
+[Install]
+WantedBy=timers.target

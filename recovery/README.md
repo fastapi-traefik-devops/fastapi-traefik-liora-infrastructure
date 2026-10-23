@@ -242,3 +242,15 @@ visibly fake. The interactive password helper includes this R2 pair and optional
 API token only after its existing explicit plaintext-output confirmation.
 Private recovery inputs are not database backups. See
 [runbook 19](../runbooks/19-cnpg-r2-backup-pitr.md).
+
+The optional generated `backup-coordinator.json` is ignored and mode 0600.
+Its supported fields are shown by the deliberately fake `.json.example`.
+The checker validates version 1, the fixed VM 250 listener/state directory,
+R2 equality with YAML inputs, exact NONPROD/PROD API and Alertmanager addresses,
+parseable public CA certificates and coordinator service-account JWT subjects
+(and expiry when present). Unknown keys warn with locations, never values.
+The API verifies token signatures and namespace RBAC. This file grants no
+application/Secret/Pod/PVC writes; preserve it in the private recovery kit.
+The token Secrets are persistent purpose-scoped service-account credentials;
+rotate/reprovision them if compromised. Never substitute administrator kubeconfigs.
+Generate with `scripts/backups/provision.py`; do not hand-copy example tokens.

@@ -26,3 +26,5 @@ spec:
     kind: Ingress
   - group: postgresql.cnpg.io
     kind: Cluster
+  - group: barmancloud.cnpg.io
+    kind: ObjectStore

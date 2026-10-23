@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "state_dir": "/var/lib/liora-backups",
+  "listen": "192.168.77.250",
+  "r2": {
+    "endpoint": "https://REPLACE_WITH_ACCOUNT_ID.r2.cloudflarestorage.com",
+    "bucket": "liora-backup",
+    "access_key_id": "REPLACE_WITH_32_HEX_R2_ACCESS_KEY",
+    "secret_access_key": "REPLACE_WITH_64_HEX_R2_SECRET_KEY"
+  },
+  "clusters": {
+    "nonprod": {
+      "server": "https://192.168.77.11:6443",
+      "token": "REPLACE_WITH_NONPROD_COORDINATOR_TOKEN",
+      "ca_pem": "REPLACE_WITH_NONPROD_PUBLIC_CA_PEM",
+      "alertmanager": "http://192.168.77.16:9093"
+    },
+    "prod": {
+      "server": "https://192.168.77.12:6443",
+      "token": "REPLACE_WITH_PROD_COORDINATOR_TOKEN",
+      "ca_pem": "REPLACE_WITH_PROD_PUBLIC_CA_PEM",
+      "alertmanager": "http://192.168.77.17:9093"
+    }
+  }
+}

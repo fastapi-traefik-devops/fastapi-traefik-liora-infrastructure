@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: backup-coordinator
+  namespace: cnpg-system
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: backup-coordinator-token
+  namespace: cnpg-system
+  annotations:
+    kubernetes.io/service-account.name: backup-coordinator
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: backup-coordinator
+  namespace: app-dev
+rules:
+- apiGroups:
+  - postgresql.cnpg.io
+  resources:
+  - backups
+  verbs:
+  - get
+  - list
+  - create
+- apiGroups:
+  - postgresql.cnpg.io
+  resources:
+  - clusters
+  resourceNames:
+  - liora-db
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backup-coordinator
+  namespace: app-dev
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: backup-coordinator
+subjects:
+- kind: ServiceAccount
+  name: backup-coordinator
+  namespace: cnpg-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: backup-coordinator
+  namespace: app-stage
+rules:
+- apiGroups:
+  - postgresql.cnpg.io
+  resources:
+  - backups
+  verbs:
+  - get
+  - list
+  - create
+- apiGroups:
+  - postgresql.cnpg.io
+  resources:
+  - clusters
+  resourceNames:
+  - liora-db
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: backup-coordinator
+  namespace: app-stage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: backup-coordinator
+subjects:
+- kind: ServiceAccount
+  name: backup-coordinator
+  namespace: cnpg-system

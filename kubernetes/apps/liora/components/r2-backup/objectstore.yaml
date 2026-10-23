@@ -1,0 +1,29 @@
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: r2-backup
+  annotations:
+    argocd.argoproj.io/sync-wave: '-3'
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+spec:
+  retentionPolicy: 7d
+  configuration:
+    destinationPath: s3://liora-backup/dev/
+    s3Credentials:
+      accessKeyId: {name: r2-backup, key: ACCESS_KEY_ID}
+      secretAccessKey: {name: r2-backup, key: SECRET_ACCESS_KEY}
+      region: {name: r2-backup, key: REGION}
+    data:
+      compression: lz4
+      jobs: 1
+    wal:
+      compression: lz4
+      maxParallel: 2
+  instanceSidecarConfiguration:
+    env:
+    - name: AWS_ENDPOINT_URL
+      valueFrom:
+        secretKeyRef: {name: r2-backup, key: ENDPOINT_URL}
+    resources:
+      requests: {cpu: 50m, memory: 128Mi}
+      limits: {cpu: 500m, memory: 512Mi}
