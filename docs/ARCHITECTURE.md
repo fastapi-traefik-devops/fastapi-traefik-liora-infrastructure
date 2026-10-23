@@ -175,13 +175,52 @@ budgets are environment configuration, independent of the number of K3s servers.
 ### Backup and recovery
 
 PostgreSQL physical base backups and continuous WAL archiving use the Barman
-Cloud Plugin with R2 object storage outside the physical Proxmox host failure
-domain. Each environment has a distinct backup identity and destination.
-Backup schedules, retention and recovery objectives are explicit configuration
-parameters. An isolated restoration exercise validates the recovery procedure;
-a raw copy of a running PVC directory is not a database backup. Recovery
-procedures cover application data, etcd, infrastructure state, cluster credentials and encryption
-keys. Backup copies and the private recovery kit stay outside Git.
+Cloud Plugin with lz4 compression for both. Data travels directly between each
+cluster and the private Cloudflare R2 bucket `liora-backup`, outside the Proxmox
+host failure domain. DEV, STAGE and PROD use distinct `dev/`, `stage/` and
+`prod/` destinations and `liora-dev`, `liora-stage`, `liora-prod` archive identities.
+One S3 credential pair is scoped to the bucket; prefixes separate data but do
+not provide credential isolation. Private endpoint/credential inputs stay outside Git.
+
+| Environment | Recovery window | Target RPO | Target RTO |
+| --- | --- | --- | --- |
+| DEV | 7 days | 1 hour | 4 hours |
+| STAGE | 7 days | 1 hour | 4 hours |
+| PROD | 14 days | 15 minutes | 1 hour |
+
+These are objectives requiring measured restoration and archive-delivery evidence.
+RTO starts with a working K3s cluster and R2 access and ends with a usable restored
+application; rebuilding Proxmox/K3s is excluded. Five-minute WAL archive timeout
+leaves delivery headroom. Barman recovery-window retention preserves the older
+anchor backup and required WAL; independent R2 age-deletion rules are excluded.
+A raw copy of a running PVC is not a database backup.
+
+VM 250 runs a recoverable systemd full-backup coordinator daily at 02:00 UTC.
+A full cycle runs PROD → STAGE → DEV, starting each only after its predecessor
+is terminal. A local lock and durable Kubernetes Lease/session fence serialize
+scheduled and manually coordinated cycles across hosts. A definitive failure
+alerts and advances without retry. Running/unknown state blocks advancement and
+retains intent for explicit inspection/resume. The coordinator has only scoped
+Backup access and its named Lease; backup data does not pass through VM 250.
+WAL archiving and manual recovery do not depend on that VM's availability.
+
+Per-cluster cert-manager provides the plugin's internal self-signed mutual TLS.
+Backup health enters the existing Prometheus/Alertmanager stack: failures,
+overdue usable backups, WAL problems and missing telemetry have recovery
+notifications. No daily success messages are sent. Aggregate R2 usage is measured
+across all object pages and warns above 10 GiB; this is informational, not a quota,
+retention-fit guarantee or permission to stop backups/force-delete data.
+
+Isolated PITR exercises restore DEV → STAGE → PROD sequentially, with one
+temporary database instance at a time. Included/excluded markers around an
+explicit target prove replay of archived WAL beyond a physical base backup.
+Restored test clusters cannot archive into or prune the source archive and
+never replace live endpoints. Operators repeat the exercise monthly and after
+significant backup changes; no automated weekly restore schedule is required.
+
+Recovery procedures cover application data, etcd, infrastructure state,
+cluster credentials and encryption keys. Backup copies and private recovery
+inputs stay outside Git.
 
 The recovery kit contains the inputs and procedures needed to recreate the
 Proxmox guests, both clusters, GitOps and platform services, then restore data.
