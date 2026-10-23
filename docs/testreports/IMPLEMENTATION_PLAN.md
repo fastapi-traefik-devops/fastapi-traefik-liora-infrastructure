@@ -138,7 +138,7 @@ daemons and metrics endpoints do not receive administrative browser endpoints.
 | Slack | Existing kind destination available; new-cluster destination not yet confirmed | Configure delivery only after destination agreement; no assumption of verified notification receipt |
 | Sealed Secrets | Separate controllers and keys; later platform phase | Cluster-specific encrypted Secret management |
 | CloudNativePG | Per-environment namespaces; Phase 10.1 | Fresh PostgreSQL 16 databases; DEV 1, STAGE 1, PROD 2 async instances on different nodes |
-| R2 database backups | Next database task; Phase 10.2 | Barman physical base backups plus WAL archive, then isolated restoration; no backup readiness claimed |
+| R2 database backups | Phase 10.2 complete | Physical backups/WAL and isolated PITR passed for all environments; monthly exercises and retention-window aging continue |
 
 VM 100, its legacy kind deployment and existing public administrative NAT
 rules are outside this implementation's change scope. The operator will retire
@@ -942,7 +942,8 @@ agreed automatic STAGE acceptance gate is implemented and verified.
 
 ### 10.2 — R2 physical backup and isolated PITR
 
-Status: **authorized; implementation in progress**. Current CNPG data is to be
+Status: **completed on 2026-10-23 within the agreed Alertmanager-only boundary**.
+Current CNPG data is to be
 preserved; 10.1's disposable-data authorization has ended. Use the original
 checkouts and unchanged application images. No full Jenkins regression or
 Phase 9 feature work is included.
@@ -978,23 +979,33 @@ Confirmed configuration:
 - Document monthly manually initiated sequential isolated PITR for all three
   environments and after significant backup changes; no weekly restore timer.
 
-- [ ] Validate/store private R2 inputs; update checker, fake examples and
+- [x] Validate/store private R2 inputs; update checker, fake examples and
       credentials-table helper together; verify S3 operations without leaks.
-- [ ] Install bounded pinned dependencies and configure environment archives.
-- [ ] Hold/drain conflicting deployment work, preserve data, coordinate DB
+- [x] Install bounded pinned dependencies and configure environment archives.
+- [x] Hold/drain conflicting deployment work, preserve data, coordinate DB
       sidecar rolls and declarative backend reconnects, then verify live CRUD.
-- [ ] Complete full backups and verify continuous WAL and retention settings.
-- [ ] Install least-privilege VM 250 coordinator, durable locking, bounded
+- [x] Complete full backups and verify continuous WAL and retention settings.
+- [x] Install least-privilege VM 250 coordinator, durable locking, bounded
       API calls and monitoring; test failure/interruption/unknown-state paths.
-- [ ] Verify isolated PITR inclusion/exclusion, ownership/schema/application
+- [x] Verify isolated PITR inclusion/exclusion, ownership/schema/application
       compatibility and measured RPO/RTO evidence in all environments.
-- [ ] Verify usage/Alertmanager integration, preserve evidence, clean only test
+- [x] Verify usage/Alertmanager integration, preserve evidence, clean only test
       resources and restore the exact approved Argo/Jenkins automation.
 
 Procedure: [runbook 19](../../runbooks/19-cnpg-r2-backup-pitr.md).
 Results: [Phase 10.2 report](PHASE10_2_REPORT.md). Readiness requires successful
 restore checks; configured schedules alone do not prove recovery windows or
 RPO/RTO. Delegated Phase 9 work and PROD promotion gate remain separate.
+
+Measured PITR application usability: DEV 286.163s, STAGE 195.483s, PROD
+287.029s. Natural WAL delivery: 303.059s, 304.031s, 304.043s respectively.
+The full VM 250 sequence and cross-host overlap refusal passed. Its 02:00 UTC
+timer is enabled; original Argo/Jenkins policies and main polling are restored.
+All 13 original PVCs, current data and application images were preserved.
+Slack delivery is delegated; bucket-policy metadata inspection remains limited
+by 403 responses. Full 7/14-day archive coverage requires elapsed retention
+history. Continue monthly manual isolated PITR and repeat after mechanism
+changes. These database checks do not complete the separate PROD image gate.
 
 ### Other separately scoped improvements
 

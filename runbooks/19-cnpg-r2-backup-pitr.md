@@ -262,3 +262,13 @@ Standalone cleanup: [pitr-cleanup.py](../scripts/backups/pitr-cleanup.py), along
 before namespace creation/UID recording, inspect the specific source marker
 instead of inventing an identity or forcing deletion. Retain the failed result;
 cleanup does not relabel a failed recovery as successful.
+
+Alertmanager API-only verification (exact synthetic silence, no Slack test):
+
+```sh
+bash scripts/local-python.sh scripts/backups/test-alertmanager.py
+```
+
+Standalone script: [test-alertmanager.py](../scripts/backups/test-alertmanager.py).
+It posts and resolves only its uniquely labeled synthetic alert and removes
+only its own silence. It does not verify downstream notification delivery.

@@ -180,12 +180,11 @@ from CI/CD regression: the latter is not rerun here. PROD application promotion
 remains blocked by its pending automatic STAGE acceptance gate. Phase 9 startup,
 observer, acceptance serialization and promotion work remain separate tasks.
 
-## Next database task: R2 physical backup and restoration
+## R2 physical backup and restoration
 
-Integrate the supported Barman Cloud Plugin with environment-specific identities
-and object-store destinations: PostgreSQL physical base backups plus continuous
-WAL archiving to R2. Configure credentials, schedules, retention and capacity,
-then perform an **isolated restoration exercise** with explicit recovery-point
-checks. Never treat a periodic raw copy of a running PVC as a database backup.
-No R2 resources, WAL archiving, schedules or retention are configured by this
-installation. Do not claim backup, PITR or recovery readiness before that task.
+The fresh-installation checkpoint did not configure backups. Phase 10.2 has
+subsequently added physical base backups, continuous WAL and isolated PITR.
+Use [runbook 19](19-cnpg-r2-backup-pitr.md) for current operations and
+[the Phase 10.2 report](../docs/testreports/PHASE10_2_REPORT.md) for scope,
+measured objectives and limitations. Never treat a raw copy of a running PVC
+as a database backup.

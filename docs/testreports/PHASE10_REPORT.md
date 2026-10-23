@@ -186,3 +186,7 @@ The database checks neither satisfy nor bypass that gate.
 
 Procedure: [runbook 18](../../runbooks/18-cloudnative-pg.md). Current execution
 order: [implementation plan](IMPLEMENTATION_PLAN.md).
+
+Subsequent backup work: [Phase 10.2](PHASE10_2_REPORT.md) records implemented
+physical backups/WAL and isolated PITR. Earlier R2-pending statements in this
+report describe the completed fresh-installation checkpoint.
