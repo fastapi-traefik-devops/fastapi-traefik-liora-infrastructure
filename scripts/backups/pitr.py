@@ -170,20 +170,22 @@ def application_check(config, namespace, source_namespace, record):
             do_GET=do_POST=do_PUT=do_DELETE=do_OPTIONS=handle_request
             def log_message(self,*args):pass
         server=ThreadingHTTPServer(('127.0.0.1',0),Proxy)
+        serving=False
         try:
             for _ in range(30):
                 try:
                     with socket.create_connection(('127.0.0.1',ports[0]),timeout=1):break
                 except OSError:time.sleep(1)
             else:raise RuntimeError('Isolated application forward unavailable')
-            threading.Thread(target=server.serve_forever,daemon=True).start()
+            threading.Thread(target=server.serve_forever,daemon=True).start();serving=True
             secret=kube(config,['-n',source_namespace,'get','secret','backend-secrets','-o','json'])
             browser_check('http://127.0.0.1:'+str(server.server_address[1]),
                 {'email':cm['data']['FIRST_SUPERUSER'],'password':base64.b64decode(secret['data']['FIRST_SUPERUSER_PASSWORD']).decode()})
             record['restored_frontend_backend_login_crud']=True
             record['application_access']='localhost-only temporary frontend/API proxy; no live routing change'
         finally:
-            server.shutdown();server.server_close();forward.terminate()
+            if serving:server.shutdown()
+            server.server_close();forward.terminate()
             try:forward.wait(timeout=10)
             except subprocess.TimeoutExpired:forward.kill();forward.wait()
 
