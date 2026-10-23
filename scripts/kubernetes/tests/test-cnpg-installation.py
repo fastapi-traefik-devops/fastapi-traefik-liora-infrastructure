@@ -60,6 +60,13 @@ class InstallationTests(unittest.TestCase):
                 self.assertEqual(len(database), 2)
                 self.assertTrue(any(x['kind']=='Service' and x['metadata']['name']=='db' for x in database))
 
+    def test_operator_bootstrap_image_is_digest_pinned(self):
+        operator=next(x for x in render(ROOT/'kubernetes/platform/cloudnative-pg') if x['kind']=='Deployment')
+        container=operator['spec']['template']['spec']['containers'][0]
+        injected=next(x['value'] for x in container['env'] if x['name']=='OPERATOR_IMAGE_NAME')
+        self.assertIn('@sha256:',container['image'])
+        self.assertEqual(injected,container['image'])
+
     def test_password_table_uses_cnpg_administrative_credentials(self):
         import base64
         spec=importlib.util.spec_from_file_location('passwords', ROOT/'recovery/show_passwords.py')

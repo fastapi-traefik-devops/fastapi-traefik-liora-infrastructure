@@ -5,7 +5,8 @@ The unchanged vendored `upstream/cnpg-1.30.1.yaml` was downloaded from the
 release asset `cnpg-1.30.1.yaml`; SHA-256:
 `37237f145d8138256ea25ae830f87759255665ff08f8d552fdd8224a5ec032fb`.
 Kustomize pins the operator image by release tag and OCI index digest and bounds
-its resources. Install independently in both clusters using server-side apply.
+its resources. `OPERATOR_IMAGE_NAME` uses the same digest so generated instance
+bootstrap containers are reproducible too. Install independently in both clusters using server-side apply.
 The platform operator is operator-managed infrastructure, not owned by the
 application Argo projects. Environment Cluster objects are application-owned.
 
