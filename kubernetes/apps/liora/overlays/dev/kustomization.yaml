@@ -6,6 +6,7 @@ resources:
 - service-adminer-private.yaml
 components:
 - ../../components/cloudnative-pg
+- ../../components/r2-backup
 images:
 - name: backend
   newName: ghcr.io/fastapi-traefik-devops/fastapi-backend

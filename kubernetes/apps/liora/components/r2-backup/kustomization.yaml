@@ -21,4 +21,4 @@ patches:
           serverName: liora-dev
       postgresql:
         parameters:
-          archive_timeout: 900s
+          archive_timeout: 300s
