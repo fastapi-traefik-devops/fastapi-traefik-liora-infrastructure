@@ -86,9 +86,13 @@ signing key, registry credentials and all other Secrets unchanged.
 
 ## Transition one environment
 
-The shared application base contains no database workload. Each overlay opts
-into `components/legacy-postgres` or `components/cloudnative-pg`, allowing the
-other environments to remain unchanged during the transition.
+The shared application base contains no database workload. Current overlays
+select `components/cloudnative-pg`. The independent legacy component used during
+the cutover is retained in Git history at `2ff6364` and was removed after all
+three environments passed. For a fresh installation, provision the operator
+and credentials, then sync the CNPG overlay; skip legacy maintenance and
+retirement. The numbered sequence below records conversion of an existing
+legacy environment, not instructions to recreate the obsolete workload.
 
 1. Provision bootstrap Secrets and apply the pinned component `cluster.yaml`
    in the selected namespace alongside the legacy database using field manager
