@@ -24,8 +24,11 @@ All three synthetic acceptance markers were removed after isolation checks.
 
 ### Scope and environment map
 
-Retain PostgreSQL 16.6, its 1Gi PVC, Adminer 4.8.1, and the prestart migration
-Job. This procedure does not install Argo CD, monitoring, CloudNativePG, edge
+Use the pinned CloudNativePG PostgreSQL 16 database, existing Adminer 4.8.1,
+and prestart migration Job. [Runbook 18](18-cloudnative-pg.md) covers operator
+installation, bootstrap credentials, fresh database replacement and retirement
+of the old database Deployment/PVC. Never repeat that destructive cutover as
+a routine application deployment. This procedure does not install Argo CD, monitoring, CloudNativePG, edge
 routing, DNS, or certificate automation. Preserve each environment's data.
 
 | Environment | Kubeconfig | Namespace | Configured origin |
@@ -130,9 +133,10 @@ kubectl --kubeconfig="$kubeconfig" kustomize "$overlay" > "$render_dir/all.yaml"
 > Stop on an API/node mismatch, a non-Ready node, missing storage, or an
 > unconfigured/placeholder image.
 
-Each environment needs one 1Gi RWO PVC. DEV/STAGE each have one backend and
-one frontend replica; PROD has two of each. PostgreSQL and Adminer each have
-one replica.
+CNPG requests one 2 GiB RWO volume for DEV and STAGE each, and two for PROD.
+DEV/STAGE each have one backend/frontend replica; PROD has two of each.
+Adminer keeps one replica. Existing database contents must survive routine
+application updates; the separately authorized Phase 10 reset is exceptional.
 
 All environments explicitly run one backend worker per Pod. The image defaults
 to four workers; PROD's initial deployment repeatedly lost child workers before
@@ -151,7 +155,9 @@ import yaml
 
 root = Path(os.environ['render_dir'])
 resources = list(yaml.safe_load_all((root / 'all.yaml').read_text()))
-assert len(resources) == 13
+cnpg = any(r['kind'] == 'Cluster' and r['metadata']['name'] == 'liora-db' for r in resources)
+private_adminer = any(r['kind'] == 'Service' and r['metadata']['name'] == 'adminer-private' for r in resources)
+assert len(resources) == (11 if cnpg else 13) + int(private_adminer)
 assert {r['metadata']['namespace'] for r in resources} == {os.environ['namespace']}
 groups = {name: [] for name in ['config-storage', 'database', 'prestart', 'application']}
 for resource in resources:
@@ -164,14 +170,14 @@ for resource in resources:
                 assert '@sha256:' in image, 'Application images must be digest-pinned'
     if kind in ['ConfigMap', 'PersistentVolumeClaim']:
         group = 'config-storage'
-    elif (kind, name) in [('Service', 'db'), ('Deployment', 'postgres-deployment')]:
+    elif (kind, name) in [('Service', 'db'), ('Deployment', 'postgres-deployment'), ('Cluster', 'liora-db')]:
         group = 'database'
     elif (kind, name) == ('Job', 'prestart'):
         group = 'prestart'
     else:
         group = 'application'
     groups[group].append(resource)
-assert [len(groups[name]) for name in groups] == [3, 2, 1, 7]
+assert [len(groups[name]) for name in groups] == [1 if cnpg else 3, 2, 1, 7 + int(private_adminer)]
 for name, items in groups.items():
     (root / (name + '.yaml')).write_text(yaml.safe_dump_all(items, sort_keys=False))
 print('Render inspected and split; no resources applied')
@@ -292,8 +298,7 @@ kubectl --kubeconfig="$kubeconfig" -n "$namespace" get secrets
 
 After Secret bootstrap, test the default StorageClass in each target namespace
 using the [temporary storage probe manifest](_resources/application-storage-check.yaml).
-The manifest has a 1Gi RWO claim with no explicit StorageClass, matching the
-application's request, and a short-lived Pod that writes and reads a namespace
+The manifest has a 1Gi RWO claim with no explicit StorageClass, checking basic provisioning independently of CNPG's 2 GiB request, and a short-lived Pod that writes and reads a namespace
 marker. It uses `postgres:16.6` to run a shell command; it does not start a
 database or read application Secrets. The consumer Pod allows the
 `WaitForFirstConsumer` claim to bind.
@@ -344,11 +349,15 @@ kubectl --kubeconfig="$kubeconfig" -n "$namespace" get pods,pvc
 > [!WARNING]
 > Inspect events and Pod status before cleanup. Investigate and repeat the
 > probe; record transient interruptions. Do not proceed until a fresh check
-> passes. The application `postgres-vol` PVC is created separately during
-> deployment; the probe does not pre-create it.
+> passes. CNPG creates its own instance PVCs during deployment; the probe does not
+> pre-create them.
 
-## 3. Bring up PostgreSQL, then prestart — Phases 3, 4 or 5
+## 3. Bring up PostgreSQL, then prestart
 
+- [ ] First install the pinned operator and provision `cnpg-app` and
+      `cnpg-superuser` following [runbook 18](18-cloudnative-pg.md). Existing
+      Argo-owned environments must use their reviewed GitOps sync, not these
+      manual fresh-bootstrap apply commands.
 - [ ] For the current authorized environment only, apply configuration and
       database resources. Wait for the PVC, PostgreSQL rollout, and
       `pg_isready`:
@@ -356,10 +365,8 @@ kubectl --kubeconfig="$kubeconfig" -n "$namespace" get pods,pvc
 ```sh
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" apply -f "$render_dir/config-storage.yaml"
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" apply -f "$render_dir/database.yaml"
-kubectl --kubeconfig="$kubeconfig" -n "$namespace" wait --for=jsonpath='{.status.phase}'=Bound pvc/postgres-vol --timeout=180s
-kubectl --kubeconfig="$kubeconfig" -n "$namespace" rollout status deployment/postgres-deployment --timeout=180s
-kubectl --kubeconfig="$kubeconfig" -n "$namespace" exec deployment/postgres-deployment -- sh -c 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
-kubectl --kubeconfig="$kubeconfig" -n "$namespace" get pvc postgres-vol -o wide
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" wait --for=condition=Ready cluster/liora-db --timeout=600s
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" get cluster,pvc -o wide
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" get job prestart --ignore-not-found
 ```
 

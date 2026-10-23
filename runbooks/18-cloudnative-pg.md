@@ -86,9 +86,12 @@ The shared application base contains no database workload. Each overlay opts
 into `components/legacy-postgres` or `components/cloudnative-pg`, allowing the
 other environments to remain unchanged during the transition.
 
-1. Add the CNPG Cluster beside the legacy workload in the selected environment
-   and provision its Secrets. For PROD set `instances: 2`. Sync the exact reviewed
-   commit and wait for all CNPG instances, bound PVCs and correct ownership.
+1. Provision bootstrap Secrets and apply the pinned component `cluster.yaml`
+   in the selected namespace alongside the legacy database using field manager
+   `liora-cnpg-bootstrap`. For PROD render a reviewed local copy with
+   `instances: 2`. This creates only the new database; the environment Argo
+   Application adopts the same Cluster during step 3. Wait for all instances
+   and bound PVCs before switching the application endpoint.
 2. Commit zero backend/frontend replicas for that environment and explicitly
    sync that revision. Wait until its application Pods have terminated. Do not
    change routing, namespace, Adminer or database credentials.
@@ -96,7 +99,7 @@ other environments to remain unchanged during the transition.
    counts. Its Service patch retains the existing `db` ClusterIP and changes
    only its selector to `cnpg.io/cluster: liora-db`, `role: primary`. Its backend
    ConfigMap changes only the database username to `app_owner`. The backend
-   template annotation causes clients to reconnect. Render and inspect before
+   restart after maintenance reloads the new connection configuration. Render and inspect before
    publishing, then explicitly sync the exact revision with hooks enabled.
 4. CNPG readiness is wave -2; existing `prestart` runs at Sync wave 0 using the
    unchanged backend image. It waits for SQL connectivity, runs Alembic to head

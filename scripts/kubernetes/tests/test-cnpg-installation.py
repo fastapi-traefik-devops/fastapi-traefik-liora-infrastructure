@@ -48,6 +48,18 @@ class InstallationTests(unittest.TestCase):
             owner = next(x for x in target if x['kind']=='ConfigMap' and x['metadata']['name']=='backend-config')
             self.assertEqual(owner['data']['POSTGRES_USER'], 'app_owner')
 
+    def test_split_render_supports_current_database_platforms(self):
+        import os
+        import runpy
+        for env in ['dev', 'stage', 'prod']:
+            with tempfile.TemporaryDirectory() as tmp:
+                Path(tmp, 'all.yaml').write_text(yaml.safe_dump_all(render(ROOT/'kubernetes/apps/liora/overlays'/env)))
+                with patch.dict(os.environ, render_dir=tmp, namespace='app-'+env), patch('sys.stdout', io.StringIO()):
+                    runpy.run_path(str(ROOT/'scripts/kubernetes/split-application-render.py'))
+                database=list(yaml.safe_load_all(Path(tmp, 'database.yaml').read_text()))
+                self.assertEqual(len(database), 2)
+                self.assertTrue(any(x['kind']=='Service' and x['metadata']['name']=='db' for x in database))
+
     def test_bootstrap_does_not_leak_or_overwrite_secrets(self):
         spec=importlib.util.spec_from_file_location('bootstrap', ROOT/'scripts/kubernetes/bootstrap-cnpg-secrets.py')
         module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)

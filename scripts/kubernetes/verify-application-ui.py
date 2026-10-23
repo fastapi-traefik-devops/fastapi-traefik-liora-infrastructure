@@ -96,6 +96,19 @@ def main():
             }''', result['item_id'])
             assert persisted['status'] == 200 and persisted['item']['title'] == updated_title
             result.update(verified=True, step='complete', marker_retained_for_isolation=True)
+            if os.environ.get('acceptance_cleanup') == 'true':
+                result.update(verified=False, step='delete disposable item and confirm absence')
+                deleted = page.evaluate('''async id => {
+                    const headers = {Authorization: 'Bearer ' + localStorage.getItem('access_token')};
+                    const removed = await fetch('/api/v1/items/' + id, {method: 'DELETE', headers});
+                    const absent = await fetch('/api/v1/items/' + id, {headers});
+                    return {deleted: removed.status, read: absent.status};
+                }''', result['item_id'])
+                assert deleted['deleted'] == 200 and deleted['read'] == 404
+                page.reload()
+                expect(page.get_by_role('row').filter(has_text=updated_title)).to_have_count(0)
+                result.update(verified=True, step='complete', marker_retained_for_isolation=False,
+                              disposable_item_deleted=True)
             browser.close()
     except Exception as error:
         result['error_type'] = type(error).__name__
