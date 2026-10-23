@@ -42,3 +42,14 @@ application_credentials:
       SMTP_PASSWORD: ''
     db-secrets:
       POSTGRES_PASSWORD: REPLACE_WITH_PROD_DATABASE_PASSWORD
+
+# Optional until Phase 10.2; all values below are deliberately fake.
+database_backups:
+  account_id: REPLACE_WITH_32_HEX_ACCOUNT_ID
+  api_token: REPLACE_WITH_OPTIONAL_R2_API_TOKEN
+  endpoint: https://REPLACE_WITH_ACCOUNT_ID.r2.cloudflarestorage.com
+  jurisdiction: default
+  region: auto
+  bucket: liora-backup
+  access_key_id: REPLACE_WITH_32_HEX_R2_ACCESS_KEY
+  secret_access_key: REPLACE_WITH_64_HEX_R2_SECRET_KEY

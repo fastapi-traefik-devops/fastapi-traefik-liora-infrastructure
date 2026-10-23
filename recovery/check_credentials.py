@@ -279,10 +279,12 @@ class Check:
             self.error('recovery/recovery.yaml', 'invalid YAML; use unique string keys without aliases, anchors or custom tags')
             return
         root = self.mapping(data, 'recovery/recovery.yaml',
-                            {'schema_version', 'kubernetes', 'application_credentials'},
+                            {'schema_version', 'kubernetes', 'application_credentials', 'database_backups'},
                             {'schema_version', 'kubernetes', 'application_credentials'} if self.all_fields else {'schema_version'})
         if type(root.get('schema_version')) is not int or root.get('schema_version') != 1:
             self.error('recovery/recovery.yaml.schema_version', 'must be integer 1')
+        if 'database_backups' in root:
+            self.database_backups(root['database_backups'])
         if 'kubernetes' in root:
             kube = self.mapping(root['kubernetes'], 'kubernetes', {'nonprod'})
             if 'nonprod' in kube:
@@ -294,6 +296,29 @@ class Check:
             for env in ('dev', 'stage', 'prod'):
                 if env in apps:
                     self.application(apps[env], env)
+
+    def database_backups(self, value):
+        loc = 'database_backups'
+        keys = {'account_id', 'api_token', 'endpoint', 'jurisdiction', 'region',
+                'bucket', 'access_key_id', 'secret_access_key'}
+        item = self.mapping(value, loc, keys, keys - {'api_token'})
+        for key, val in item.items():
+            if key in keys:
+                self.text(val, loc + '.' + key)
+        for key, length in [('account_id', 32), ('access_key_id', 32), ('secret_access_key', 64)]:
+            if not isinstance(item.get(key), str) or not re.fullmatch('[a-fA-F0-9]{' + str(length) + '}', item[key]):
+                self.error(loc + '.' + key, 'expected Cloudflare hexadecimal credential identifier of length ' + str(length))
+        jurisdiction = item.get('jurisdiction')
+        if jurisdiction not in ['default', 'eu', 'fedramp']:
+            self.error(loc + '.jurisdiction', 'must be default, eu or fedramp')
+        suffix = '' if jurisdiction == 'default' else '.' + str(jurisdiction)
+        expected = 'https://' + str(item.get('account_id')) + suffix + '.r2.cloudflarestorage.com'
+        if item.get('endpoint') != expected:
+            self.error(loc + '.endpoint', 'must match the account and jurisdiction HTTPS S3 endpoint, without a path')
+        if item.get('bucket') != 'liora-backup':
+            self.error(loc + '.bucket', 'must be the dedicated liora-backup bucket')
+        if item.get('region') != 'auto':
+            self.error(loc + '.region', 'must be auto for R2 S3 access')
 
     def controllers(self, entries):
         path = 'kubernetes.nonprod.sealed_secrets_controller_keys'

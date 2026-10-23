@@ -9,6 +9,8 @@ from pathlib import Path
 import subprocess
 import sys
 
+import yaml
+
 
 class ReadError(Exception):
     """A safe diagnostic containing resource identifiers only."""
@@ -44,7 +46,7 @@ def field(data, key, encoded=False):
         raise ReadError(f"Missing or invalid field {key}; cannot render a safe TSV table.") from None
 
 
-def collect(configs):
+def collect(configs, backup=None):
     sections = []
     for cluster, environments, vip in [
         ("prod", ["prod"], "192.168.77.17"),
@@ -85,6 +87,13 @@ def collect(configs):
         ("Jenkins", "http://192.168.77.16:8085", "admin",
          field(jenkins, "jenkins-admin-password", True)),
     ]))
+    if backup:
+        rows = [('R2 S3', field(backup, 'endpoint') + '/' + field(backup, 'bucket'),
+                 field(backup, 'access_key_id'), field(backup, 'secret_access_key'))]
+        if backup.get('api_token'):
+            rows.append(('R2 API token', 'https://dash.cloudflare.com/', field(backup, 'account_id'),
+                         field(backup, 'api_token')))
+        sections.append(('DATABASE BACKUPS (shared bucket credential)', rows))
     return sections
 
 
@@ -106,7 +115,12 @@ def main():
         return 0
     try:
         # Collect everything first: a failed read must not emit a partial password table.
-        sections = collect({"nonprod": args.nonprod_kubeconfig, "prod": args.prod_kubeconfig})
+        recovery = Path(__file__).resolve().parent / "recovery.yaml"
+        backup = yaml.safe_load(recovery.read_text()).get("database_backups") if recovery.exists() else None
+        sections = collect({"nonprod": args.nonprod_kubeconfig, "prod": args.prod_kubeconfig}, backup)
+    except (OSError, yaml.YAMLError) as error:
+        print("ERROR: Cannot read private recovery YAML; no credentials printed.", file=sys.stderr)
+        return 1
     except ReadError as error:
         print(f"ERROR: {error}", file=sys.stderr)
         return 1

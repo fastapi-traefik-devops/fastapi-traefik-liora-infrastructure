@@ -224,3 +224,21 @@ restoring an existing account. See [runbook 18](../runbooks/18-cloudnative-pg.md
 Fresh CNPG installation does not restore discarded data. R2 physical base
 backups and WAL archiving plus an isolated restoration exercise remain a
 separate task; private recovery inputs alone are not a database backup.
+
+## Database physical-backup R2 inputs
+
+Optional root `database_backups` is fully validated when present (same warning
+and exit-code rules as other fields). Required keys: `account_id` (32 hex),
+`endpoint` (HTTPS S3 account/jurisdiction endpoint, no path), `jurisdiction`
+(`default`, `eu`, `fedramp`), `region` (`auto`), `bucket` (`liora-backup`),
+`access_key_id` (32 hex), `secret_access_key` (64 hex). Optional `api_token`
+is a nonempty opaque Cloudflare API credential; no invented fixed token length.
+Only the S3 pair is installed in application namespaces. The API token is kept
+for owner-operated metadata checks; do not broaden permissions on a denied read.
+
+Use one pair scoped to the private dedicated bucket. Environment prefixes do
+not isolate credentials. No secret value belongs in Git or logs; examples are
+visibly fake. The interactive password helper includes this R2 pair and optional
+API token only after its existing explicit plaintext-output confirmation.
+Private recovery inputs are not database backups. See
+[runbook 19](../runbooks/19-cnpg-r2-backup-pitr.md).

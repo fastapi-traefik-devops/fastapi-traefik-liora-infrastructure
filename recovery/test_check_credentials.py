@@ -104,6 +104,22 @@ class CredentialsTest(unittest.TestCase):
             self.assertNotIn(value, output)
         return output
 
+    def test_database_backup_fields_and_secret_safe_errors(self):
+        account='a'*32;access='b'*32;secret='c'*64;token='fixture-r2-api-token-must-stay-private'
+        self.canaries = list(self.canaries) + [access, secret, token]
+        backup={'account_id':account,'endpoint':'https://'+account+'.r2.cloudflarestorage.com',
+                'jurisdiction':'default','region':'auto','bucket':'liora-backup',
+                'access_key_id':access,'secret_access_key':secret,'api_token':token}
+        self.yaml_values['database_backups']=backup;self.write();self.run_check()
+        for key in backup:
+            with self.subTest(key=key):
+                original=backup[key];backup[key]='invalid-fixture-value';self.write()
+                self.run_check(expected=0 if key=='api_token' else 1)
+                backup[key]=original
+        backup['obsolete_backup_field']='fixture-hidden-value';self.write()
+        self.assertIn('obsolete_backup_field',self.run_check())
+        self.run_check(args=('--offline','--strict-warnings'),expected=1)
+
     def test_complete_success_and_wrapper(self):
         self.run_check()
         env = dict(os.environ, RECOVERY_DIR=str(self.directory), RECOVERY_PYTHON=sys.executable)
