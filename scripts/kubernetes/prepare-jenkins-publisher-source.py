@@ -11,7 +11,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE_COMMIT = 'd87b3c9599c5b79dfc6b6751739a110ecbb2ba96'
+SOURCE_COMMIT = '8b584055a83c8f73be1bc3d81f085bbd0db02484'
 SOURCE_REPOSITORY = 'fastapi-traefik-devops/fastapi-traefik-liora-application'
 
 

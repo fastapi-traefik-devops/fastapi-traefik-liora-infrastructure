@@ -291,14 +291,16 @@ Implemented worker budgets (idle observations are not application CI load tests)
 
 The helper does not modify the application checkout. It reads `ci/` from
 Git objects at the reviewed application commit
-`d87b3c9599c5b79dfc6b6751739a110ecbb2ba96`, verifies the blobs and prepares an
-immutable ConfigMap for `jenkins-publisher`. It does not use mutable working-tree
-files, execute pipelines, or apply anything to Kubernetes. It preserves all 27
-source files for the publisher's existing `/opt/phase1-ci` path.
+`8b584055a83c8f73be1bc3d81f085bbd0db02484` (PR #65; previously `d87b3c9599c5`),
+verifies the blobs and prepares an immutable ConfigMap for `jenkins-publisher`.
+It does not use mutable working-tree files, execute pipelines, or apply anything
+to Kubernetes. It preserves all 28 source files for the publisher's existing
+`/opt/phase1-ci` path. `--observer` prepares the one-file STAGE observer bundle.
 
 ```bash
 mkdir -p .local-work/phase9
-bash scripts/local-python.sh scripts/kubernetes/prepare-jenkins-publisher-source.py --output .local-work/phase9/publisher-source.json
+bash scripts/local-python.sh scripts/kubernetes/prepare-jenkins-publisher-source.py --output .local-work/phase9/publisher-source-8b584055a83c.json
+bash scripts/local-python.sh scripts/kubernetes/prepare-jenkins-publisher-source.py --observer --output .local-work/phase9/acceptance-source-8b584055a83c.json
 ```
 
 [Standalone publisher-source preparation](../scripts/kubernetes/prepare-jenkins-publisher-source.py).
