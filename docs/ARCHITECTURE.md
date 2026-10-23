@@ -1,472 +1,310 @@
 # Infrastructure architecture
 
-Updated **2026-10-22**. This document describes the implemented infrastructure
-and the agreed target architecture. Sections explicitly distinguish
-**Implemented**, **In progress**, **Agreed, not deployed**, and **In development**.
-Agreement on a design does not establish its operational readiness or tested availability.
+This document defines the desired architecture of the Liora platform.
+Implementation order, migration procedures and execution results belong in the
+[implementation plan](testreports/IMPLEMENTATION_PLAN.md), [runbooks](../runbooks/)
+and [phase reports](testreports/).
 
-The implemented application, GitOps and public HTTPS topology is documented in
-the Phase 0–7 reports. Phase 8 has deployed separate Admin VIP controllers and
-monitoring in both clusters and a persistent, isolated Jenkins foundation in
-NONPROD. Native browser/API checks passed from the execution host, and the
-operator confirmed all interfaces and passwords through Tailscale on 2026-10-22.
-Phase 8 is complete. See the
-[Phase 8 report](testreports/PHASE8_REPORT.md) and
-[implementation plan](testreports/IMPLEMENTATION_PLAN.md).
-Phase 9 has restored Jenkins state to a separate NONPROD home while retaining
-the current administrator login. The CI/DinD worker and separate publisher are
-connected; a Docker build/bind-path smoke passed and imported state is retained.
-The first Phase 9 controlled CI/publication cycle passed and Argo deployed
-STAGE; manual running-digest and HTTPS checks passed. Main-only polling then
-automatically built and deployed the next main commit; unrelated imported jobs
-remain disabled. See the
-[Phase 9 report](testreports/PHASE9_REPORT.md).
+## Platform topology
 
-## Host and private network
+One Proxmox host runs two independent, three-server K3s clusters. DEV and STAGE
+share the NONPROD cluster and have separate namespaces, databases and Secrets.
+PROD has its own cluster, data and administrative configuration.
 
-**Status: Implemented.**
+| Component | VM IDs | Private addresses |
+| --- | --- | --- |
+| Proxmox gateway | Host | `192.168.77.1` |
+| Management | 200 | `192.168.77.200` |
+| Public application edge | 240 | `192.168.77.240` |
+| Tailscale subnet router | 250 | `192.168.77.250` |
+| NONPROD K3s servers | 201–203 | `192.168.77.201`–`192.168.77.203` |
+| PROD K3s servers | 211–213 | `192.168.77.211`–`192.168.77.213` |
 
-One Proxmox VE 9 host provides `vnet77` (`192.168.77.0/24`), gateway
-`192.168.77.1`, and outbound NAT. Its public IPv4 address is a recovery input,
-not a fixed part of the topology. Debian 13 Cloud-Init template **9013** is the
-source for the managed VMs. The operator selects VM-capable disk storage on the
-current host before creating the template.
+The private network is `192.168.77.0/24` on Proxmox `vnet77`. VM addresses are
+static. DHCP allocation excludes static VM addresses and all floating addresses.
+Proxmox provides outbound NAT. The public IPv4 address is a
+recovery/configuration input.
 
-| Component | VM IDs | Private address or API VIP | Provisioning |
-| --- | --- | --- | --- |
-| Management | 200 | `192.168.77.200` | Proxmox clone and Cloud-Init |
-| Application edge | 240 | `192.168.77.240` | Terraform VM; Ansible HAProxy |
-| Tailscale subnet router | 250 | `192.168.77.250` | Terraform VM; Ansible guest setup |
-| Dev/stage K3s servers | 201–203 | `192.168.77.201–203`; VIP `192.168.77.11` | Terraform VMs; Ansible K3s |
-| Prod K3s servers | 211–213 | `192.168.77.211–213`; VIP `192.168.77.12` | Terraform VMs; Ansible K3s |
+Terraform manages infrastructure resources; Ansible configures guest operating
+systems, K3s and the edge. VM 200 is the operator host for these tools and holds
+separate NONPROD and PROD kubeconfigs. Each infrastructure module has its own
+state and recovery procedure. Credentials, private keys and state stay outside Git.
 
-## Access and cluster control
+Each K3s cluster uses embedded etcd across its three server nodes. CPU, memory,
+replicas and storage requests are explicit configuration within the resource
+budget of the single Proxmox host.
 
-**Status: Implemented, with the kubeconfig observation noted below.**
+## Address roles and traffic ownership
 
-- Proxmox host nftables forwards public TCP `22200` to VM 200 port `22` for
-  initial SSH access. Tailscale VM 250 advertises `192.168.77.0/24` for private
-  administration after its route is approved in the tailnet.
-- VM 200 holds the working checkout and runs Terraform and Ansible. Each
-  Terraform module keeps its own state. Local credentials and SSH keys reside
-  in ignored files under `recovery/`; that directory also contains tracked
-  examples and helpers.
-- Both clusters have three K3s server nodes with embedded etcd. Ansible
-  installs kube-vip for each cluster's **API** VIP; remaining servers join
-  through that VIP. Cluster tokens are separate and stored locally in
-  `recovery/`. The playbooks do not disable K3s packaged Traefik or ServiceLB.
-- The K3s VM Terraform defaults are two vCPUs and Proxmox memory ballooning
-  from 2 GiB to 8 GiB. Ansible prepares the guest OS and installs the pinned
-  K3s version from each inventory.
-- VM 200 stores the separate kubeconfigs `~/.kube/config-dev-stage` and
-  `~/.kube/config-prod`, with contexts `dev-stage` and `prod`. The Ansible
-  playbooks include a merge step, but the default `~/.kube/config` on VM 200
-  had no contexts during the documentation review on 2026-10-21. Use the
-  explicit cluster kubeconfig for every operation; do not assume the default
-  configuration selects either target cluster.
+| Purpose | NONPROD | PROD |
+| --- | --- | --- |
+| Kubernetes API | `192.168.77.11:6443` | `192.168.77.12:6443` |
+| Public application ingress | Dedicated NONPROD ingress VIP | Dedicated PROD ingress VIP |
+| Private administrative Services | `192.168.77.16` | `192.168.77.17` |
 
-### Address roles
+API, public ingress and administrative addresses have separate roles and
+controller ownership. Public ingress VIP addresses are network configuration
+parameters; they must not overlap API VIPs, Admin VIPs, static VMs or DHCP.
 
-| Purpose | DEV/STAGE | PROD | Status |
-| --- | --- | --- | --- |
-| Kubernetes API | `192.168.77.11:6443` | `192.168.77.12:6443` | Implemented; API kube-vip |
-| Public application ingress | `.201`–`.203:80/443` | `.211`–`.213:80/443` | Implemented; Traefik/ServiceLB behind HAProxy |
-| Private administrative Services | `192.168.77.16` | `192.168.77.17` | Implemented in both clusters; native status-ownership guard |
+API kube-vip instances serve cluster control-plane access. Separate
+services-only kube-vip instances serve administrative Services. Public ingress
+has its own address ownership; neither an API nor an Admin VIP is reused for it.
+Each LoadBalancer Service has one controller responsible for its status and
+address advertisement. LoadBalancer classes and admission rules enforce that
+ownership without competing ServiceLB updates.
 
-The operator confirms `.16` and `.17` are free and allocated to private
-administration. They are distinct from both API VIPs and public ingress
-addresses. Both Admin VIPs are active; their independent ownership is recorded
-in the Phase 8 report.
+## Public application access
 
-## Repository boundaries
+| Environment | Cluster / namespace | Application URL |
+| --- | --- | --- |
+| DEV | NONPROD / `app-dev` | `https://dev.liora.aprt.info` |
+| STAGE | NONPROD / `app-stage` | `https://stage.liora.aprt.info` |
+| PROD | PROD / `app-prod` | `https://liora.aprt.info` |
 
-| Path | Responsibility |
-| --- | --- |
-| `scripts/proxmox/` | Debian template creation |
-| `edge/nftables/` | Proxmox SSH DNAT examples |
-| `edge/tailscale/` | Subnet router VM and Tailscale configuration |
-| `edge/haproxy/` | Implemented application edge, routing and certificate distribution configuration |
-| `infrastructure/k3s-cluster/terraform/` | Six K3s server VMs |
-| `infrastructure/k3s-cluster/ansible/` | Guest preparation, two K3s clusters, kubeconfigs |
-| `kubernetes/apps/liora/` | Current application manifests, environment overlays, and imported deployment history; DEV/STAGE/PROD deployed and privately verified |
-| `kubernetes/gitops/argocd/` | Implemented independent Argo CD installations and cluster-specific GitOps definitions |
-| `kubernetes/platform/nonprod/` | Implemented NONPROD administrative access, monitoring and Jenkins foundation/held restore overlays |
-| `kubernetes/platform/prod/` | Implemented independent PROD administrative access and monitoring |
-| `scripts/kubernetes/` | Reusable deployment, certificate and verification helpers |
-| `recovery/` | Local recovery inputs and examples; live credentials stay out of Git |
-| `runbooks/` | Operator steps for installation and recovery |
-| `docs/testreports/` | Implementation plans, provenance and phase reports |
-| `.local-work/` | Existing ignored operator tools, browser dependencies and generated output |
-
-The platform paths above now contain Phase 8 configuration and preserved
-upstream source history; actual deployment is recorded in its report. Work uses
-the original infrastructure checkout and its ignored local workspace, without
-an additional migration worktree. See
-the [local workspace guide](LOCAL_WORKSPACE.md) for tool and archive locations.
-
-The application repository owns application code, tests, image builds and
-release pipeline source. The infrastructure repository owns deployed image
-references, Kubernetes/GitOps resources and the target Jenkins platform
-configuration. Jenkins deployment sources currently remain in the application
-repository's `infra/jenkins-host/` proof of concept until their staged import.
-Promotion changes targeting infrastructure overlays are planned for Phase 9;
-they are not described here as already implemented.
-
-Start with the [installation](../00-Installation_from-0.md) or
-[disaster recovery](../01-Disaster_recovery.md) navigator. The documented
-infrastructure flow continues with the
-[application deployment procedure](../runbooks/13-deploy-application-manifests.md).
-
-## Application environments and storage
-
-**Status: Implemented; database replacement and backup/restore are later work.**
-
-DEV and STAGE run in `app-dev` and `app-stage` on the dev/stage cluster. PROD
-runs in `app-prod` on its separate cluster, with two backend and two frontend
-replicas. Each environment retains PostgreSQL, its separate 1Gi local-path PVC,
-Adminer, prestart, backend and frontend from the imported stack. All backend
-Pods use one worker; PROD required the same explicit command as DEV/STAGE.
-
-| Environment | Cluster / namespace | Public application URL | Backend / frontend replicas |
-| --- | --- | --- | --- |
-| DEV | DEV/STAGE / `app-dev` | `https://dev.liora.aprt.info` | 1 / 1 |
-| STAGE | DEV/STAGE / `app-stage` | `https://stage.liora.aprt.info` | 1 / 1 |
-| PROD | PROD / `app-prod` | `https://liora.aprt.info` | 2 / 2 |
-
-Each namespace has its own frontend, backend, PostgreSQL and Adminer Services.
-Prestart is a migration Job, not a browser service. PostgreSQL and other
-application internals remain on the cluster service network. The agreed
-administrative endpoints expose Adminer, not PostgreSQL directly.
-
-Current `local-path` volumes are node-local; they do not replicate data across
-the three cluster nodes. A three-server control plane or movable VIP does not
-make these volumes or database instances highly available. Data restore and
-storage failover have not been established by the functional application checks.
-
-Database readiness, migrations, private UI login and item persistence are
-verified in the [Phase 3](testreports/PHASE3_REPORT.md),
-[Phase 4](testreports/PHASE4_REPORT.md), and [Phase 5](testreports/PHASE5_REPORT.md)
-reports. All three environments passed mutual database-marker and token
-isolation checks; synthetic acceptance items were removed afterward. Data
-restoration and target platform replacements remain later work. Public HTTPS
-routing is now verified in Phase 7 below.
-
-## GitOps ownership
-
-**Status: Implemented for the current application deployments.**
-
-Independent Argo CD v3.5.6 installations in each cluster's `argocd` namespace
-source this infrastructure repository. Nonprod manages app-dev/app-stage; PROD
-manages app-prod. Each destination is the local Kubernetes API. Separate roots
-manage the cluster-specific Application and AppProject definitions; no external
-cluster credentials or shared ApplicationSet are configured.
-
-Both roots and all children have automated reconciliation and self-healing.
-Nonprod child pruning is enabled after inventory review; PROD and both roots
-keep pruning off. Database PVC retention annotations remain. Registry and
-application Secrets stay external prerequisites. The controllers have the
-upstream cluster RBAC; AppProject restrictions scope applications rather than
-providing a controller service-account boundary against cluster administrators.
-
-Private Argo CD UI access, root/child reconciliation, hook migrations and
-ConfigMap drift correction passed in the [Phase 6 report](testreports/PHASE6_REPORT.md).
-Use [runbook 14](../runbooks/14-install-argocd.md) for bootstrap and adoption,
-including the manual-policy render required before enabling a fresh deployment.
-
-Administrative exposure must retain a single declarative owner for each
-Service. The exact resources and ownership for the new platform are **in
-development**; the current application reconciliation must not undo, or compete
-with, a separately managed copy of the same Service.
-
-## Public application ingress and certificates
-
-**Status: Implemented for DNS-only public-origin HTTPS access.**
-
-All three application hostnames resolve directly to the current Proxmox public
-origin (`151.115.96.5` at acceptance), using Cloudflare DNS-only records. Proxmox
-forwards public TCP 80/443 to dedicated HAProxy VM 240. Existing SSH and unrelated
-forwarding rules remain intact. HAProxy allows the three application Host/SNI
-names and rejects unknown/admin names; Argo CD and Adminer gain no public route.
+Cloudflare manages public DNS. DEV and STAGE use Cloudflare protection/Access;
+PROD uses DNS-only public-origin access. The origin path is Proxmox public
+TCP 80/443 forwarding to HAProxy VM 240, then the selected cluster's dedicated
+ingress VIP and Traefik. HTTP requests redirect to HTTPS. HAProxy routes only
+application hostnames and rejects unknown and administrative names.
 
 ```mermaid
 flowchart LR
-  Browser[Public browser] --> Origin[Proxmox public TCP 80/443]
-  DNS[Cloudflare DNS-only] -. resolves application names .-> Origin
+  NonprodBrowser[DEV / STAGE browser] --> Cloudflare[Cloudflare protection / Access]
+  ProdBrowser[PROD browser] --> Origin[Proxmox public origin]
+  Cloudflare --> Origin
   Origin --> Edge[HAProxy VM 240]
-  Edge --> Nonprod[Traefik on .201-.203]
-  Edge --> Prod[Traefik on .211-.213]
-  Nonprod --> Apps[DEV and STAGE application Services]
-  Prod --> App[PROD application Services]
+  Edge --> NonprodVIP[NONPROD ingress VIP]
+  Edge --> ProdVIP[PROD ingress VIP]
+  NonprodVIP --> NonprodTraefik[NONPROD Traefik]
+  ProdVIP --> ProdTraefik[PROD Traefik]
+  NonprodTraefik --> NonprodApps[DEV / STAGE application Services]
+  ProdTraefik --> ProdApp[PROD application Services]
 ```
 
-TLS passes through to Traefik over disjoint ServiceLB node endpoint pools:
-nonprod `.201`–`.203`, PROD `.211`–`.213`. API VIPs `.11`/`.12` are not ingress
-addresses. Dedicated floating ingress VIPs and a second edge are not installed.
-This is a single-edge deployment without a tested failover/reboot guarantee.
+HAProxy passes TLS through using SNI. Traefik terminates origin HTTPS using
+certificates managed inside its cluster. DEV/STAGE Access restrictions apply
+at the Cloudflare edge; the direct-origin path is not restricted to Cloudflare.
 
-Certbot HTTP-01 on the edge issues separate trusted certificates for DEV, STAGE
-and PROD. The management VM's daily certificate-sync service privately fetches
-and validates each pair and updates only that environment's `app-tls` Secret.
-Certbot renewal simulations and a service execution passed; the reports do not
-establish a later unattended real renewal/distribution cycle. Certificate state
-and Terraform state remain external operator data. DEV's HTTPS origin/CORS is
-active in its restarted backend; STAGE/PROD retain their existing HTTPS settings.
+### Certificate lifecycle
 
-The operator confirmed external warning-free loads of all three URLs. Canonical
-HTTPS UI persistence, health, redirects and mutual database/token isolation
-passed. See [Phase 7](testreports/PHASE7_REPORT.md) and
-[runbook 15](../runbooks/15-publish-application.md). Cloudflare's proxy/Full (strict)
-path remains optional follow-up and was not part of this DNS-only acceptance.
+Each cluster has its own cert-manager installation and issuer configuration.
+Let's Encrypt issues application certificates through ACME DNS-01 validation.
+cert-manager creates the required TXT records through the Cloudflare DNS API
+and renews certificates into the environment's TLS Secret.
 
-## Permanent private administrative access
+Cloudflare credentials are scoped to the required zone and permissions. Private
+recovery inputs provision those credentials into Kubernetes. Each TLS Secret
+has one certificate-management owner. Certificate issuance and renewal are
+cluster-local.
 
-**Status: Implemented; external Tailscale access confirmed on 2026-10-22.**
+## Private administrative access
 
-Both Admin VIPs serve the agreed endpoints. Argo/Grafana/Jenkins native logins,
-all Adminer database logins, Prometheus/Alertmanager browser UIs and all four
-Grafana dashboards per cluster passed direct-VIP checks from the execution host.
-The approved [status ownership guard](testreports/PHASE8_ADMIN_VIP_DECISION.md)
-prevents K3s ServiceLB from clearing their VIP status.
-
-Trusted administrators use the existing Tailscale route to
-`192.168.77.0/24`. The agreed browser path is Tailscale → Admin VIP →
-Kubernetes Service → Pod. It requires no private ingress, DNS configuration,
-additional reverse proxy, SSH tunnel or manually started port-forward.
+Trusted administrators access `192.168.77.0/24` through Tailscale VM 250.
+Administrative browser access uses IP and port through each cluster's Admin VIP.
+No private ingress, private DNS service, additional reverse proxy, SSH tunnel
+or manually started port-forward is required.
 
 ```mermaid
 flowchart LR
   Browser[Administrator browser] --> Tailscale[Tailscale subnet router .250]
   Tailscale --> Nonprod[Admin VIP 192.168.77.16]
   Tailscale --> Prod[Admin VIP 192.168.77.17]
-  Nonprod --> NonprodServices[Nonprod administrative Services]
+  Nonprod --> NonprodServices[NONPROD administrative Services]
   Prod --> ProdServices[PROD administrative Services]
-  NonprodServices --> NonprodPods[Pods in DEV/STAGE K3s]
-  ProdServices --> ProdPods[Pods in PROD K3s]
 ```
 
-All endpoints below are deployed and locally verified. The operator also
-confirmed the external Tailscale browser path and working passwords.
-
-| Interface | DEV/STAGE | PROD |
+| Interface | NONPROD | PROD |
 | --- | --- | --- |
 | Argo CD | `https://192.168.77.16:8080` | `https://192.168.77.17:8080` |
 | Grafana | `http://192.168.77.16:3000` | `http://192.168.77.17:3000` |
 | Prometheus | `http://192.168.77.16:9090` | `http://192.168.77.17:9090` |
 | Alertmanager | `http://192.168.77.16:9093` | `http://192.168.77.17:9093` |
-| Adminer DEV | `http://192.168.77.16:8081` | — |
-| Adminer STAGE | `http://192.168.77.16:8082` | — |
-| Adminer PROD | — | `http://192.168.77.17:8081` |
 | Jenkins | `http://192.168.77.16:8085` | — |
 
-Use each service's native HTTP/HTTPS and authentication. Argo CD currently
-provides HTTPS with its bootstrap self-signed certificate; the agreed IP URL
-does not imply a trusted, warning-free certificate. Grafana and Jenkins use
-their native logins; Adminer uses database credentials. No additional TLS
-termination, certificate issuance, SSO or authentication proxy is agreed.
-Prometheus and Alertmanager rely on their native access model within the
-trusted private subnet. Native base URLs and redirects must match the final
-external IP and port.
+Services provide their native HTTP/HTTPS and authentication. Argo CD uses its
+native HTTPS endpoint; an IP endpoint does not require a publicly trusted
+certificate. Grafana, Jenkins and Argo CD retain native logins. Prometheus and
+Alertmanager use their native access model within the trusted private subnet.
+No additional SSO, authentication proxy or private certificate authority is part
+of this access design.
 
-The agreed access policy gives trusted administrators subnet access through
-Tailscale. Additional Tailscale ACL/grants restrictions and firewall hardening
-are outside this increment. Admin VIP Services must not receive public NAT or
-public HAProxy routes. Proxmox administration and management SSH retain their
-own addresses; they are not routed through these Kubernetes Admin VIPs.
+Tailscale gives trusted administrators subnet access. Additional per-service
+ACL/grant restrictions are outside the agreed access model. Administrative
+interfaces have no public NAT or HAProxy route. PostgreSQL, Redis, build daemons
+and internal exporter endpoints stay on their internal networks. Proxmox and
+management SSH use their own addresses outside the Admin VIPs.
 
-### Services-only kube-vip
+### Administrative VIP ownership
 
-**Status: Implemented.**
+Each cluster runs a services-only `kube-vip-admin` DaemonSet with dedicated
+selectors, service account and RBAC. All Services sharing an Admin VIP use one
+common leader. Its election lease is independent of the API VIP lease.
+API and administrative instances have distinct host-network listeners.
 
-Each cluster runs its own services-only kube-vip v1.2.3 DaemonSet named
-`kube-vip-admin`, with dedicated selectors/service account/RBAC. Global service
-election uses `svc_election=false` and `kube-system/liora-admin-services`,
-independent of the API instance's `plndr-cp-lock`. The shared Admin VIP has one
-leader across all administrative Services. Reads of all three nodes in each
-cluster confirmed exactly one physical owner, matching its lease and Service
-annotations. Metrics use `2113`, separate from the API instance's `2112`.
+Administrative Services explicitly declare their VIP and use LoadBalancer
+class `liora.aprt.info/admin-vip`, `externalTrafficPolicy: Cluster` and
+`allocateLoadBalancerNodePorts: false`. Only the dedicated administrative
+kube-vip identity may update their Service status. API and public ingress
+Services belong to their respective controllers.
 
-Each Service explicitly sets `kube-vip.io/loadbalancerIPs`, class
-`liora.aprt.info/admin-vip`, `externalTrafficPolicy: Cluster`, and
-`allocateLoadBalancerNodePorts: false`. No new NodePorts are allocated. Strict
-class handling keeps kube-vip away from public Traefik and avoids administrative
-ServiceLB DaemonSets. K3s v1.36.5+k3s1 nevertheless has a separate EndpointSlice
-status worker that ignores class; a native ValidatingAdmissionPolicy allows only
-the dedicated kube-vip identity to update this class's Service status. Other
-classes and workload admission are unaffected. ServiceLB may log/retry denied
-writes; this prevents corruption rather than patching K3s. See the decision
-record for enforcement, rollback and its limits.
+## Application and database platform
 
-Existing application Services are preserved; separately named `adminer-private`
-Services are declared in their environment overlays. They are currently applied
-by the operator and can be adopted by the existing Argo Application when reviewed
-source changes are published. Helm owns monitoring chart resources; operator
-manifests own the additional private Services and scrape/dashboard/rule resources.
-There is no second platform Argo owner. A VIP path does not isolate other trusted
-private-network paths or host listeners.
+Application configuration uses a shared Kustomize base and separate DEV,
+STAGE and PROD overlays. Each environment owns its configuration, runtime
+Secrets, database credentials and image digest pair. Frontend and backend
+images are immutable and referenced by digest.
 
-API VIPs, their DaemonSets and public ingress remain unchanged. VIP failover,
-reboot and outage-duration tests are deferred. A common VIP leader does not
-establish availability of the services, their storage or the single Proxmox host.
+CloudNativePG manages PostgreSQL separately for each environment. Database
+instance counts, storage and resource budgets are environment-specific.
+Application migrations use the prestart/migration lifecycle and preserve
+compatibility with the deployed application. Database administration uses a
+private operational access path; Adminer is excluded from the final application
+stack.
 
-## Cluster monitoring
+Persistent storage has explicit ownership, retention and recovery rules.
+Node-local `local-path` storage does not replicate volume contents. Database
+replication, backups and application replica placement are separate from
+control-plane and VIP availability. PROD application scaling and disruption
+budgets are environment configuration, independent of the number of K3s servers.
 
-**Status: Implemented independently in both clusters.**
+### Backup and recovery
 
-Each cluster has its own monitoring namespace, Grafana, Prometheus and
-Alertmanager. The agreed stack includes Prometheus Operator, kube-state-metrics,
-Node Exporter, Argo CD/Traefik monitoring, dashboards and alert rules adapted
-from the application repository's existing `monitoring/` configuration.
-DEV/STAGE and PROD have separate data, credentials and environment-specific
-monitoring configuration. Exporter and operator endpoints remain internal.
+Database backups have a restore procedure and a destination outside the
+physical Proxmox host failure domain. Storage backend, retention and recovery
+objectives are explicit database/recovery configuration parameters. Recovery procedures cover
+application data, etcd, infrastructure state, cluster credentials and encryption
+keys. Backup copies and the private recovery kit stay outside Git.
 
-Phase 8 pins kube-prometheus-stack 92.2.0 and retains the bounded PoC budgets:
-Prometheus retention is three days/1500MB with a 2Gi local-path PVC; Alertmanager
-uses a 256Mi local-path PVC. Grafana state is ephemeral with provisioned dashboards
-and datasource. Helm owns its release; separately applied configuration owns
-custom monitors/rules/dashboards and private Services. Direct-VIP checks found
-26/26 targets up, eight healthy rules, a healthy Grafana datasource and four loaded
-dashboards in each cluster. The inherited Grafana 384Mi limit caused an OOM kill;
-both clusters now request 100m/256Mi, limit 500m/768Mi and allow up to 15 minutes
-for cold startup. The replacement instances remained Ready without restarts at
-the 2026-10-22 follow-up. These observations do not constitute a load/HA test.
-Exact resource limits are tracked in the per-cluster values and
-[runbook 16](../runbooks/16-private-platform-access.md).
+The recovery kit contains the inputs and procedures needed to recreate the
+Proxmox guests, both clusters, GitOps and platform services, then restore data.
+Jenkins recovery includes controller state, credential encryption material,
+users, jobs and retained history. Secret-controller keys and registry access
+are recoverable independently of an application deployment.
 
-An existing Slack destination is configured in the
-legacy kind deployment, but the destination for new-cluster notifications
-has not been agreed. Alert delivery configuration is **in development**;
-notification receipt is not yet verified.
+## GitOps ownership
 
-## Jenkins and CI
+Each cluster has its own Argo CD installation, root Application and AppProject.
+NONPROD manages DEV/STAGE; PROD manages PROD. Each controller deploys to its
+local Kubernetes API and reads the infrastructure repository.
 
-**Current state: Jenkins state and worker agents in K3s; application jobs held.**
+Argo CD automatically reconciles approved Git state and repairs drift.
+NONPROD application pruning is enabled under the resource ownership policy.
+PROD and root Applications do not automatically prune. Database volume retention
+is explicit. Every Service and platform resource has one declarative owner;
+application namespace resources belong to their environment definitions and
+platform resources to their platform definitions.
 
-The legacy Jenkins ran in Docker on VM 100 at private address
-`192.168.77.100:8085`. Its source configuration is in the application repository
-under `infra/jenkins-host/`. It has a controller with zero executors, a CI
-agent, a separate trusted registry publisher and an isolated Docker-in-Docker
-build daemon. This proof of concept is the migration source. Its controller,
-agents, daemon and local kind node were stopped with operator authorization.
-The operator subsequently ran `docker system prune -a --volumes` on the local
-execution host on 2026-10-22. The stopped containers and local images were
-removed; the seven named Jenkins volumes and private backups remain. Legacy
-Docker recovery now requires recreating containers and restoring missing bind
-inputs from the private archives. It cannot use `docker start` on the removed
-containers. This cleanup did not affect either remote K3s cluster or its PVCs.
-The old kind node's anonymous data volume was removed too; the Jenkins backups
-do not preserve that cluster's state.
+STAGE image updates are direct automated commits after successful main CI.
+DEV and PROD promotion use manual, reviewed GitOps changes. Git rollback is an
+explicit operator action; Argo CD reconciles the selected rollback state.
 
-One Jenkins controller now runs in the DEV/STAGE cluster's `jenkins` namespace,
-with a separate 5Gi local-path `JENKINS_HOME` PVC and native HTTP/login at
-`192.168.77.16:8085`. It reuses the unchanged PoC image/plugin set, published to
-GHCR and pinned by digest. The restoration baseline contained 30 configured items,
-139 build records and three persisted users; subsequent reviewed CI adds records
-and related PR jobs without pruning imported history. The current K3s admin
-account and password are retained; legacy admin data remains only in the
-recovery archive.
-Native browser/API login passed, credential IDs/scopes and decryption were checked,
-and original encryption/user-directory keys were retained. It requests 100m/512Mi,
-limits 1 CPU/768Mi and caps its heap at 384Mi. No PROD controller is planned.
-The restored baseline held all jobs, multibranch scanning and Pipeline resume.
-Authorized Phase 9 execution now enables only the existing main CI and trusted
-publisher. Related prerequisite PR checks completed and are disabled again;
-unrelated jobs and recurring indexing/nightly schedules remain disabled. Controller executors remain zero.
-Two agents are connected, each with one executor and its preserved label.
-The startup quiet-mode hook is retained, so controller restart still requires
-deliberate release after inspecting job/trigger state; restart cutover remains
-open. A controller GitHub egress policy permits DNS/public HTTPS for this cycle.
-An init check prevents the restored-state overlay from starting on an incomplete
-home. The original foundation PVC and a consistent foundation backup are retained.
-Migration is staged:
+## Jenkins and delivery
 
-- Phase 8 installs the controller, storage and private access. Working jobs,
-  polling, schedules, publication and promotion are not activated there.
-- Phase 9 moves working CI and its private state. Preserve as much as possible
-  from the existing image/plugin/tool locks, Dockerfiles, JCasC, Job DSL,
-  pipelines, users, credential IDs/scopes, history and artifacts. Keep CI and
-  trusted publication separate. Current pipeline sources/settings remain preserved
-  with the reviewed promotion adaptation installed for controlled execution.
-  The current target supersedes human review for every GitOps PR: successful CI
-  of the exact resulting application main commit publishes immutable images, directly commits
-  the pair to infrastructure main and lets Argo CD deploy STAGE automatically.
-  DEV/PROD remain manual; PROD reuses a successfully STAGE-accepted pair without
-  rebuilding. Application code/build pipelines stay in the application repository.
-  Serialize STAGE promotion, recheck application main before each push and skip
-  superseded builds. Automatic Argo health, running-digest and HTTPS smoke evidence
-  tied to source/pair is mandatory before PROD. Rollback remains manual.
-  The trusted writer restricts direct commits to STAGE image, promotion and
-  acceptance files; unrelated concurrent infrastructure changes are preserved.
-  App grants were verified; the owner confirmed no infrastructure main
-  protection. Application integration used its required real CI check and
-  normal PR merge, without changing branch rules or permissions.
-  The first minimal live cycle passed with main #15 and publisher #34:
-  Argo automatically deployed `b8caf7e`, with exact running-digest and strict
-  HTTPS checks through the private edge route. Its sole `H/2 * * * *` SCM poll
-  detected the next main commit `3459d5a`; main #16 / publisher #35 automatically
-  deployed `59c3685` and the same manual checks passed. The publisher stops
-  after the STAGE update; deployment verification is currently manual. The separate
-  observer/automatic acceptance and expanded promotion workflows are preserved
-  but deferred outside that initial path. PROD is explicitly blocked until the
-  agreed automated acceptance gate is implemented and live-verified. This is a
-  staged implementation of the target above, not an alternative architecture.
+One persistent Jenkins controller runs in NONPROD with zero executors.
+Application builds run on the separate `host-ci` agent alongside an isolated,
+privileged Docker-in-Docker daemon. The trusted `registry-publisher` agent has
+its own workspace and executes pinned publisher helpers. Application build code
+does not receive registry-publishing or infrastructure-writing credentials.
+The privileged build daemon's isolation does not provide a separate physical
+security boundary from its K3s node.
 
-Controller resources and image provenance are tracked in
-`kubernetes/platform/nonprod/jenkins/`. Its default overlay supports a fresh
-foundation; `held/` selects the restored home and zero-agent execution guard,
-and the current `agents/` overlay adds the connected workers. Do not apply
-the foundation overlay over the restored controller as routine reconciliation.
-The CI Pod in `jenkins-ci` co-locates the original `host-ci` agent with privileged
-DinD, sharing a 5Gi work PVC at `/home/jenkins/agent` and using a fresh 20Gi cache
-PVC. Its limits are 500m/384Mi for the agent and 1500m/2560Mi for DinD.
-The separate `registry-publisher` Pod in `jenkins-publisher` has a 5Gi work PVC,
-500m/512Mi limit and read-only immutable helper source from the reviewed application
-commit. Neither worker mounts an API token or host Docker socket. Only the CI Pod
-receives generated Docker TLS certificates; basic network policies retain the
-build/publication separation. Both agents connect by WebSocket, with no new
-browser or daemon Service. Native admin login and retained state passed again;
-the Docker smoke did not execute a Jenkins job or publish application images.
+The controller preserves operator identities, credential scopes and retained
+build history. Its startup configuration restores normal execution of the
+approved jobs and triggers. Agent images, plugins and tools are pinned;
+workspaces, Docker cache and controller state have separate storage lifecycles.
 
-The recovered worker images are published to GHCR and pinned by digest. The
-operator deferred vulnerability remediation and further image scans for this
-educational deployment; the failed DinD result remains recorded as a failure.
-See the [worker report](testreports/PHASE9_WORKERS.md) for provenance and checks.
-Application CI, trusted publication activation and pipeline/promotion review
-remain **in development** for Phase 9. Stored publisher/App credentials have
-been restored, but publication is inactive and imported Job DSL is not executed.
-Live credentials, encryption keys and home archives remain private operator data
-outside Git. Successful state restore does not establish CI or promotion readiness.
+### Build and promotion policy
 
-VM 100 retirement and legacy public NAT cleanup are operator work outside
-this implementation's scope. Phase 8 does not complete the working CI
-migration required before the operator retires the old environment.
+Main SCM polling runs approximately every two minutes. Automation is limited
+to the agreed main pipeline and explicit promotion entrypoints; nightly
+schedules and recurring multibranch indexing are disabled.
 
-## Later platform components
+```mermaid
+flowchart LR
+  Main[Application main commit] --> CI[CI / tests / image build]
+  CI --> Publisher[Trusted immutable-image publisher]
+  Publisher --> GitOps[Direct STAGE digest commit to infrastructure main]
+  GitOps --> Argo[Argo CD deploys STAGE]
+  Argo --> Acceptance[Automatic STAGE acceptance]
+  Acceptance --> ProdRequest[Manual release-tag PROD promotion]
+```
 
-### Database platform and backup/restore
+- **DEV:** an operator requests deployment of a selected application branch.
+  DEV is independent of STAGE and is not a mandatory promotion step.
+- **STAGE:** a merge into application main runs CI for the resulting main
+  commit. Successful CI exports its tested images to the trusted publisher,
+  which publishes immutable frontend/backend images and directly commits the
+  pair to infrastructure main. Argo CD deploys that state without a STAGE PR
+  or human approval.
+- **PROD:** an operator selects a release tag and the exact image digest pair
+  accepted in STAGE. A reviewed GitOps change promotes that pair without
+  rebuilding either image.
 
-**Status: Target agreed; section in development.**
+Publication, STAGE promotion and acceptance are serialized through one publisher
+lock. The writer rechecks exact application main immediately before each
+infrastructure push. Superseded builds are skipped, including when a newer
+commit fails CI. A failed newer build leaves the deployed STAGE version intact.
+Infrastructure updates preserve unrelated concurrent changes. Automated writes
+are limited to the intended STAGE image, promotion and acceptance files.
 
-CloudNativePG is the target database platform, introduced one environment at
-a time after backup/restore verification. Current PostgreSQL Deployments and
-PVCs remain in service. Backup destination, retention, database migration
-procedure and storage/availability design are in development. Adminer remains
-until an alternative operational path is available and its removal is agreed.
+### Automatic STAGE acceptance
 
-### Cluster-specific Secret encryption
+A separate observer checks Argo CD Synced/Healthy, the ready running
+frontend/backend digest pair and a STAGE HTTPS smoke request. Acceptance records
+bind the application SHA, both digests and infrastructure/Argo revisions.
+The observer has only the read access needed for observation; the trusted
+writer records the acceptance result.
 
-**Status: Target agreed; section in development.**
+PROD promotion requires a successful automatic acceptance record for the exact
+pair and release source. Failed or superseded acceptance cannot qualify a
+release. Rollback remains manual.
 
-Separate Sealed Secrets controllers and recovery keys are planned for the two
-K3s clusters. They have not been deployed there. Existing application and
-registry Secrets were provisioned from private recovery inputs. Controller
-deployment, key recovery and the migration procedure are in development.
+## Monitoring and operational configuration
 
-### Future ingress and resilience changes
+Each cluster has independent Prometheus, Alertmanager and Grafana configuration,
+credentials and metrics storage. Prometheus Operator, kube-state-metrics and
+Node Exporter provide cluster monitoring. Argo CD, Traefik and application
+monitoring use internal endpoints, provisioned dashboards and alert rules.
+Exporter endpoints are not administrative browser services.
 
-**Status: Section in development.**
+Resource limits, retention, dashboard provisioning and storage budgets are
+explicit per-cluster configuration. Alert delivery has configured destinations
+and routing; notification channels, log collection and external uptime checks
+are selected within the observability design and resource budget.
 
-Dedicated floating public-ingress addresses and further platform changes
-appear in the later implementation plan. Their detailed design is not
-settled. The agreed Admin VIPs do not implement public ingress failover,
-replicated storage or host redundancy. Existing public certificate automation
-remains as described above; no additional mechanism is selected here.
+## Secrets and repository boundaries
+
+Each cluster has a separate Sealed Secrets controller and recovery key.
+Git-managed Secret resources contain encrypted data; controller private keys
+and live credentials remain private recovery inputs. Application, database,
+registry, GitHub App and Cloudflare credentials have distinct purposes and
+scopes. Public manifests and logs contain no live credential values.
+
+| Repository or path | Responsibility |
+| --- | --- |
+| Application repository | Application code, tests, image builds, release tags and Jenkins pipeline/publisher source |
+| Infrastructure repository | Infrastructure provisioning, Kubernetes/platform resources, image references, GitOps, Jenkins deployment/bootstrap and recovery procedures |
+| `kubernetes/apps/liora/` | Shared application base, environment overlays and promotion/acceptance records |
+| `kubernetes/gitops/argocd/` | Independent roots, Applications and AppProjects for both clusters |
+| `kubernetes/platform/nonprod/` | NONPROD administration, monitoring and Jenkins platform |
+| `kubernetes/platform/prod/` | PROD administration and monitoring |
+| `recovery/` | Tracked examples/helpers and ignored private recovery inputs |
+| `runbooks/` | Installation, operation and disaster recovery procedures |
+| `docs/testreports/` | Implementation plan, migration history and execution reports |
+| `.local-work/` | Ignored operator tools, generated output and private working data |
+
+Application and infrastructure Git histories remain independent. Pipeline checks
+of application ancestry and release tags use application history; deployment
+writes use infrastructure history. Live credentials, private keys, Terraform
+state and operator data are never committed.
+
+## Availability boundaries
+
+Two clusters provide separate control planes and environment ownership on one
+physical Proxmox host. The HAProxy edge and Tailscale router each have their own
+VM. Common power, host and storage remain shared failure domains.
+
+API/VIP elections, application replicas, database replication and persistent
+storage recovery solve different availability problems. None substitutes for
+host-independent backups or a complete recovery procedure. Physical-host
+redundancy is outside this topology.
