@@ -1,0 +1,183 @@
+{
+  "date": "2026-10-23",
+  "source_branch": "feat/grafana-operations-dashboards",
+  "local_validation": {
+    "yaml_json": "passed",
+    "kustomize": "v5.8.2 passed",
+    "promtool": "v3.15.0 passed",
+    "missing_data_behavior_tests": 9,
+    "schemaVersion": 39
+  },
+  "live_query_validation": [
+    {
+      "cluster": "nonprod",
+      "dashboards": 5,
+      "legacy_uids_preserved": [
+        "dev-stage-workloads",
+        "gitops-argocd",
+        "ingress-traefik",
+        "platform-nodes"
+      ],
+      "operations_uid": "liora-nonprod-operations",
+      "operations_panels": 32,
+      "query_variants": 140,
+      "unique_queries": 136,
+      "local_validation": "not run in this invocation",
+      "special_metric_families": [],
+      "live_validation": "passed",
+      "timestamp_utc": "2026-10-23T14:03:10Z",
+      "service_labels": [
+        "app-dev-backend-80@kubernetes",
+        "app-stage-backend-80@kubernetes",
+        "app-dev-frontend-80@kubernetes",
+        "app-stage-frontend-80@kubernetes"
+      ],
+      "queries_executed": 139,
+      "max_query_roundtrip_ms": 117.37,
+      "median_query_roundtrip_ms": 19.25,
+      "no_finite_instant_observations": [
+        {
+          "dashboard": "liora-nonprod-operations",
+          "panel": "Firing incidents \u00b7 cluster scope",
+          "environment": "cluster",
+          "range": false,
+          "instant_series": 0,
+          "finite_instant_series": 0,
+          "range_series": 0,
+          "elapsed_ms": 7.02
+        }
+      ],
+      "source_scope": "all four existing dashboards plus new Operations definition",
+      "deployed": true
+    },
+    {
+      "cluster": "prod",
+      "dashboards": 5,
+      "legacy_uids_preserved": [
+        "gitops-argocd",
+        "ingress-traefik",
+        "platform-nodes",
+        "prod-workloads"
+      ],
+      "operations_uid": "liora-prod-operations",
+      "operations_panels": 31,
+      "query_variants": 79,
+      "unique_queries": 77,
+      "local_validation": "not run in this invocation",
+      "special_metric_families": [],
+      "live_validation": "passed",
+      "timestamp_utc": "2026-10-23T14:03:15Z",
+      "service_labels": [
+        "app-prod-backend-80@kubernetes",
+        "app-prod-frontend-80@kubernetes"
+      ],
+      "queries_executed": 78,
+      "max_query_roundtrip_ms": 57.87,
+      "median_query_roundtrip_ms": 11.43,
+      "no_finite_instant_observations": [
+        {
+          "dashboard": "liora-prod-operations",
+          "panel": "Firing incidents \u00b7 cluster scope",
+          "environment": "cluster",
+          "range": false,
+          "instant_series": 0,
+          "finite_instant_series": 0,
+          "range_series": 0,
+          "elapsed_ms": 10.41
+        }
+      ],
+      "source_scope": "all four existing dashboards plus new Operations definition",
+      "deployed": false
+    }
+  ],
+  "deployment": {
+    "nonprod": "new Operations ConfigMap deployed; legacy ConfigMap unchanged",
+    "prod": "not deployed; new ConfigMap absent; old dashboard fixes pending approval"
+  },
+  "prod_browser_verification": {
+    "cluster": "prod",
+    "grafana_version": "13.2.3",
+    "legacy_dashboards_loaded": [
+      "platform-nodes",
+      "ingress-traefik",
+      "gitops-argocd",
+      "prod-workloads"
+    ],
+    "operations_deployed": false,
+    "query_errors": [],
+    "screenshots": []
+  },
+  "nonprod_browser_verification": {
+    "cluster": "nonprod",
+    "grafana_version": "13.2.3",
+    "legacy_dashboards_loaded": [
+      "platform-nodes",
+      "ingress-traefik",
+      "gitops-argocd",
+      "dev-stage-workloads"
+    ],
+    "operations_deployed": true,
+    "query_errors": [],
+    "screenshots": [
+      "nonprod-operations.png",
+      "nonprod-capacity.png",
+      "nonprod-assurance.png"
+    ],
+    "released_navigation_response_bodies": 4,
+    "environment_views": [
+      "dev",
+      "stage"
+    ],
+    "environment_query_filters_verified": true,
+    "all_sections_rendered": true
+  },
+  "nonprod_read_only_traffic": {
+    "requests": 12,
+    "statuses": [
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200,
+      200
+    ],
+    "method": "GET",
+    "edge": "192.168.77.240 with SNI and normal HTTPS certificate validation",
+    "environments": [
+      "dev",
+      "stage"
+    ],
+    "paths": [
+      "/login",
+      "/api/v1/utils/health-check/"
+    ]
+  },
+  "dashboard_configmap_sha256": {
+    "nonprod": "4a842505e4807139c3673deabfea4fee5f09972eba899ac9262b4e043e4b29ad",
+    "prod": "e4653e7e2fed74e24abfd3e75cfbd8cc718ffdc1ed27a857d38afdd45d5854ec"
+  },
+  "nonprod_snapshot": "/home/root-admin/.local/state/liora-grafana/20261023T135346Z/nonprod",
+  "screenshots": {
+    "nonprod-operations.png": {
+      "sha256": "6c3405df3fb4b1090904b024f6fde2b6124cfc70631a2b3e84c932f81a20ca5b",
+      "width": 1600,
+      "height": 1500
+    },
+    "nonprod-capacity.png": {
+      "sha256": "9b67b38460232cb9d8b81106f1a7ccb9719295df3f227baa00b267c68c2c0e07",
+      "width": 1600,
+      "height": 1500
+    },
+    "nonprod-assurance.png": {
+      "sha256": "5594b1ad80bee50d6449f8146cf0f123880201c0009bbac5dce57e0df00e8917",
+      "width": 1600,
+      "height": 1500
+    }
+  }
+}

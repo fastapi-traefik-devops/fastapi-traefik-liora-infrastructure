@@ -11,7 +11,7 @@ data:
       "uid": "platform-nodes",
       "title": "PROD / Platform Overview",
       "schemaVersion": 39,
-      "version": 3,
+      "version": 4,
       "refresh": "1m",
       "time": {
         "from": "now-1h",
@@ -39,7 +39,7 @@ data:
         {
           "id": 10,
           "title": "Argo applications Healthy",
-          "description": "Expected 2: app-prod and app-prod. Below 2 needs investigation; no telemetry is not healthy.",
+          "description": "Expected 1: app-prod. Below 1 needs investigation; no telemetry is not healthy.",
           "type": "stat",
           "datasource": {
             "type": "prometheus",
@@ -72,12 +72,8 @@ data:
                     "value": null
                   },
                   {
-                    "color": "yellow",
-                    "value": 1
-                  },
-                  {
                     "color": "green",
-                    "value": 2
+                    "value": 1
                   }
                 ]
               }
@@ -101,7 +97,7 @@ data:
         {
           "id": 11,
           "title": "Argo applications Synced",
-          "description": "Expected 2: app-prod and app-prod. Review Argo diff when below 2; missing telemetry remains no data.",
+          "description": "Expected 1: app-prod. Below 1 needs investigation; no telemetry is not healthy.",
           "type": "stat",
           "datasource": {
             "type": "prometheus",
@@ -134,12 +130,8 @@ data:
                     "value": null
                   },
                   {
-                    "color": "yellow",
-                    "value": 1
-                  },
-                  {
                     "color": "green",
-                    "value": 2
+                    "value": 1
                   }
                 ]
               }
@@ -799,9 +791,9 @@ data:
   dev-stage-workloads.json: |
     {
       "uid": "prod-workloads",
-      "title": "PROD / PROD Workloads",
+      "title": "PROD / Workloads",
       "schemaVersion": 39,
-      "version": 3,
+      "version": 4,
       "refresh": "1m",
       "time": {
         "from": "now-1h",
@@ -2007,7 +1999,7 @@ data:
       "uid": "ingress-traefik",
       "title": "PROD / Traefik",
       "schemaVersion": 39,
-      "version": 3,
+      "version": 4,
       "refresh": "1m",
       "time": {
         "from": "now-1h",
@@ -2315,7 +2307,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "sum by(service,code) (rate(traefik_service_requests_total{service=~\"app-(dev|stage)-.*\"}[5m]))",
+              "expr": "sum by(service,code) (rate(traefik_service_requests_total{service=~\"app-prod-(backend|frontend)-80@kubernetes\"}[5m]))",
               "legendFormat": "{{service}} HTTP {{code}}"
             }
           ],
@@ -2531,7 +2523,7 @@ data:
           "targets": [
             {
               "refId": "A",
-              "expr": "histogram_quantile(0.95,sum by(le,service) (rate(traefik_service_request_duration_seconds_bucket{service=~\"app-(dev|stage)-.*\"}[5m])))",
+              "expr": "histogram_quantile(0.95,sum by(le,service) (rate(traefik_service_request_duration_seconds_bucket{service=~\"app-prod-(backend|frontend)-80@kubernetes\"}[5m])))",
               "legendFormat": "{{service}}"
             }
           ],
