@@ -17,8 +17,9 @@ Phase 9 has restored Jenkins state to a separate NONPROD home while retaining
 the current administrator login. The CI/DinD worker and separate publisher are
 connected; a Docker build/bind-path smoke passed and imported state is retained.
 The first Phase 9 controlled CI/publication cycle passed and Argo deployed
-STAGE; manual running-digest and HTTPS checks passed. The main polling proof
-remains pending; unrelated imported jobs remain disabled. See the
+STAGE; manual running-digest and HTTPS checks passed. Main-only polling then
+automatically built and deployed the next main commit; unrelated imported jobs
+remain disabled. See the
 [Phase 9 report](testreports/PHASE9_REPORT.md).
 
 ## Host and private network
@@ -367,12 +368,13 @@ Native browser/API login passed, credential IDs/scopes and decryption were check
 and original encryption/user-directory keys were retained. It requests 100m/512Mi,
 limits 1 CPU/768Mi and caps its heap at 384Mi. No PROD controller is planned.
 The restored baseline held all jobs, multibranch scanning and Pipeline resume.
-Authorized Phase 9 controlled execution now enables only the existing main CI,
-trusted publisher and one-time related PR checks; unrelated jobs and recurring
-indexing/nightly schedules remain disabled. Controller executors remain zero.
+Authorized Phase 9 execution now enables only the existing main CI and trusted
+publisher. Related prerequisite PR checks completed and are disabled again;
+unrelated jobs and recurring indexing/nightly schedules remain disabled. Controller executors remain zero.
 Two agents are connected, each with one executor and its preserved label.
-The startup quiet-mode hook is retained; a controller GitHub egress policy
-permits DNS/public HTTPS for the authorized cycle.
+The startup quiet-mode hook is retained, so controller restart still requires
+deliberate release after inspecting job/trigger state; restart cutover remains
+open. A controller GitHub egress policy permits DNS/public HTTPS for this cycle.
 An init check prevents the restored-state overlay from starting on an incomplete
 home. The original foundation PVC and a consistent foundation backup are retained.
 Migration is staged:
@@ -399,9 +401,10 @@ Migration is staged:
   normal PR merge, without changing branch rules or permissions.
   The first minimal live cycle passed with main #15 and publisher #34:
   Argo automatically deployed `b8caf7e`, with exact running-digest and strict
-  HTTPS checks through the private edge route. Main-only SCM polling and its
-  automatic demonstration remain pending. The publisher stops after the STAGE
-  update; deployment verification is currently manual. The separate
+  HTTPS checks through the private edge route. Its sole `H/2 * * * *` SCM poll
+  detected the next main commit `3459d5a`; main #16 / publisher #35 automatically
+  deployed `59c3685` and the same manual checks passed. The publisher stops
+  after the STAGE update; deployment verification is currently manual. The separate
   observer/automatic acceptance and expanded promotion workflows are preserved
   but deferred outside that initial path. PROD is explicitly blocked until the
   agreed automated acceptance gate is implemented and live-verified. This is a

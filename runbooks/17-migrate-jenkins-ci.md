@@ -896,3 +896,19 @@ interrupted cleanup settle, then restore the hold. Wait for completed results;
 a transient SUCCESS while `building=true` is not a publishable result. Never
 relabel an interrupted build: retry CI under a new build number if it finishes
 ABORTED. Preserve its artifacts and diagnostics.
+
+### Current activated checkpoint
+
+The controlled main #15 / publisher #34 cycle and subsequent SCM-polled
+main #16 / publisher #35 cycle are verified. Main alone retains
+`H/2 * * * *`; trusted publication is enabled without its own trigger. All
+related PR/imported jobs, recurring folder indexing and nightly schedules are
+disabled. See [exact source/digest/deployment evidence](../docs/testreports/PHASE9_LIVE_CYCLE.md).
+The verification is manual; no automatic acceptance receipt qualifies PROD.
+
+The restored startup quiet-mode hook remains in place. A controller restart
+requires checking the approved job/trigger states and deliberately canceling
+quiet mode. Do not use `start` merely to release it: that command requests a
+new build. Adapting the migration guard and verifying restart behavior remain
+a separate operational follow-up. Preserve the zero-executor and restored-home
+checks. DEV stays manual, PROD stays blocked, and rollback stays manual.

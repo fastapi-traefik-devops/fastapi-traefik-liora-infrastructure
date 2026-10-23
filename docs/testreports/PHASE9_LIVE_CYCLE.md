@@ -1,4 +1,12 @@
-# Phase 9 — Authorized live cycle: execution in progress
+# Phase 9 — Minimal live CI/CD cycle verified
+
+Final checkpoint, 2026-10-23: **controlled and SCM-polled cycles verified**.
+Main #15 / publisher #34 deployed `b8caf7e`; main #16 / publisher #35
+automatically deployed `59c3685` for application `3459d5a`. Main-only polling
+is active. Argo Synced/Healthy, ready running digests and strict HTTPS smoke
+passed. Verification was manual, through the existing private HAProxy route;
+automatic acceptance is deferred and PROD remains blocked. Historical attempts
+and their original outcomes follow below.
 
 Latest continuation: the owner pushed `migration/phase9-k3s-bootstrap` and
 opened application [PR #62](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/pull/62)
@@ -194,3 +202,83 @@ was committed. Observer resources remain inactive and PROD remains blocked.
 Polling remains disabled until the related PR check completes and the worker
 settles; PR #63 must pass its required check before normal merge for the later
 polling demonstration.
+
+## Main-only polling activation and automatic demonstration
+
+After the verified first deployment, application PR #63 passed the real existing
+required check (`app-ci/PR-63 #2`, all 13 functional gates and 96 tests). Its
+job was disabled again and retained. Discovery now includes only `main`, with
+orphan pruning disabled and index/event-triggered builds suppressed. Recurring
+folder indexing and nightly schedules remain off.
+
+The sole main trigger is `hudson.triggers.SCMTrigger`, `H/2 * * * *`. The normal
+PR merge then produced `3459d5a4f1d39473fd845674dfc7f591bee81059`; the change
+clarifies `ci/README.md`, with no pipeline or application behavior changes.
+Local application main fast-forwarded normally. Polling automatically requested
+`app-ci/main #16`; its native cause is exactly
+`hudson.triggers.SCMTrigger$SCMTriggerCause` and checkout matches that full merge
+SHA. No manual main-build request, webhook setup, branch-rule change or fabricated
+status was used. Main #16 completed SUCCESS in 1,536,106 ms, with all 13
+functional gates and native JUnit 96 passed / 0 failed / 0 skipped. Separate
+publisher #35 completed SUCCESS in 273,304 ms and directly committed
+`59c36854e8c2533c450821b718d39bb3f8f4946e`.
+
+The second promotion changed only STAGE `kustomization.yaml` and `promotion.json`.
+The intervening infrastructure documentation/helper commits remain ancestors
+and were preserved. This documentation-only application change produced the
+same image bytes/digests listed above; new immutable tags are
+`sha-3459d5a4f1d39473fd845674dfc7f591bee81059`. Both the candidate and running
+pod specifications identify that exact new main SHA. No images were rebuilt
+for PROD and no PROD action ran.
+
+Manual verification at 2026-10-23 07:29 UTC found:
+
+- Argo Synced/Healthy at `59c3685`, operation Succeeded. Deployment followed the
+  direct Git commit automatically; no manual sync or refresh was requested.
+- Ready backend `backend-7b57c5d7f8-z7t8g` and frontend
+  `frontend-6c67f8cbf5-7k2kb` use the new SHA-tagged references. Their actual
+  `imageID` digests exactly match publisher #35's verified pair.
+- UI and API health URLs again returned HTTP 200 with expected bodies and
+  valid TLS through private HAProxy `192.168.77.240`. The same external-
+  reachability limitation described above applies; no new public-origin
+  reachability claim is made.
+- Final current user hashes, all original 12 main / 30 publisher build IDs
+  (keep-forever), unrelated job states/build counts, database pod/PVC UIDs and
+  volume bindings match the baseline. Successful and failed checkpoint records
+  are retained. Queue/running counts are zero, controller executors are zero.
+- Exactly main and trusted publisher are enabled; every other job is disabled.
+  Main retains its sole `H/2 * * * *` SCM trigger after the second run, publisher
+  has none, and recurring folder indexing/nightly schedules remain disabled.
+
+Private receipts are under
+`.local-work/private/phase9/live-cycle-20261022/automatic-stage/`, with native
+source-cause, test, preservation and original console evidence alongside it.
+No credentials, private keys, recovery inputs or generated evidence were added
+to Git. Both repositories were integrated by normal pushes/merges and
+fast-forwards; no force-push, rebase or history rewrite was used.
+
+## Validation and remaining boundary
+
+- Registry/promotion fixtures: 27 tests passed, including stale main (even a
+  failed/unbuilt newer commit), immediate pre-push recheck, concurrent unrelated
+  infrastructure updates, immutable-tag protection and blocked PROD.
+- Live-control client: 3 tests passed, including credential-output protection
+  and rejection of Jenkins HTTP-200 assertion failures. Read-only live success
+  and failure probes confirmed that completion detection; no job state changed.
+- All three overlays rendered and passed semantic/schema validation: 14 valid
+  resources each, no invalid/error/skipped resources.
+- No additional vulnerability scan/remediation, operator SQL/data restore,
+  database reseed, credential rotation, observer installation or branch/App
+  permission change was performed.
+
+The initial working-cycle checkpoint is complete. Phase 9's remaining target
+work is the preserved separate observer/automatic acceptance gate and expanded
+manual DEV/PROD workflows. PROD stays explicitly blocked until that automatic
+gate is implemented and verified; these manual receipts do not qualify it.
+Rollback remains manual and was not exercised by this checkpoint.
+
+The migration startup quiet-mode hook is still retained. After a controller
+restart, inspect the approved job/trigger states before deliberately canceling
+quiet mode. Adapting that guard and verifying restart behavior is recorded as
+a follow-up; automatic continuation across controller restart is not claimed.
+No controller restart or unrelated infrastructure change was needed here.

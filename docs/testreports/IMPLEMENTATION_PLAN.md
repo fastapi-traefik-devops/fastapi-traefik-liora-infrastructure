@@ -594,25 +594,29 @@ confirmed external Tailscale browser access and passwords; Phase 8 is closed.
 
 ## Phase 9 — Move promotion and CI ownership
 
-Status: **in progress; migration decisions and legacy stop authorized on 2026-10-22**. Runtime inventory,
-read-only GitHub App checks and a private online preservation copy are complete.
-The authorized legacy stop, consistent source/foundation backups and restore to
-a separate NONPROD PVC are complete. Runtime and browser checks verified the
-current K3s admin login, retained users/history/credential scopes and decryption,
-and the execution/egress hold. Both worker agents are now connected and the Docker
-build/shared-bind smoke passed. After correcting the observed nested Docker MTU
-mismatch, the approved second manual CI build passed all 13 functional gates
-and 96 tests. All jobs are held again and application publishing remains disabled.
-See [worker acceptance](PHASE9_WORKERS.md),
-[Phase 9 report](PHASE9_REPORT.md)
-and [runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
+Status: **in progress; initial live STAGE cycle accepted on 2026-10-23**.
+Legacy Jenkins state is restored to a separate NONPROD home, preserving the
+current K3s admin, users, history, credential scopes and encryption material.
+Existing CI/DinD and trusted publisher agents are connected. After the MTU
+correction, manual CI passed all 13 functional gates and 96 tests.
+
+The reviewed minimal live cycle now works: controlled main #15 / publisher #34,
+then SCM-polled main #16 / publisher #35. Both automatically updated
+infrastructure STAGE and Argo deployed the exact image pair. Manual running
+digest and strict HTTPS checks passed through the existing private edge route.
+Only main SCM polling is active (`H/2 * * * *`); unrelated jobs, nightly schedules
+and recurring folder indexing remain disabled. Automatic acceptance and expanded
+manual promotion workflows remain open; PROD is explicitly blocked. See the
+[live execution evidence](PHASE9_LIVE_CYCLE.md), [worker acceptance](PHASE9_WORKERS.md),
+[Phase 9 report](PHASE9_REPORT.md) and [runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
 
 The [pipeline review](PHASE9_PIPELINE_REVIEW.md) is complete as a technical
 inspection; the operator approved its CI-only proposal. It checked live disabled
 jobs and the pinned source, and found application GitHub `main` four commits
 ahead at `13aa29eb27abac01e9638cdf45f1414a4c3002a1`. No source, job, trigger or
-controller policy was changed during that read-only review. The approved
-checkpoint is one manual functional CI build without scans, publication, promotion or deployment.
+controller policy was changed during that read-only review. Its earlier approved
+checkpoint was one manual functional CI build without scans, publication,
+promotion or deployment; later live authorization superseded that boundary.
 The [first attempt](PHASE9_MANUAL_CI.md) stopped at a nested-network stall.
 The operator approved MTU alignment and one further attempt; [build #2](PHASE9_CI_RETRY.md)
 passed all 13 functional gates and 96 tests, including both runtime-image smoke
@@ -645,7 +649,7 @@ were verified on 2026-10-22 after the operator updated the installation.
 
 ### Initial working cycle — latest implementation priority
 
-**Live activation in progress (2026-10-23).** The operator authorized reviewed
+**Minimal live cycle verified (2026-10-23).** The operator authorized reviewed
 pushes, existing-job/helper installation, controller GitHub connectivity, one
 controlled cycle, and main-only polling after manual STAGE verification.
 Application PR #62 passed its real required Jenkins check (13 gates/96 tests)
@@ -663,7 +667,7 @@ as confirmed by its owner. See the [live execution report](PHASE9_LIVE_CYCLE.md)
       exposed missing exact-script approval. Both were repaired under the hold,
       with failed/interrupted attempts retained. Controlled retry main #15 and
       publisher #34 succeeded; first STAGE manual verification
-      passed at `b8caf7e`. The polling proof remains pending.
+      passed at `b8caf7e`. The following SCM-polled cycle also passed at `59c3685`.
 
 Get the existing CI/CD working on K3s first, then complete the target below.
 Reuse the current agents/DinD, 13 functional gates, tested-image export and trusted
@@ -675,7 +679,7 @@ immutable image publication → direct STAGE digest update in infrastructure mai
 Argo automatic deployment. Verify that first deployment MANUALLY: Argo
 Synced/Healthy, running pair and STAGE URL. Do not call that automated acceptance.
 
-- [ ] Under the received live authorization, adapt the existing app-ci main job and
+- [x] Under the received live authorization, adapt the existing app-ci main job and
       trusted publisher definitions/pins. Main uses one SCM poll every two minutes;
       keep recurring folder indexing/nightly schedules off. Filter discovery to
       main before any one-time index; keep all imported PR/other jobs disabled.
@@ -693,10 +697,13 @@ Synced/Healthy, running pair and STAGE URL. Do not call that automated acceptanc
       smoke passed through the existing private edge route with strict TLS.
       Current admin profile hashes and database pod/PVC identities are unchanged.
       This manual check is not automatic acceptance or a PROD gate.
-- [ ] Enable only main SCM polling (`H/2 * * * *`) after this verified cycle
+- [x] Enable only main SCM polling (`H/2 * * * *`) after the verified cycle
       and demonstrate a meaningful new main commit reaches STAGE automatically.
-      PR #63 is prepared and must pass its real required check before normal
-      merge. Keep nightly schedules and recurring folder indexing disabled.
+      PR #63 passed its real check and merged normally at `3459d5a`. Native
+      SCMTriggerCause requested main #16; publisher #35 committed `59c3685`.
+      Argo Synced/Healthy, actual digest pair and HTTPS smoke passed again.
+      All related PR jobs are disabled again; nightly schedules and recurring
+      folder indexing remain disabled.
 - [ ] After that cycle, integrate the preserved separate observer, automatic
       acceptance receipts and lock coverage through observation. Its manifests
       and fixture-tested helpers remain outside the initial activation path;
@@ -707,6 +714,12 @@ Synced/Healthy, running pair and STAGE URL. Do not call that automated acceptanc
 - [ ] Extend manual DEV/PROD workflows incrementally after the working cycle;
       retain immutable PROD digest reuse and manual rollback. Reuse prepared
       helpers and the same pipelines; do not create another migration or rewrite.
+- [ ] Complete the remaining migration restart cutover. The existing startup
+      quiet-mode hook is retained; a controller restart requires deliberate
+      release from quiet mode after checking the approved job/trigger states.
+      Adapt that guard and verify restart behavior in the next operational
+      increment, preserving zero controller executors and restored-home checks.
+      Automatic recovery across controller restart is not claimed here.
 
 The earlier local-only boundary is superseded by the live authorization above.
 Live actions are authorized in the agreed order once application integration is
@@ -746,9 +759,9 @@ simply deferred behind the first working cycle. See
   main-branch rule exceptions before activation; repository write permissions
   alone do not restrict paths. DEV/PROD use manual reviewed changes.
 - The minimal live checkpoint is now explicitly authorized, including necessary
-  reviewed pushes. Application integration is complete and controlled activation
-  is in progress; verify the first STAGE cycle before enabling the main-only
-  poll. Do not change branch rules or App permissions.
+  reviewed pushes. Application integration and both controlled/polled STAGE
+  cycles are complete; only the agreed main poll and trusted publisher are
+  active. Do not change branch rules or App permissions.
 - The operator authorized immediate stopping of the local legacy kind cluster
   and its Jenkins stack. Preserve containers, volumes, all recovery inputs and
   source; do not delete anything or change Proxmox NAT/VMs or remote K3s.
@@ -819,7 +832,7 @@ simply deferred behind the first working cycle. See
       existing-job/helper setup and necessary GitHub connectivity. The owner
       authorized one controlled cycle followed by main-only polling and an
       automatic demonstration after manual STAGE verification. Application PR/check
-      integration is complete; execution is in progress under that authorization.
+      integration and the minimal live cycle are complete under that authorization.
 - [x] After pipeline review, verify application build/publication credential
       separation, artifact provenance, SHA image tags and existing CI gates in
       controlled execution (main #15 / publisher #34). Image vulnerability handling
@@ -832,12 +845,14 @@ simply deferred behind the first working cycle. See
       dependency.
 - [ ] Complete live promotion validation incrementally after the first STAGE
       cycle; DEV/PROD remain manual and PROD is blocked pending its gate.
-- [ ] Verify Argo CD deploys the reviewed digests and can roll back. Retire
-      old GitOps source paths only after this succeeds.
-- [ ] Enable polling/schedules and trusted publication only at the reviewed
-      cutover. Demonstrate the replacement can build/publish/promote without
-      VM 100 agents, bind mounts or Docker services, and preserve a private
-      recovery copy of the migrated Jenkins state.
+- [ ] Complete the reviewed manual rollback verification before retiring old
+      GitOps source paths. Automatic deployment of the reviewed pair passed in
+      both live cycles; rollback was not exercised in this checkpoint.
+- [x] Activate main-only polling and trusted publication at the reviewed
+      cutover. Main #16 / publisher #35 proved build/publish/STAGE deployment
+      using only K3s workers, without VM 100 agents, bind mounts or Docker
+      services. Private recovery copies remain retained. Nightly schedules and
+      recurring folder indexing remain disabled; expanded workflows stay open.
 
 **Pass:** working CI and the agreed automatic STAGE/manual DEV/PROD promotion
 run from nonprod K3s, reuse the

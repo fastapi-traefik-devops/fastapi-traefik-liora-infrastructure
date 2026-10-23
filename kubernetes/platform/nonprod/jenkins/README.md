@@ -99,10 +99,11 @@ not include `acceptance/` or an observer node. Applying it relaxes the current
 egress hold and requires explicit live approval. Under that received approval,
 the controller GitHub egress policy and reviewed publisher helper/job definition
 are installed. Main #15 / publisher #34 completed the first controlled STAGE
-cycle and manual deployment verification passed. Main polling is still off
-while the related required PR check completes; the next checkpoint enables
-only its SCM poll and demonstrates automatic deployment. The initial publisher
-stops after the STAGE update; deployment verification remains manual.
+cycle and manual deployment verification passed. Main-only polling
+(`H/2 * * * *`) then detected `3459d5a`; main #16 / publisher #35 automatically
+deployed `59c3685` and manual verification passed again. Related PR jobs are
+disabled again; recurring folder indexing/nightly schedules remain off.
+The initial publisher stops after the STAGE update; deployment verification remains manual.
 PROD is explicitly blocked until automatic acceptance is implemented and live-verified. Retain prepared
 observer work for that later increment.
 
@@ -122,3 +123,8 @@ further image scans for this educational deployment. See the
 [worker report](../../../../docs/testreports/PHASE9_WORKERS.md) and
 [runbook 17](../../../../runbooks/17-migrate-jenkins-ci.md) for recovery, execution
 and the retained zero-agent/foundation rollback boundaries.
+
+The migration startup quiet-mode hook remains present. A controller restart
+requires inspection of the approved job/trigger state and deliberate cancellation
+of quiet mode. Its operational cutover/restart verification remains a follow-up;
+do not rerun `start` just to release quiet mode, because that requests a build.

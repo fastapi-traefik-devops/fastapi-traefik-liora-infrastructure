@@ -7,12 +7,15 @@ and immutable helper bundle; no branch rule or App permission was changed.
 Main #15 and trusted publisher #34 succeeded; Argo automatically deployed
 `b8caf7e`. Manual STAGE verification passed with exact running digests and
 strict-TLS UI/API smoke through the existing private edge route. Failed and
-interrupted attempts are preserved. The main polling proof is still pending.
+interrupted attempts are preserved. SCM polling then detected `3459d5a` and
+main #16 / publisher #35 automatically deployed `59c3685`. The second manual
+Argo/running-pair/HTTPS verification passed; only main polling remains active.
 
 Started: 2026-10-22. Status: **Phase 9 in progress; minimal live STAGE cycle
-manually verified, polling proof pending**. Earlier sections below describe
-their historical checkpoints; the linked live report records current results. Current K3s admin, retained
-Jenkins state, recovery inputs and PostgreSQL content remain protected.
+and main-only polling verified; target acceptance work remains open**.
+Earlier sections below describe their historical checkpoints; the linked live
+report records current results. Current K3s admin, retained Jenkins state,
+recovery inputs and PostgreSQL content remain protected.
 
 Latest review: [publisher and promotion repository split](PHASE9_PUBLICATION_REVIEW.md).
 The operator approved local implementation with automatic direct STAGE commits,
@@ -23,10 +26,11 @@ The latest priority narrows the initial path to existing CI → immutable
 publication → direct STAGE update → Argo, with manual first-deployment checks.
 Observer/receipts and expanded workflows are preserved for later. PROD is
 explicitly blocked until automatic acceptance is implemented and live-verified.
-Source, validators and optional observer are prepared locally; no job, policy,
-publication or deployment was activated.
+The preserved optional observer remains outside the live initial path.
+The main/publisher jobs and necessary egress are active for the verified minimal
+cycle; automatic acceptance and PROD promotion remain blocked.
 
-Latest execution checkpoint: [MTU correction and successful manual build #2](PHASE9_CI_RETRY.md).
+Earlier CI-only checkpoint: [MTU correction and successful manual build #2](PHASE9_CI_RETRY.md).
 The operator approved continuing after the [first aborted attempt](PHASE9_MANUAL_CI.md).
 Default and new user-defined Docker bridges now use MTU 1450; bounded nested
 HTTPS probes passed before activation. Build #2 at application `cb08cda` passed
@@ -34,11 +38,12 @@ all 13 functional gates and 96 tests, including both runtime-image health checks
 The formerly stalled Alpine step completed in 4.7 seconds. JSON/JUnit reporting
 and cleanup passed; build #1 and all four of its archives are preserved.
 
-All jobs are again disabled, quiet mode is restored, and imported job/user hashes
-match the baseline. The current administrator and K3s PostgreSQL data remain
-unchanged; all five Argo CD applications are Synced/Healthy. No security scan,
-publication, promotion, application deployment or Git push occurred. Phase 9 remains open
-for separate review of publishing and promotion across the repository split.
+At that earlier checkpoint all jobs were disabled, quiet mode restored, and
+imported job/user hashes matched the baseline. The administrator and K3s
+PostgreSQL data were unchanged; all five Argo CD applications were Synced/Healthy.
+No security scan, publication, promotion, application deployment or Git push
+occurred in that CI-only increment. Publishing and promotion across the
+repository split remained open for the later review and execution described above.
 
 ## Confirmed decisions — 2026-10-22
 
