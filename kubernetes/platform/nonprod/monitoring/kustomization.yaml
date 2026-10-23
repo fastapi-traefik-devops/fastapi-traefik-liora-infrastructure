@@ -5,3 +5,4 @@ resources:
 - monitors.yaml
 - rules.yaml
 - services.yaml
+- ../backup-monitoring

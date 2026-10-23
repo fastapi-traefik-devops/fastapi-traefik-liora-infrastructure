@@ -54,10 +54,14 @@ def collect(config, previous=None):
         try:
             backups = c.api(env).request('GET', backup_path(env))['items']
             backups = [b for b in backups if b['spec']['cluster']['name'] == 'liora-db' and b['spec']['method'] == 'plugin']
-            phases = [(b.get('status', {}).get('phase', '').lower(), b.get('status', {})) for b in backups]
+            phases = []
+            for b in backups:
+                status = dict(b.get('status', {}))
+                status['event_time'] = status.get('stoppedAt') or status.get('reconciliationTerminatedAt') or status.get('startedAt') or b['metadata']['creationTimestamp']
+                phases.append((status.get('phase', '').lower(), status))
             result['environments'][env] = {
-                'success': max([timestamp(s.get('stoppedAt')) for p, s in phases if p == 'completed'] or [0]),
-                'failure': max([timestamp(s.get('stoppedAt')) for p, s in phases if p == 'failed'] or [0]),
+                'success': max([timestamp(s['event_time']) for p, s in phases if p == 'completed'] or [0]),
+                'failure': max([timestamp(s['event_time']) for p, s in phases if p == 'failed'] or [0]),
                 'nonterminal': sum(p not in ('completed', 'failed') for p, _ in phases), 'ok': 1}
         except Exception:
             result['environments'][env] = {'success': 0, 'failure': 0, 'nonterminal': 0, 'ok': 0}

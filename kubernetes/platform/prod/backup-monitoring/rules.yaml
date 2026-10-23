@@ -1,0 +1,140 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: prod-database-backups
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+  - name: prod-database-backups
+    rules:
+    - alert: CNPGFullBackupFailed
+      expr: max(liora_backup_last_failure_timestamp{environment="PROD",namespace="app-prod"})
+        > max(liora_backup_last_success_timestamp{environment="PROD",namespace="app-prod"})
+      for: 2m
+      labels:
+        cluster: prod
+        environment: PROD
+        namespace: app-prod
+        severity: critical
+      annotations:
+        summary: CNPGFullBackupFailed
+        description: Latest physical full backup failed; no immediate automatic retry.
+        action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+          follow runbook 19.
+    - alert: CNPGFullBackupOverdue
+      expr: time() - max(liora_backup_last_success_timestamp{environment="PROD",namespace="app-prod"})
+        > 26 * 3600
+      for: 5m
+      labels:
+        cluster: prod
+        environment: PROD
+        namespace: app-prod
+        severity: critical
+      annotations:
+        summary: CNPGFullBackupOverdue
+        description: No completed physical backup within the daily cycle plus two-hour
+          margin.
+        action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+          follow runbook 19.
+    - alert: CNPGBackupTelemetryMissing
+      expr: (max(liora_backup_telemetry_ok{environment="PROD",namespace="app-prod"})
+        == 0) or absent(liora_backup_telemetry_ok{environment="PROD",namespace="app-prod"})
+      for: 5m
+      labels:
+        cluster: prod
+        environment: PROD
+        namespace: app-prod
+        severity: critical
+      annotations:
+        summary: CNPGBackupTelemetryMissing
+        description: Coordinator cannot observe the source Backup resources.
+        action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+          follow runbook 19.
+    - alert: CNPGWALArchivingFailure
+      expr: max(cnpg_pg_stat_archiver_last_failed_time{namespace="app-prod",role="primary"})
+        > max(cnpg_pg_stat_archiver_last_archived_time{namespace="app-prod",role="primary"})
+      for: 2m
+      labels:
+        cluster: prod
+        environment: PROD
+        namespace: app-prod
+        severity: critical
+      annotations:
+        summary: CNPGWALArchivingFailure
+        description: WAL archiving failed more recently than its last success; check
+          R2 delivery.
+        action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+          follow runbook 19.
+    - alert: CNPGWALArchiveDelayed
+      expr: (max(cnpg_collector_pg_wal_archive_status{namespace="app-prod",role="primary",value="ready"})
+        > 0) and (time() - max(cnpg_pg_stat_archiver_last_archived_time{namespace="app-prod",role="primary"})
+        > 600)
+      for: 1m
+      labels:
+        cluster: prod
+        environment: PROD
+        namespace: app-prod
+        severity: critical
+      annotations:
+        summary: CNPGWALArchiveDelayed
+        description: Completed WAL segments remain pending beyond the warning margin;
+          RPO headroom is being consumed.
+        action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+          follow runbook 19.
+    - alert: CNPGWALTelemetryMissing
+      expr: absent(cnpg_pg_stat_archiver_last_archived_time{namespace="app-prod",role="primary"})
+      for: 5m
+      labels:
+        cluster: prod
+        environment: PROD
+        namespace: app-prod
+        severity: critical
+      annotations:
+        summary: CNPGWALTelemetryMissing
+        description: Primary WAL archive metrics are absent; absence is not proof
+          of successful archiving.
+        action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+          follow runbook 19.
+    - alert: CNPGBackupCycleBlocked
+      expr: (max(liora_backup_cycle_blocked) == 1) or ((max(liora_backup_cycle_lease_held)
+        == 1) and (time() - max(liora_backup_cycle_last_heartbeat_timestamp) > 120))
+      for: 2m
+      labels:
+        cluster: prod
+        environment: PROD
+        namespace: app-prod
+        severity: critical
+      annotations:
+        summary: CNPGBackupCycleBlocked
+        description: A durable backup cycle is blocked or its owner heartbeat stopped.
+          Inspect/resume; do not clear the fence blindly.
+        action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+          follow runbook 19.
+    - alert: CNPGBackupCycleTelemetryMissing
+      expr: (liora_backup_cycle_telemetry_ok == 0) or absent(liora_backup_cycle_telemetry_ok)
+      for: 5m
+      labels:
+        cluster: prod
+        environment: PLATFORM
+        namespace: monitoring
+        severity: critical
+      annotations:
+        summary: CNPGBackupCycleTelemetryMissing
+        description: The global coordination Lease cannot be observed.
+        action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+          follow runbook 19.
+    - alert: CNPGBackupCollectorStale
+      expr: (time() - liora_backup_collection_timestamp > 300) or absent(liora_backup_collection_timestamp)
+      for: 5m
+      labels:
+        cluster: prod
+        environment: PLATFORM
+        namespace: monitoring
+        severity: critical
+      annotations:
+        summary: CNPGBackupCollectorStale
+        description: VM 250 backup telemetry stopped; WAL archiving remains cluster-local.
+        action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+          follow runbook 19.

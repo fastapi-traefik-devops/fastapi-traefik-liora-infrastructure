@@ -1,0 +1,39 @@
+rule_files:
+- nonprod-prom-rules.yaml
+- prod-prom-rules.yaml
+evaluation_interval: 1m
+tests:
+- interval: 1m
+  input_series:
+  - series: 'liora_backup_last_success_timestamp{environment="DEV",namespace="app-dev"}'
+    values: '100+0x12'
+  - series: 'liora_backup_last_failure_timestamp{environment="DEV",namespace="app-dev"}'
+    values: '200+0x5 0+0x6'
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: CNPGFullBackupFailed
+    exp_alerts:
+    - exp_labels: {cluster: nonprod, environment: DEV, namespace: app-dev, severity: critical}
+      exp_annotations:
+        summary: CNPGFullBackupFailed
+        description: Latest physical full backup failed; no immediate automatic retry.
+        action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator; follow runbook 19.
+  - eval_time: 10m
+    alertname: CNPGFullBackupFailed
+    exp_alerts: []
+- interval: 1m
+  input_series:
+  - series: 'liora_r2_usage_bytes'
+    values: '12000000000+0x7 100+0x7'
+  alert_rule_test:
+  - eval_time: 6m
+    alertname: R2BackupUsageHigh
+    exp_alerts:
+    - exp_labels: {cluster: nonprod, environment: PLATFORM, namespace: monitoring, severity: warning}
+      exp_annotations:
+        summary: R2BackupUsageHigh
+        description: Aggregate R2 usage exceeds informational 10 GiB threshold; review capacity, never force-delete or stop backups.
+        action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator; follow runbook 19.
+  - eval_time: 12m
+    alertname: R2BackupUsageHigh
+    exp_alerts: []

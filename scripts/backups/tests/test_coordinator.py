@@ -85,6 +85,14 @@ class CoordinatorTest(unittest.TestCase):
         with self.assertRaises(m.UnsafeState):self.c.run()
         self.assertEqual(self.events,['app-prod']);self.assertEqual(self.prod.lease['spec']['holderIdentity'],'new-session')
 
+    def test_healthy_concurrent_refusal_is_not_an_incident(self):
+        self.prod.lose_post=True
+        with self.assertRaises(m.UnsafeState):self.c.run()
+        state=json.loads(self.prod.lease['metadata']['annotations'][m.ANNOTATION]);state.pop('blocked_at');self.prod.lease['metadata']['annotations'][m.ANNOTATION]=json.dumps(state)
+        self.c.alert.reset_mock()
+        with self.assertRaises(m.UnsafeState):self.c.run()
+        self.c.alert.assert_not_called()
+
     def test_status_journal_does_not_copy_sensitive_errors(self):
         original=self.prod.request
         def request(method,path,value=None,missing=False):

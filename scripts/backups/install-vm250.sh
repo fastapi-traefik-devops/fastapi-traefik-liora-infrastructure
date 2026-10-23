@@ -23,7 +23,7 @@ id liora-backups >/dev/null 2>&1 || sudo -n useradd --system --home-dir /var/lib
 sudo -n install -d -m 755 /opt/liora-backups
 sudo -n touch /opt/liora-backups/.liora-managed
 sudo -n python3 -m venv /opt/liora-backups/venv
-sudo -n /opt/liora-backups/venv/bin/python -m pip install --disable-pip-version-check -r "$stage/requirements.txt"
+sudo -n /opt/liora-backups/venv/bin/python -m pip install --require-hashes --disable-pip-version-check -r "$stage/requirements.txt"
 sudo -n install -m 644 "$stage/coordinator.py" "$stage/metrics.py" "$stage/requirements.txt" /opt/liora-backups/
 sudo -n install -d -m 750 -o root -g liora-backups /etc/liora-backups
 sudo -n install -m 600 -o liora-backups -g liora-backups "$stage/backup-coordinator.json" /etc/liora-backups/config.json
@@ -31,7 +31,8 @@ sudo -n install -d -m 700 -o liora-backups -g liora-backups /var/lib/liora-backu
 sudo -n install -m 644 "$stage/liora-backup.service" "$stage/liora-backup.timer" "$stage/liora-backup-metrics.service" /etc/systemd/system/
 rm -f "$stage/backup-coordinator.json"
 sudo -n systemctl daemon-reload
-sudo -n systemctl enable --now liora-backup-metrics.service
+sudo -n systemctl enable liora-backup-metrics.service
+sudo -n systemctl restart liora-backup-metrics.service
 sudo -n systemctl is-active --quiet tailscaled
 sudo -n sysctl net.ipv4.ip_forward
 printf 'Coordinator installed; metrics enabled; daily timer awaits explicit acceptance activation.\n'

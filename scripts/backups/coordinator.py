@@ -139,8 +139,11 @@ class Coordinator:
             lease = self.save(lease, state, holder)
         else:
             if holder:
-                self.alert('CNPGBackupCycleBlocked')
-                raise UnsafeState('A previous cycle holds the fence; inspect and explicitly resume')
+                existing = json.loads(lease['metadata'].get('annotations', {}).get(ANNOTATION, '{}'))
+                renewed = dt.datetime.fromisoformat(lease['spec']['renewTime'].replace('Z', '+00:00'))
+                if existing.get('blocked_at') or (dt.datetime.now(dt.timezone.utc) - renewed).total_seconds() > 120:
+                    self.alert('CNPGBackupCycleBlocked')
+                raise UnsafeState('A cycle holds the fence; wait for its owner or inspect/explicitly resume')
             if self.active_backups():
                 self.alert('CNPGBackupCycleBlocked')
                 raise UnsafeState('An existing nonterminal Backup blocks a new cycle')

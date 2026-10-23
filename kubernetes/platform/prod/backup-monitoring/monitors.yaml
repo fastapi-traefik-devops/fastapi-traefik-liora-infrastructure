@@ -1,0 +1,74 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: cnpg-backup-prod
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+    - app-prod
+  selector:
+    matchLabels:
+      cnpg.io/cluster: liora-db
+      cnpg.io/podRole: instance
+  podMetricsEndpoints:
+  - port: metrics
+    interval: 30s
+    relabelings:
+    - sourceLabels:
+      - __meta_kubernetes_pod_label_role
+      targetLabel: role
+    - targetLabel: environment
+      replacement: PROD
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backup-coordinator
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: backup-coordinator
+spec:
+  ports:
+  - name: metrics
+    port: 9899
+    targetPort: 9899
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: backup-coordinator
+  namespace: monitoring
+  labels:
+    kubernetes.io/service-name: backup-coordinator
+    endpointslice.kubernetes.io/managed-by: liora-backup-platform
+addressType: IPv4
+ports:
+- name: metrics
+  port: 9899
+  protocol: TCP
+endpoints:
+- addresses:
+  - 192.168.77.250
+  conditions:
+    ready: true
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: backup-coordinator
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: backup-coordinator
+  endpoints:
+  - port: metrics
+    path: /metrics/prod
+    interval: 30s
+    scrapeTimeout: 20s
