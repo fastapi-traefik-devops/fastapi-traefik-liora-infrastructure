@@ -18,9 +18,9 @@ images:
   digest: sha256:a8d07b6be8ae8c76cc8133c885ba8ec3c095ded005db251aaf6a190e88426f82
 replicas:
 - name: backend
-  count: 0
+  count: 1
 - name: frontend
-  count: 0
+  count: 1
 patches:
 - target:
     kind: ConfigMap
@@ -68,4 +68,4 @@ patches:
       path: /spec/template/metadata/annotations
       value:
         liora.aprt.info/config-revision: https-phase7
-        liora.aprt.info/database: cnpg-16.15-initialized
+        liora.aprt.info/database: cnpg-r2-0.15.1

@@ -22,3 +22,16 @@ patches:
       postgresql:
         parameters:
           archive_timeout: 300s
+- target:
+    kind: Deployment
+    name: backend
+  patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: backend
+    spec:
+      template:
+        metadata:
+          annotations:
+            liora.aprt.info/database: cnpg-r2-0.15.1
