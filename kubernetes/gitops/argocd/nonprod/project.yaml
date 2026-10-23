@@ -26,3 +26,5 @@ spec:
     kind: Job
   - group: networking.k8s.io
     kind: Ingress
+  - group: postgresql.cnpg.io
+    kind: Cluster

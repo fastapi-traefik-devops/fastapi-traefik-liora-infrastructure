@@ -891,37 +891,66 @@ do not perform that cleanup as part of this implementation.
 
 ## Phase 10 — Replace temporary components incrementally
 
-Status: **direction agreed; detailed scope and execution plan pending**. The
-items below describe future work, not authorization to select unspecified
-parameters or start implementation automatically after Phase 9.
+### 10.1 — Fresh CloudNativePG application databases
 
-### Before starting Phase 10 — Refine and approve the scope
+Status: **authorized and in progress**. The operator approved fresh empty
+application databases and disposal of old DEV/STAGE/PROD database data. This
+supersedes logical dump/restore and the earlier requirement to test legacy
+backup restoration before this replacement. Jenkins and unrelated data remain
+protected. Phase 9 deferred Jenkins work remains open and is not part of 10.1.
 
-- [ ] After Phase 9, reconcile the deferred ADR backlog with the working
-      system, including accepted replacements and completed improvements.
-      Identify which remaining changes are still needed.
-- [ ] Agree the order, resource budget and concrete parameters for the
-      selected work: CloudNativePG, R2 backup/restore and retention, logging,
-      external uptime checks, alert delivery, HPA/PDB, Secret encryption and
-      the recovery kit. Record deferred items without silently dropping them.
-- [ ] Expand the selected work into explicit subphases with prerequisites,
-      acceptance criteria and recovery procedures. Present the updated plan
-      to the operator and obtain confirmation before implementation.
+- [x] Inspect both original checkouts and live databases: PostgreSQL 16.6,
+      `plpgsql` and `uuid-ossp`, `app` database, legacy `postgres` application
+      login, 1 GiB local-path PVC per environment; capture private baselines.
+- [x] Select compatible pinned CNPG 1.30.1 / PostgreSQL 16.15 images. Budget
+      DEV/STAGE one instance each, PROD two instances on distinct nodes with
+      asynchronous streaming replication, no synchronous replication. Per
+      instance: 250m/512 MiB requests, 1 CPU/1 GiB limits, 2 GiB local-path.
+- [ ] Drain and hold conflicting Jenkins work; pause Argo roots and children.
+      Use committed maintenance replicas and revision-bound explicit syncs.
+- [ ] Install the operator in both clusters; create fresh environment Clusters
+      and bootstrap `app_owner` using existing passwords. Keep `postgres`
+      administrative access and existing initialization login credentials.
+- [ ] Complete DEV, then STAGE, then PROD: database readiness, stable `db`
+      endpoint, Alembic initialization, unchanged application digests, HTTPS,
+      login and disposable CRUD; verify PROD streaming/async placement.
+- [ ] Retire only obsolete application database Deployments/config/PVCs after
+      each replacement works; verify Argo ownership and reconciliation.
+- [ ] Restore approved Argo and Jenkins polling/publication settings, preserve
+      unrelated Secrets/PVCs and Jenkins user/history inputs; record results.
 
-### Planned implementation areas — Subject to the scope review above
+Procedure: [fresh CNPG installation](../../runbooks/18-cloudnative-pg.md).
+Results: [Phase 10 report](PHASE10_REPORT.md). Existing-image validation is
+required; full Jenkins CI/CD regression and vulnerability scans are not rerun
+for this replacement. PROD image promotion remains blocked until Phase 9's
+agreed automatic STAGE acceptance gate is implemented and verified.
 
-- [ ] Test database backup and restore before replacing the current
-      PostgreSQL Deployment. Introduce CloudNativePG one environment at a
-      time, beginning with DEV.
-- [ ] Add per-cluster Secret encryption and recovery keys and dedicated
-      ingress addresses in separate changes. Retain the working Certbot
-      automation until the final Phase 11 certificate migration.
-      Check each on DEV, then STAGE, then PROD.
-- [ ] Remove Adminer and other lab-only resources only after a replacement
-      operational path works. Recheck both clusters' recovery procedures.
+### 10.2 — R2 physical backup and isolated restoration
 
-**Pass:** target services replace the initial stack without losing data,
-access, or a tested recovery path.
+Next database task, separate from 10.1: supported Barman Cloud Plugin,
+PostgreSQL physical base backups plus WAL archiving to R2, separate environment
+identities/destinations, explicit schedules/retention/capacity, followed by an
+isolated restoration exercise and recovery-point checks. No buckets, credentials,
+WAL archive, backup schedules or retention are configured in 10.1. Replication
+is not a backup; backup/PITR/restoration readiness remains unproven.
+
+- [ ] Refine and approve R2 integration parameters and recovery objectives.
+- [ ] Implement physical backup/WAL archive and verify isolated restoration.
+
+### Other separately scoped improvements
+
+- [ ] Reconcile the remaining ADR backlog; refine resource budgets and approve
+      logging, external uptime checks, alert delivery, HPA/PDB, Secret encryption
+      and the recovery kit before implementing them.
+- [ ] Add per-cluster Secret encryption/recovery keys and dedicated ingress
+      addresses separately. Retain working Certbot automation until Phase 11.
+- [ ] Remove Adminer only after a replacement operational path works; preserve
+      its current private access during 10.1.
+
+**10.1 pass:** fresh databases and existing-image application checks succeed in
+all three environments; obsolete DB resources are retired and approved
+reconciliation/automation restored. This does not close Phase 9 or establish
+backup/recovery readiness.
 
 ## Phase 11 — Доведення до ідеалу або полірування
 

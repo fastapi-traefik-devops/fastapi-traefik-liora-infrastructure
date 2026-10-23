@@ -9,3 +9,16 @@ metadata:
 data:
   installationID: liora-nonprod
   application.resourceTrackingMethod: annotation
+  resource.customizations.health.postgresql.cnpg.io_Cluster: |
+    hs = {status = "Progressing", message = "Waiting for CloudNativePG readiness"}
+    if obj.status ~= nil and obj.status.conditions ~= nil then
+      for _, condition in ipairs(obj.status.conditions) do
+        if condition.type == "Ready" and condition.status == "True" then
+          if obj.status.readyInstances == obj.spec.instances then
+            hs.status = "Healthy"
+            hs.message = "All requested PostgreSQL instances are ready"
+          end
+        end
+      end
+    end
+    return hs
