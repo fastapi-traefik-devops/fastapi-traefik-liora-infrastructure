@@ -154,8 +154,13 @@ STAGE and PROD overlays. Each environment owns its configuration, runtime
 Secrets, database credentials and image digest pair. Frontend and backend
 images are immutable and referenced by digest.
 
-CloudNativePG manages PostgreSQL separately for each environment. Database
-instance counts, storage and resource budgets are environment-specific.
+CloudNativePG manages a separate PostgreSQL 16 database in each environment.
+DEV and STAGE each have one instance; PROD has two instances on different K3s
+nodes, using asynchronous streaming replication without synchronous replicas.
+Operator and PostgreSQL images are pinned reproducibly. Storage and resource
+budgets are environment-specific. The stable application endpoint is `db:5432`;
+`app_owner` owns the application database, while `postgres` is an administrative
+role with separate connection settings.
 Application migrations use the prestart/migration lifecycle and preserve
 compatibility with the deployed application. Database administration uses a
 private operational access path; Adminer is excluded from the final application
@@ -169,10 +174,13 @@ budgets are environment configuration, independent of the number of K3s servers.
 
 ### Backup and recovery
 
-Database backups have a restore procedure and a destination outside the
-physical Proxmox host failure domain. Storage backend, retention and recovery
-objectives are explicit database/recovery configuration parameters. Recovery procedures cover
-application data, etcd, infrastructure state, cluster credentials and encryption
+PostgreSQL physical base backups and continuous WAL archiving use the Barman
+Cloud Plugin with R2 object storage outside the physical Proxmox host failure
+domain. Each environment has a distinct backup identity and destination.
+Backup schedules, retention and recovery objectives are explicit configuration
+parameters. An isolated restoration exercise validates the recovery procedure;
+a raw copy of a running PVC directory is not a database backup. Recovery
+procedures cover application data, etcd, infrastructure state, cluster credentials and encryption
 keys. Backup copies and the private recovery kit stay outside Git.
 
 The recovery kit contains the inputs and procedures needed to recreate the
