@@ -1,0 +1,76 @@
+{
+  "scope": "REAL LOCAL TLS/SQLITE FIXTURE ONLY \u2014 NOT PRODUCTION SOFTWARE RECOVERY",
+  "started_utc": "2026-10-23T23:41:17.369770+00:00",
+  "run_id": "03402a7b-2910-49cf-8bc2-7b7f4d24a0dc",
+  "inventory": {
+    "bind": "127.0.0.1",
+    "port": 34401,
+    "runtime": "Python stdlib HTTPServer",
+    "disposable_paths": [
+      "fixture.sqlite",
+      "checkpoint.sqlite",
+      "tls.key",
+      "tls.crt"
+    ],
+    "production_credentials_used": false,
+    "public_dns_changes": false
+  },
+  "checks": [
+    {
+      "check": "TLS certificate/hostname validation and health",
+      "result": "PASS"
+    },
+    {
+      "check": "wrong HTTP Host rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "wrong TLS hostname rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "unauthenticated request rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "invalid fixture credential rejected",
+      "result": "PASS"
+    },
+    {
+      "check": "create via TLS fixture",
+      "result": "PASS"
+    },
+    {
+      "check": "read via TLS fixture",
+      "result": "PASS"
+    },
+    {
+      "check": "update via TLS fixture",
+      "result": "PASS"
+    },
+    {
+      "check": "delete via TLS fixture",
+      "result": "PASS"
+    },
+    {
+      "check": "SQLite integrity",
+      "result": "PASS"
+    },
+    {
+      "check": "fixture server stopped and socket closed",
+      "result": "PASS"
+    },
+    {
+      "check": "checkpoint rollback restores original DB bytes",
+      "result": "PASS"
+    },
+    {
+      "check": "fixture directory and generated private key removed",
+      "result": "PASS"
+    }
+  ],
+  "checkpoint_sha256": "4512c9507085f969cd6517b90d910ef2935616a88a2460a491d11ae9843cf844",
+  "finished_utc": "2026-10-23T23:41:18.152770+00:00",
+  "duration_local_seconds": 0.783,
+  "status": "PASS"
+}

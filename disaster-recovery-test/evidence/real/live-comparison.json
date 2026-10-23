@@ -1,0 +1,29 @@
+{
+  "before_utc": "2026-10-23T23:38:57.802047+00:00",
+  "after_utc": "2026-10-23T23:43:37.586661+00:00",
+  "audited_configuration_and_identity_equal": true,
+  "differences": [],
+  "observed_resource_counts": {
+    "dev-stage": {
+      "nodes": 3,
+      "deployments.apps": 28,
+      "statefulsets.apps": 3,
+      "persistentvolumeclaims": 9,
+      "applications.argoproj.io": 3,
+      "ingresses.networking.k8s.io": 2
+    },
+    "prod": {
+      "nodes": 3,
+      "deployments.apps": 21,
+      "statefulsets.apps": 3,
+      "persistentvolumeclaims": 4,
+      "applications.argoproj.io": 2,
+      "ingresses.networking.k8s.io": 1
+    }
+  },
+  "coverage": "Node UIDs; Deployment/StatefulSet UIDs, replicas, images; PVC UIDs/PV binding; Application UIDs/specs; Ingress UIDs/specs.",
+  "limitations": [
+    "Not an exhaustive audit. No DNS/firewall/R2/Proxmox/Secret-data/Jenkins-history comparison.",
+    "Read-only GET queries only. No production mutation commands issued."
+  ]
+}

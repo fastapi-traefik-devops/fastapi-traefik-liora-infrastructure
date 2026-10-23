@@ -1,0 +1,90 @@
+[
+  {
+    "file": "evidence/simulated/01-proxmox.png",
+    "simulated": true,
+    "exit_code": 0,
+    "png_exists": true,
+    "browser": "existing Google Chrome",
+    "profile": "disposable; removed on exit"
+  },
+  {
+    "file": "evidence/simulated/02-kubernetes.png",
+    "simulated": true,
+    "exit_code": 0,
+    "png_exists": true,
+    "browser": "existing Google Chrome",
+    "profile": "disposable; removed on exit"
+  },
+  {
+    "file": "evidence/simulated/03-database.png",
+    "simulated": true,
+    "exit_code": 0,
+    "png_exists": true,
+    "browser": "existing Google Chrome",
+    "profile": "disposable; removed on exit"
+  },
+  {
+    "file": "evidence/simulated/04-application.png",
+    "simulated": true,
+    "exit_code": 0,
+    "png_exists": true,
+    "browser": "existing Google Chrome",
+    "profile": "disposable; removed on exit"
+  },
+  {
+    "file": "evidence/simulated/05-argocd.png",
+    "simulated": true,
+    "exit_code": 0,
+    "png_exists": true,
+    "browser": "existing Google Chrome",
+    "profile": "disposable; removed on exit"
+  },
+  {
+    "file": "evidence/simulated/06-jenkins.png",
+    "simulated": true,
+    "exit_code": 0,
+    "png_exists": true,
+    "browser": "existing Google Chrome",
+    "profile": "disposable; removed on exit"
+  },
+  {
+    "file": "evidence/simulated/07-grafana.png",
+    "simulated": true,
+    "exit_code": 0,
+    "png_exists": true,
+    "browser": "existing Google Chrome",
+    "profile": "disposable; removed on exit"
+  },
+  {
+    "file": "evidence/simulated/08-completion.png",
+    "simulated": true,
+    "exit_code": 0,
+    "png_exists": true,
+    "browser": "existing Google Chrome",
+    "profile": "disposable; removed on exit"
+  },
+  {
+    "file": "evidence/simulated/09-rollback.png",
+    "simulated": true,
+    "exit_code": 0,
+    "png_exists": true,
+    "browser": "existing Google Chrome",
+    "profile": "disposable; removed on exit"
+  },
+  {
+    "file": "evidence/simulated/10-cleanup.png",
+    "simulated": true,
+    "exit_code": 0,
+    "png_exists": true,
+    "browser": "existing Google Chrome",
+    "profile": "disposable; removed on exit"
+  },
+  {
+    "file": "evidence/real/actual-local-checks.png",
+    "simulated": false,
+    "exit_code": 0,
+    "png_exists": true,
+    "browser": "existing Google Chrome",
+    "profile": "disposable; removed on exit"
+  }
+]

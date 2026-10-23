@@ -1,0 +1,41 @@
+{
+  "started_utc": "2026-10-23T23:41:43.611141+00:00",
+  "finished_utc": "2026-10-23T23:41:44.011062+00:00",
+  "scope": "REAL LOCAL SOFTWARE CHECKS ONLY \u2014 NOT INFRASTRUCTURE RECOVERY",
+  "guard_tests": 5,
+  "repository_jenkins_fixture_tests": {
+    "tests_run": 12,
+    "failures": 0,
+    "errors": 0,
+    "source_sha256": "aca0a70f28b54c1145bf46a1dc64f15f66a67577da4db193f1a66545678fc8bd",
+    "copied_helper_sha256": "aca0a70f28b54c1145bf46a1dc64f15f66a67577da4db193f1a66545678fc8bd",
+    "scope": "Actual offline archive transformations with synthetic inputs; no Jenkins runtime"
+  },
+  "static_source_checks": [
+    {
+      "check": "app-dev destination and policy",
+      "result": "PASS"
+    },
+    {
+      "check": "app-stage destination and policy",
+      "result": "PASS"
+    },
+    {
+      "check": "nonprod root pruning disabled",
+      "result": "PASS"
+    },
+    {
+      "check": "app-prod destination and policy",
+      "result": "PASS"
+    },
+    {
+      "check": "prod root pruning disabled",
+      "result": "PASS"
+    },
+    {
+      "check": "inventory-only: infrastructure install uses a remote upstream ArgoCD URL",
+      "result": "OBSERVED",
+      "limitation": "Complete air-gapped software bundle not supplied"
+    }
+  ]
+}

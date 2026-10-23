@@ -1,0 +1,197 @@
+{
+  "label": "SIMULATED \u2014 NOT A REAL TEST",
+  "run_id": "7138a88f-0665-4172-be94-fe873dccc926",
+  "started_utc": "2026-10-23T23:41:43.970994+00:00",
+  "finished_utc": "2026-10-23T23:41:44.009721+00:00",
+  "duration_local_harness_seconds": 0.0718,
+  "network_calls": 0,
+  "original_source_required": false,
+  "fixture_tree_removed": true,
+  "checkpoint_manifest": {
+    ".run-id": "2c4af59794ba52e8a1c7162ef8462d6dcc950ff905e59371034a697c89665b0c"
+  },
+  "rollback_manifest": {
+    ".run-id": "2c4af59794ba52e8a1c7162ef8462d6dcc950ff905e59371034a697c89665b0c"
+  },
+  "owned_resource_inventory": {
+    "kind": "MOCK Proxmox",
+    "vms": [
+      {
+        "name": "lab-management",
+        "id": 9200
+      },
+      {
+        "name": "lab-k3s-1",
+        "id": 9201
+      },
+      {
+        "name": "lab-k3s-2",
+        "id": 9202
+      },
+      {
+        "name": "lab-k3s-3",
+        "id": 9203
+      },
+      {
+        "name": "lab-k3s-4",
+        "id": 9204
+      },
+      {
+        "name": "lab-k3s-5",
+        "id": 9205
+      },
+      {
+        "name": "lab-k3s-6",
+        "id": 9206
+      },
+      {
+        "name": "lab-edge",
+        "id": 9240
+      },
+      {
+        "name": "lab-router",
+        "id": 9250
+      }
+    ],
+    "network": "198.18.77.0/24",
+    "endpoint": "mock://isolated-recovery-lab"
+  },
+  "cleanup_scope": "only the run-owned temporary fixture tree",
+  "steps": [
+    {
+      "test": 1,
+      "title": "Simulate host loss",
+      "timestamp_utc": "2026-10-23T23:41:43.970994+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "Deleted only the synthetic source directory; restoration uses the copied local bundle.",
+      "elapsed_local_seconds": 0.0331
+    },
+    {
+      "test": 2,
+      "title": "Rebuild Proxmox/network/VMs",
+      "timestamp_utc": "2026-10-23T23:41:43.973174+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "Constructed nine JSON VM records on a documentation-only lab network; no hypervisor or network changes.",
+      "elapsed_local_seconds": 0.0353
+    },
+    {
+      "test": 3,
+      "title": "Recreate K3s",
+      "timestamp_utc": "2026-10-23T23:41:43.973587+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "Mock adapter created two groups of three Ready node records; Terraform/Ansible/K3s were not executed.",
+      "elapsed_local_seconds": 0.0357
+    },
+    {
+      "test": 4,
+      "title": "Recover configuration/Secrets",
+      "timestamp_utc": "2026-10-23T23:41:43.973882+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "Restored fixture-only configuration with private file permissions from the independent local bundle.",
+      "elapsed_local_seconds": 0.0359
+    },
+    {
+      "test": 5,
+      "title": "Restore database backup",
+      "timestamp_utc": "2026-10-23T23:41:43.974337+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "Copied and opened a real SQLite fixture; no PostgreSQL, CNPG, R2 or original cluster access.",
+      "elapsed_local_seconds": 0.0364
+    },
+    {
+      "test": 6,
+      "title": "Point-in-time recovery",
+      "timestamp_utc": "2026-10-23T23:41:43.984955+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "Synthetic SQL event replay to fixture time 30 includes time-20 marker and excludes time-40 marker; not PostgreSQL WAL replay.",
+      "elapsed_local_seconds": 0.047
+    },
+    {
+      "test": 7,
+      "title": "Restore FastAPI/React",
+      "timestamp_utc": "2026-10-23T23:41:43.985339+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "In-process application adapter reads the recovered fixture; no FastAPI/React server started.",
+      "elapsed_local_seconds": 0.0474
+    },
+    {
+      "test": 8,
+      "title": "Restore ArgoCD",
+      "timestamp_utc": "2026-10-23T23:41:43.985657+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "Pinned fixture desired state equals observed mock state, with automation disabled; no ArgoCD instance.",
+      "elapsed_local_seconds": 0.0477
+    },
+    {
+      "test": 9,
+      "title": "Restore Jenkins",
+      "timestamp_utc": "2026-10-23T23:41:43.989977+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "Preserved mock job/build records in held state; no Jenkins runtime or real credential decryption.",
+      "elapsed_local_seconds": 0.0521
+    },
+    {
+      "test": 10,
+      "title": "Restore monitoring",
+      "timestamp_utc": "2026-10-23T23:41:43.990989+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "Validated fixture target list and simulated local alert/resolution; no Prometheus/Grafana/Alertmanager services.",
+      "elapsed_local_seconds": 0.0531
+    },
+    {
+      "test": 11,
+      "title": "Routing/HTTPS",
+      "timestamp_utc": "2026-10-23T23:41:43.991256+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "Checked a mock Host/SNI mapping and synthetic TLS metadata; no HAProxy or TLS handshake.",
+      "elapsed_local_seconds": 0.0533
+    },
+    {
+      "test": 12,
+      "title": "Authentication/health/CRUD",
+      "timestamp_utc": "2026-10-23T23:41:44.002447+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "Valid/invalid fixture token checks and actual SQLite CRUD passed; no deployed application/API tested.",
+      "elapsed_local_seconds": 0.0646
+    },
+    {
+      "test": 13,
+      "title": "RPO/RTO",
+      "timestamp_utc": "2026-10-23T23:41:44.002530+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "Synthetic loss time 35 minus last recoverable event 20 gives 15 fixture units. Local elapsed time is not infrastructure RTO.",
+      "elapsed_local_seconds": 0.0646
+    },
+    {
+      "test": 14,
+      "title": "Lab rollback",
+      "timestamp_utc": "2026-10-23T23:41:44.005743+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "Filesystem lab restored exactly to the pre-change checkpoint hash manifest.",
+      "elapsed_local_seconds": 0.0679
+    },
+    {
+      "test": 15,
+      "title": "Lab cleanup",
+      "timestamp_utc": "2026-10-23T23:41:44.009230+00:00",
+      "real_result": "BLOCKED",
+      "simulation_result": "PASS",
+      "detail": "Only owned synthetic lab removed; copied archive hashes unchanged. TemporaryDirectory then removes this exercise fixture tree.",
+      "elapsed_local_seconds": 0.0713
+    }
+  ]
+}

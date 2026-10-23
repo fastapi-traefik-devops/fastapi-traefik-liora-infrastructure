@@ -1,0 +1,40 @@
+# Disaster recovery test evidence
+
+Start with [the report](../DISASTER_RECOVERY_TEST_REPORT.md) and the
+[evidence index](evidence/INDEX.md).
+
+These artifacts record the 24 October 2026 assessment/exercise. **No real
+infrastructure recovery was executed.** The 15 infrastructure tests are BLOCKED;
+their illustrative screenshots say **SIMULATED — NOT A REAL TEST**.
+Actual local software checks and read-only live observations are under
+`evidence/real/`. Local test success is not a production recovery PASS.
+
+The report, logs and screenshots are historical output. The repository revisions
+in `repository-provenance.json` describe the original source checkouts, before
+this evidence was added to the infrastructure repository.
+
+## Retained sources
+
+- `run_local_tests.py`: disposable JSON/SQLite simulations, cleanup guards,
+  offline repository Jenkins archive fixtures, and static ArgoCD YAML assertions.
+  Uses existing Python and PyYAML; it never contacts infrastructure.
+- `test_local_https.py`: actual loopback Python/SQLite fixture, generated test
+  certificates, TLS/Host checks, rollback and cleanup. Requires existing
+  `cryptography`; it is not FastAPI, PostgreSQL or HAProxy.
+- `render_evidence.py`: screenshots of labeled local HTML panels using an existing
+  Chrome installation and a disposable browser profile. It installs nothing.
+- `capture_readonly.py`: historical metadata collector using the original
+  operator's `Liora` SSH alias and identity. It performs GET queries only. It is
+  operator-specific and is not required to read or verify the saved evidence.
+- `finalize_report.py`: regenerates the report/index from saved results. It does
+  not contact infrastructure, but overwrites generated artifacts.
+
+Rerunning generators replaces historical output. Preserve this committed record
+before any separately reviewed repeat. No credentials, recovery archives,
+Terraform state or production database data are included.
+
+Verify artifact integrity from the infrastructure repository root:
+
+```sh
+sha256sum -c disaster-recovery-test/evidence/SHA256SUMS
+```
