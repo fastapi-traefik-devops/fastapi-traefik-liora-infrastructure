@@ -4,6 +4,8 @@ namespace: app-dev
 resources:
 - ../../base
 - service-adminer-private.yaml
+components:
+- ../../components/legacy-postgres
 images:
 - name: backend
   newName: ghcr.io/fastapi-traefik-devops/fastapi-backend
