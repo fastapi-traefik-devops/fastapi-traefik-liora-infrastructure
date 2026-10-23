@@ -37,7 +37,9 @@ def main():
             or test.get('matchers') != ['purpose="test"'] or test.get('receiver') != 'slack-testing'
             or test.get('continue', False) or test.get('routes')
             or len(slack.get('slack_configs', [])) != 1
-            or set(slack) - {'name', 'slack_configs'}):
+            # Alertmanager 0.34 adds its receiver name as metadata in the status API.
+            or slack.get('labels', {}) not in ({}, {'name': 'slack-testing'})
+            or set(slack) - {'name', 'labels', 'slack_configs'}):
         raise SystemExit('Testing route or cluster identity mismatch; no alert sent.')
     destination = slack['slack_configs'][0]
     if (destination.get('channel') != '#liora-alerts-testing'

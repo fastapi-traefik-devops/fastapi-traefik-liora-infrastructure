@@ -4,10 +4,14 @@ import argparse
 import base64
 import hashlib
 import itertools
+import io
 import json
 from pathlib import Path
 import subprocess
+import runpy
+import sys
 import tempfile
+from unittest import mock
 
 import yaml
 
@@ -38,6 +42,27 @@ def main():
             config_file = work / f'{cluster}-alertmanager.yaml'
             config_file.write_text(yaml.safe_dump(config))
             run([args.amtool, 'check-config', config_file])
+            # Exercise the actual helper against raw and API-normalized receiver metadata.
+            # Stop at its first prompt, before any alert can be submitted.
+            for receiver_labels in [None, {'name': 'slack-testing'}, {'name': 'wrong'}]:
+                fixture_config = yaml.safe_load(yaml.safe_dump(config))
+                test_receiver = next(r for r in fixture_config['receivers'] if r['name'] == 'slack-testing')
+                if receiver_labels is not None:
+                    test_receiver['labels'] = receiver_labels
+                response = json.dumps({'config': {'original': yaml.safe_dump(fixture_config)}}).encode()
+                with mock.patch.object(sys, 'argv', ['test-slack-alert.py', '--cluster', cluster]), \
+                     mock.patch('urllib.request.urlopen', return_value=io.BytesIO(response)) as request, \
+                     mock.patch('builtins.input', side_effect=RuntimeError('preflight reached prompt')) as prompt:
+                    try:
+                        runpy.run_path(str(ROOT / 'scripts/kubernetes/test-slack-alert.py'), run_name='__main__')
+                    except RuntimeError as exc:
+                        assert str(exc) == 'preflight reached prompt' and receiver_labels != {'name': 'wrong'}
+                    except SystemExit:
+                        assert receiver_labels == {'name': 'wrong'}
+                    else:
+                        raise AssertionError('Expected helper to stop before sending')
+                    assert request.call_count == 1, 'Helper must not send alerts during preflight validation'
+                    assert prompt.call_count == (0 if receiver_labels == {'name': 'wrong'} else 1)
             # Every combination must produce exactly one destination, including test criticals.
             identities = [cluster, 'prod' if cluster == 'nonprod' else 'nonprod', 'wrong', '']
             for identity, purpose, severity in itertools.product(identities, ['', 'test', 'synthetic'], ['info', 'warning', 'critical']):
