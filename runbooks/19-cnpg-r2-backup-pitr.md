@@ -49,8 +49,7 @@ Write the deterministic Backup name to durable intent before creation. A lost
 POST response is resolved by observing that same object; do not create a new
 backup on uncertainty. Never clear a held cycle merely because a timeout or
 reboot occurred. An administrator must resume/inspect the recorded cycle.
-The coordinator has namespace-scoped Backup create/get/list and Cluster read,
-plus read/update of its one precreated Lease. No live DB, Secret, Pod or PVC
+The coordinator has namespace-scoped Backup create/get/list, plus read/update of its one precreated Lease. No live DB, Secret, Pod or PVC
 write permissions. Private generated authentication/config stays recoverable
 outside Git. Manual use from another administrator machine uses the same global
 coordination protocol. VM 250 loss does not stop WAL or prevent PITR.
@@ -105,3 +104,161 @@ procedure and record markers, target, backup ID, WAL evidence, measured RTO and
 application compatibility. Repeat after significant backup mechanism changes.
 Use one temporary instance at a time and the same explicit cleanup checks.
 There is no automated weekly restore schedule.
+
+## Operator commands and standalone files
+
+From the reviewed original checkout with explicit kubeconfigs already available:
+
+```sh
+RECOVERY_PYTHON="$PWD/.local-work/venv/bin/python" bash recovery/check_credentials.sh --all --offline
+bash scripts/local-python.sh scripts/backups/provision.py
+```
+
+Standalone provisioner: [provision.py](../scripts/backups/provision.py).
+It derives R2 Secrets and namespace-scoped service-account profiles into ignored
+`recovery/backup-coordinator.json`. API tokens/CA material are never printed.
+Keep that file and the YAML inputs in protected recovery storage. Unknown state
+is fenced in the PROD `app-prod/liora-backup-cycle` Lease, not only local files.
+
+Install the pinned dependency paths independently per cluster (run only the
+selected cluster's commands, and allow webhook readiness before plugin apply):
+
+```sh
+kubectl --kubeconfig="$kubeconfig" apply --server-side --field-manager=liora-backup-platform -k kubernetes/platform/cert-manager
+kubectl --kubeconfig="$kubeconfig" -n cert-manager rollout status deployment/cert-manager --timeout=600s
+kubectl --kubeconfig="$kubeconfig" -n cert-manager rollout status deployment/cert-manager-webhook --timeout=600s
+kubectl --kubeconfig="$kubeconfig" apply --server-side --field-manager=liora-backup-platform -k kubernetes/platform/barman-cloud
+kubectl --kubeconfig="$kubeconfig" -n cnpg-system rollout status deployment/barman-cloud --timeout=600s
+```
+
+Sources, checksums and image pins: [cert-manager](../kubernetes/platform/cert-manager/UPSTREAM.md)
+and [Barman plugin](../kubernetes/platform/barman-cloud/UPSTREAM.md).
+The sidecar gets its endpoint through the standard AWS SDK `AWS_ENDPOINT_URL`
+environment variable from the private R2 Secret; the account endpoint is not
+copied into Git. Region is `auto`. Both source components use archive_timeout
+300s. Requests/limits per sidecar are 50m/128 MiB and 500m/512 MiB.
+
+VM 250 installation requires its trusted SSH host key in
+`.local-work/private/phase10-2/known_hosts` and the existing recovery SSH identity.
+It installs only `/opt/liora-backups`, `/etc/liora-backups`, its state and its
+three systemd units. It preserves Tailscale and forwarding. The installer starts
+read-only metrics but **does not activate the daily backup timer**:
+
+```sh
+bash scripts/backups/install-vm250.sh
+```
+
+Standalone installer: [install-vm250.sh](../scripts/backups/install-vm250.sh).
+Runtime requirements are version/hash pinned. Coordinator memory/CPU limits are
+128 MiB/50% of a CPU; metrics 256 MiB/50%. Its namespace-scoped persistent
+service-account credentials are recoverable outside Git and cannot write Pods,
+Secrets, PVCs, application Deployments or CNPG Cluster configuration.
+
+On VM 250, inspect/run/resume using the same dedicated identity and global fence:
+
+```sh
+sudo -u liora-backups /opt/liora-backups/venv/bin/python /opt/liora-backups/coordinator.py inspect
+sudo -u liora-backups /opt/liora-backups/venv/bin/python /opt/liora-backups/coordinator.py run
+sudo -u liora-backups /opt/liora-backups/venv/bin/python /opt/liora-backups/coordinator.py resume
+```
+
+Standalone coordinator: [coordinator.py](../scripts/backups/coordinator.py).
+`resume` is explicit and refuses a fresh active owner; after interruption it
+changes the session fence while retaining deterministic names and the cycle ID.
+Do not run it concurrently merely to restart a healthy backup. A failed full
+backup is terminal and is not retried. `--environment` is for single-environment
+initial acceptance/ad-hoc work under the same fence; ordinary full cycles use
+all three in strict PROD → STAGE → DEV order. No per-environment cron/timer.
+
+Another trusted machine can run the coordinator with the private profile file
+and `--state-dir /private/local/path`; VM 200 must not own the recurring timer.
+Manual restore uses the administrator kubeconfigs, not this restricted identity.
+
+After all three PITR and live application checks pass, enable the sole schedule:
+
+```sh
+sudo systemctl enable --now liora-backup.timer
+systemctl list-timers liora-backup.timer
+```
+
+For initial or monthly PITR, choose a completed physical Backup name from the
+matching namespace and run each sequentially. Do not proceed unless the previous
+result says success and cleanup_complete. Use a new protected evidence directory:
+
+```sh
+bash scripts/local-python.sh scripts/backups/pitr.py --environment dev --backup "$dev_backup" --evidence "$evidence/dev"
+bash scripts/local-python.sh scripts/backups/pitr.py --environment stage --backup "$stage_backup" --evidence "$evidence/stage"
+bash scripts/local-python.sh scripts/backups/pitr.py --environment prod --backup "$prod_backup" --evidence "$evidence/prod"
+```
+
+Standalone PITR exercise: [pitr.py](../scripts/backups/pitr.py).
+If copied elsewhere, use `--recovery-dir /private/recovery`. Operator tooling
+requires the pinned local-tools and backup requirements plus the prepared
+Chromium libraries. It uses unchanged frontend/backend images through a temporary
+localhost proxy, checks real browser login/CRUD, and verifies actual image IDs.
+The conservative RTO clock includes target/marker setup, WAL-upload confirmation,
+namespace/database/app creation and browser acceptance. It excludes infrastructure
+rebuild, image build, public routing changes and cleanup after usability.
+
+The exercise retains failures. Never blindly delete namespaces after an error:
+inspect the saved namespace UID/run ID, Cluster, PVC/PV names and source marker.
+Cleanup is restricted to that exact `pitr-<env>-<run>` namespace and recorded
+synthetic marker. Restored ObjectStores have no retention policy, and restored
+Clusters have no WAL archiver plugin. Source credentials remain shared, so this
+is configuration isolation rather than a read-only credential boundary.
+
+Natural WAL delivery is measured separately from the PITR setup's forced switch:
+
+```sh
+bash scripts/local-python.sh scripts/backups/rpo.py start --environment "$environment" --record "$evidence/natural-rpo.json"
+bash scripts/local-python.sh scripts/backups/rpo.py wait --environment "$environment" --record "$evidence/natural-rpo.json"
+```
+
+Standalone observer: [rpo.py](../scripts/backups/rpo.py), alongside `pitr.py` when
+copied. It closes only the preceding segment before committing a marker. Do not
+manually switch that marker's WAL or run a full backup for that environment
+until observation completes. It records R2 LastModified delay and drops only
+the matching table OID. A healthy five-minute sample is evidence, not a future
+worst-case latency guarantee. Backup metadata alone does not prove RPO.
+
+Install only the new monitoring resources, preserving other people's existing
+Helm/Slack work. Their source is also linked from the monitoring kustomizations:
+
+```sh
+kubectl --kubeconfig="$HOME/.kube/config-dev-stage" apply --server-side --field-manager=liora-backup-monitoring -k kubernetes/platform/nonprod/backup-monitoring
+kubectl --kubeconfig="$HOME/.kube/config-prod" apply --server-side --field-manager=liora-backup-monitoring -k kubernetes/platform/prod/backup-monitoring
+```
+
+VM 250 exports `/metrics/nonprod` and `/metrics/prod` on private TCP/9899, refreshed
+every 60s and scraped every 30s. Usage sums all object pages with bounded calls;
+a failed/partial scan reports stale telemetry rather than an incomplete total.
+The 26-hour full-backup freshness margin is separate from the WAL RPO objective.
+WAL errors and ready-WAL backlog use actual PostgreSQL archiver metrics. Primary
+metric absence and coordinator/usage collection failures alert separately.
+Alertmanager integration is verified independently of delegated Slack delivery.
+
+Local checks (no Jenkins build or security scan):
+
+```sh
+python3 scripts/backups/tests/test_coordinator.py
+bash scripts/local-python.sh scripts/backups/tests/test_metrics.py
+bash scripts/local-python.sh scripts/backups/tests/test_pitr_safety.py
+bash scripts/local-python.sh scripts/backups/tests/test_rpo_safety.py
+bash scripts/local-python.sh scripts/backups/tests/check-rules.py --promtool .local-work/validation-tools/promtool
+```
+
+Rule checker: [check-rules.py](../scripts/backups/tests/check-rules.py). It extracts
+native rule groups and checks firing/recovery fixtures using pinned promtool
+3.15.0, whose release checksum was verified for this checkpoint.
+
+Explicit cleanup of a failed exercise with an existing recorded namespace:
+
+```sh
+bash scripts/local-python.sh scripts/backups/pitr-cleanup.py --record "$evidence/dev/result.json"
+```
+
+Standalone cleanup: [pitr-cleanup.py](../scripts/backups/pitr-cleanup.py), alongside
+`pitr.py`. It refuses a namespace UID/run mismatch. If interruption occurred
+before namespace creation/UID recording, inspect the specific source marker
+instead of inventing an identity or forcing deletion. Retain the failed result;
+cleanup does not relabel a failed recovery as successful.

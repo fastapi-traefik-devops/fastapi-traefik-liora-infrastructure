@@ -34,14 +34,6 @@ rules:
   - list
   - create
 - apiGroups:
-  - postgresql.cnpg.io
-  resources:
-  - clusters
-  resourceNames:
-  - liora-db
-  verbs:
-  - get
-- apiGroups:
   - coordination.k8s.io
   resources:
   - leases
