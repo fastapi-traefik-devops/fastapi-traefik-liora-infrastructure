@@ -139,6 +139,12 @@ independent inventory if both GitOps and Kubernetes telemetry disappear together
   integration metrics were observed during validation. The assurance text says
   **NOT INSTRUMENTED**. K3s snapshot duration is not evidence of recoverability.
 
+The final NONPROD screenshot's critical count of **2** was checked against live
+`ALERTS`: `CNPGBackupTelemetryMissing` was firing for `app-dev` and `app-stage`.
+Those are observed missing-telemetry alerts. Their presence does not establish
+backup failure or successful recovery, and this dashboard task did not modify
+the backup system or alert rules.
+
 ## Existing dashboard fixes
 
 The four existing dashboard UIDs remain intact in each cluster:

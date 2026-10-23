@@ -179,5 +179,19 @@
       "width": 1600,
       "height": 1500
     }
+  },
+  "final_nonprod_critical_observation": {
+    "alertname": "CNPGBackupTelemetryMissing",
+    "namespaces": [
+      "app-dev",
+      "app-stage"
+    ],
+    "environments": [
+      "DEV",
+      "STAGE"
+    ],
+    "cluster": "nonprod",
+    "count": 2,
+    "handling": "Observed read-only; backup systems and alert rules not modified by this dashboard task"
   }
 }
