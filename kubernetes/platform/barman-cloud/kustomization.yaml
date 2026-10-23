@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+- upstream/barman-cloud-0.15.1.yaml
+images:
+- name: ghcr.io/cloudnative-pg/plugin-barman-cloud
+  newTag: v0.15.1
+  digest: sha256:c75acad19a36e8176cfe2885761ff1b836c6ef977d7257e298c99a28b5c302ef
+- name: ghcr.io/cloudnative-pg/plugin-barman-cloud-sidecar
+  newTag: v0.15.1
+  digest: sha256:2287a793a804db751edd0d07d44cd549e357677e98a800eb12e2cf7c0d53f9b0
+patches:
+- target:
+    kind: Deployment
+    name: barman-cloud
+  patch: "- op: add\n  path: /spec/template/spec/containers/0/resources\n  value:\n\
+    \    requests:\n      cpu: 50m\n      memory: 128Mi\n    limits:\n      cpu: 500m\n\
+    \      memory: 256Mi\n"
+- target:
+    kind: Secret
+    name: plugin-barman-cloud-5fm982t42b
+  patch: "- op: replace\n  path: /data/SIDECAR_IMAGE\n  value: Z2hjci5pby9jbG91ZG5hdGl2ZS1wZy9wbHVnaW4tYmFybWFuLWNsb3VkLXNpZGVjYXI6djAuMTUuMUBzaGEyNTY6MjI4N2E3OTNhODA0ZGI3NTFlZGQwZDA3ZDQ0Y2Q1NDllMzU3Njc3ZTk4YTgwMGViMTJlMmNmN2MwZDUzZjliMA==\n"
