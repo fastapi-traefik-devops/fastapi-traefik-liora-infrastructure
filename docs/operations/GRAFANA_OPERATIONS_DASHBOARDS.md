@@ -10,12 +10,12 @@ scrape configuration, alert rule or application workload is required.
 | Cluster | Operations dashboard | Stable UID | Status |
 | --- | --- | --- | --- |
 | NONPROD — DEV / STAGE | Liora / NONPROD Operations | `liora-nonprod-operations` | Deployed and browser-verified |
-| PROD | Liora / PROD Operations | `liora-prod-operations` | Defined and query-validated; **not deployed**, approval required |
+| PROD | Liora / PROD Operations | `liora-prod-operations` | Deployed after explicit approval; browser-verified |
 
 Live NONPROD URL: [Operations](http://192.168.77.16:3000/d/liora-nonprod-operations).
-PROD's future URL is `http://192.168.77.17:3000/d/liora-prod-operations`;
-it will exist only after approved deployment. There is no new PROD screenshot
-because the dashboard has not been imported or deployed there.
+Live PROD URL: [Operations](http://192.168.77.17:3000/d/liora-prod-operations).
+PROD deployment was explicitly approved on 2026-10-23. Both clusters now run
+the feature-branch dashboards; merge the PR to align Git main with these previews.
 
 NONPROD is a preview deployed from the reviewed feature-branch bundle. Merge the
 PR to align `main` with that preview. The shared server checkout's concurrent
@@ -135,15 +135,23 @@ independent inventory if both GitOps and Kubernetes telemetry disappear together
 - The certificate panel converts remaining K3s certificate lifetime from
   seconds to days. It uses API-server scrape instances to avoid duplicating
   embedded-component endpoints. It is **not public HTTPS certificate validity**.
-- No CNPG/Postgres exporter, backup-health, public-certificate or UptimeRobot
-  integration metrics were observed during validation. The assurance text says
-  **NOT INSTRUMENTED**. K3s snapshot duration is not evidence of recoverability.
+- At initial validation, no CNPG/Postgres exporter, backup-health, public-certificate
+  or UptimeRobot integration metrics were observed. At the approved PROD deployment
+  at 14:42 UTC, CNPG and Barman metric families were present from concurrent work.
+  PROD assurance text now describes **dashboard coverage boundaries**: those
+  metrics are not evaluated by these panels. Their presence alone does not verify
+  successful backups or recovery. NONPROD text retains its initial observation.
+  K3s snapshot duration is not evidence of recoverability.
 
 The final NONPROD screenshot's critical count of **2** was checked against live
 `ALERTS`: `CNPGBackupTelemetryMissing` was firing for `app-dev` and `app-stage`.
 Those are observed missing-telemetry alerts. Their presence does not establish
 backup failure or successful recovery, and this dashboard task did not modify
 the backup system or alert rules.
+
+At approved PROD deployment, the critical count was **1**:
+`CNPGBackupTelemetryMissing` for `app-prod`. CNPG/Barman metric families were
+present, but this task did not diagnose or change that alert or backup settings.
 
 ## Existing dashboard fixes
 
@@ -161,9 +169,9 @@ The PR fixes three PROD definitions while preserving their UIDs:
 3. `PROD / PROD Workloads` becomes `PROD / Workloads`. The historical ConfigMap
    data key is retained to avoid unnecessary provisioning churn.
 
-These PROD corrections remain **undeployed until approval**, along with the
-new PROD Operations dashboard. Existing PROD browser checks establish that the
-current dashboards load, not that these pending corrections are live.
+These three PROD corrections and the new Operations dashboard were deployed
+after explicit approval. All five provisioned dashboard titles, panels, template
+variables and links were compared with the source definitions and matched.
 
 ## Provisioning, validation and deployment
 
@@ -207,7 +215,9 @@ evidence that an uninstrumented service is healthy.
 legacy dashboards remain present. Browser verification loaded all four old
 dashboards in each cluster without datasource query errors. NONPROD's new
 dashboard was checked with DEV/STAGE selection and real query interpolation,
-all collapsible sections, and screenshots. See
+all collapsible sections, and screenshots. PROD was subsequently checked in the
+browser after approval, including all five dashboards and every new section;
+79 PROD query variants passed again. See
 [the verification record](evidence/grafana-operations-validation.json) for final
 timings, observations and deployment scope.
 
@@ -248,7 +258,7 @@ monitoring resources just to update dashboards.
 
 ## Screenshots, exam demonstration and rollback
 
-Actual NONPROD screenshots from the deployed dashboard:
+Actual screenshots from the deployed dashboards:
 
 ![NONPROD Operations](screenshots/grafana-operations/nonprod-operations.png)
 
@@ -256,12 +266,24 @@ Actual NONPROD screenshots from the deployed dashboard:
 
 ![NONPROD assurance boundaries](screenshots/grafana-operations/nonprod-assurance.png)
 
+![PROD Operations](screenshots/grafana-operations/prod-operations.png)
+
+![PROD capacity](screenshots/grafana-operations/prod-capacity.png)
+
+![PROD assurance boundaries](screenshots/grafana-operations/prod-assurance.png)
+
 For an exam, show Environment All, DEV and STAGE; explain a traffic/error/latency
 change; open replica and GitOps detail links; expand capacity and incident
 sections; show that database readiness, internal certificates and backup gaps
-have distinct meanings. Explain the PROD approval boundary. Capture PROD only
-after approved deployment and verification. Keep credentials and browser sessions
+have distinct meanings. Explain the distinction between panel coverage and available telemetry. PROD
+screenshots below were captured after approved deployment and verification. Keep credentials and browser sessions
 out of evidence; the browser helper never logs filled password values.
+
+The PROD rollback snapshot, saved before applying either ConfigMap, is
+`/home/root-admin/.local/state/liora-grafana/20261023T144143Z/prod`.
+It contains the prior legacy ConfigMap and records that Operations was absent.
+Only the two dashboard ConfigMaps were applied; no Helm release, alert rule,
+Secret or application workload was changed.
 
 The initial NONPROD rollback snapshot is on the management server at
 `/home/root-admin/.local/state/liora-grafana/20261023T135346Z/nonprod`.

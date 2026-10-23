@@ -195,6 +195,13 @@ def build(cluster):
                      'description': 'Explicit monitoring gaps, not healthy/zero status values.',
                      'options': {'mode': 'markdown', 'content': '### Backup: NOT INSTRUMENTED\nNo success, freshness or restore evidence. Snapshot duration is not proof of recoverability.\n\n**Database:** pod readiness only; no SQL/replication metrics.\n\n**Public TLS:** not covered by internal K3s certificates.\n\n**External uptime:** no UptimeRobot metrics.\n\nRunbook: `GRAFANA_OPERATIONS_DASHBOARDS.md`.'}})
 
+
+    if not nonprod:
+        children[-1]['title'] = 'Assurance · coverage boundaries'
+        children[0]['description'] = 'Readiness of observed liora-db-N pods. This panel measures Kubernetes readiness only; SQL, replication health, RPO and restore verification are not shown.'
+        children[-1]['description'] = 'Dashboard coverage boundaries, not a claim that cluster instrumentation is absent.'
+        children[-1]['options']['content'] = '### Backup: NOT SHOWN HERE\nCNPG/backup metric families are now present in PROD. This dashboard does not evaluate backup success, freshness or restore evidence.\n\n**Database:** this panel shows pod readiness only; SQL/replication metrics are not displayed.\n\n**Public TLS:** not covered by internal K3s certificates.\n\n**External uptime:** not displayed here.\n\nRunbook: `GRAFANA_OPERATIONS_DASHBOARDS.md`.'
+
     for p in list(panels) + [child for r in panels if r.get('collapsed') for child in r['panels']]:
         if p['title'] in ['Requests by Traefik service', '5xx errors by service', 'p95 latency by service']:
             p['transformations'] = [{'id': 'renameByRegex', 'options': {'regex': 'app-(dev|stage|prod)-(backend|frontend)-80@kubernetes', 'renamePattern': '$1 / $2'}}]

@@ -64,35 +64,114 @@
       "query_variants": 79,
       "unique_queries": 77,
       "local_validation": "not run in this invocation",
-      "special_metric_families": [],
+      "special_metric_families": [
+        "barman_cloud_cloudnative_pg_io_first_recoverability_point",
+        "barman_cloud_cloudnative_pg_io_last_available_backup_timestamp",
+        "barman_cloud_cloudnative_pg_io_last_failed_backup_timestamp",
+        "cnpg_backends_max_tx_duration_seconds",
+        "cnpg_backends_total",
+        "cnpg_backends_waiting_total",
+        "cnpg_cache_hits",
+        "cnpg_cache_miss",
+        "cnpg_collector_collection_duration_seconds",
+        "cnpg_collector_collections_total",
+        "cnpg_collector_fencing_on",
+        "cnpg_collector_first_recoverability_point",
+        "cnpg_collector_last_available_backup_timestamp",
+        "cnpg_collector_last_collection_error",
+        "cnpg_collector_last_failed_backup_timestamp",
+        "cnpg_collector_lo_pages",
+        "cnpg_collector_manual_switchover_required",
+        "cnpg_collector_nodes_used",
+        "cnpg_collector_pg_wal",
+        "cnpg_collector_pg_wal_archive_status",
+        "cnpg_collector_postgres_version",
+        "cnpg_collector_replica_mode",
+        "cnpg_collector_sync_replicas",
+        "cnpg_collector_up",
+        "cnpg_collector_wal_buffers_full",
+        "cnpg_collector_wal_bytes",
+        "cnpg_collector_wal_fpi",
+        "cnpg_collector_wal_records",
+        "cnpg_collector_wal_sync",
+        "cnpg_collector_wal_sync_time",
+        "cnpg_collector_wal_write",
+        "cnpg_collector_wal_write_time",
+        "cnpg_last_error",
+        "cnpg_last_update_timestamp",
+        "cnpg_pg_database_mxid_age",
+        "cnpg_pg_database_size_bytes",
+        "cnpg_pg_database_xid_age",
+        "cnpg_pg_extensions_update_available",
+        "cnpg_pg_postmaster_start_time",
+        "cnpg_pg_replication_in_recovery",
+        "cnpg_pg_replication_is_wal_receiver_up",
+        "cnpg_pg_replication_lag",
+        "cnpg_pg_replication_slots_active",
+        "cnpg_pg_replication_slots_pg_wal_lsn_diff",
+        "cnpg_pg_replication_streaming_replicas",
+        "cnpg_pg_settings_setting",
+        "cnpg_pg_stat_archiver_archived_count",
+        "cnpg_pg_stat_archiver_failed_count",
+        "cnpg_pg_stat_archiver_last_archived_time",
+        "cnpg_pg_stat_archiver_last_archived_wal_start_lsn",
+        "cnpg_pg_stat_archiver_last_failed_time",
+        "cnpg_pg_stat_archiver_last_failed_wal_start_lsn",
+        "cnpg_pg_stat_archiver_seconds_since_last_archival",
+        "cnpg_pg_stat_archiver_seconds_since_last_failure",
+        "cnpg_pg_stat_archiver_stats_reset_time",
+        "cnpg_pg_stat_bgwriter_buffers_alloc",
+        "cnpg_pg_stat_bgwriter_buffers_backend",
+        "cnpg_pg_stat_bgwriter_buffers_backend_fsync",
+        "cnpg_pg_stat_bgwriter_buffers_checkpoint",
+        "cnpg_pg_stat_bgwriter_buffers_clean",
+        "cnpg_pg_stat_bgwriter_checkpoint_sync_time",
+        "cnpg_pg_stat_bgwriter_checkpoint_write_time",
+        "cnpg_pg_stat_bgwriter_checkpoints_req",
+        "cnpg_pg_stat_bgwriter_checkpoints_timed",
+        "cnpg_pg_stat_bgwriter_maxwritten_clean",
+        "cnpg_pg_stat_database_blk_read_time",
+        "cnpg_pg_stat_database_blk_write_time",
+        "cnpg_pg_stat_database_blks_hit",
+        "cnpg_pg_stat_database_blks_read",
+        "cnpg_pg_stat_database_conflicts",
+        "cnpg_pg_stat_database_deadlocks",
+        "cnpg_pg_stat_database_temp_bytes",
+        "cnpg_pg_stat_database_temp_files",
+        "cnpg_pg_stat_database_tup_deleted",
+        "cnpg_pg_stat_database_tup_fetched",
+        "cnpg_pg_stat_database_tup_inserted",
+        "cnpg_pg_stat_database_tup_returned",
+        "cnpg_pg_stat_database_tup_updated",
+        "cnpg_pg_stat_database_xact_commit",
+        "cnpg_pg_stat_database_xact_rollback",
+        "cnpg_pg_stat_replication_backend_start",
+        "cnpg_pg_stat_replication_backend_xmin_age",
+        "cnpg_pg_stat_replication_flush_diff_bytes",
+        "cnpg_pg_stat_replication_flush_lag_seconds",
+        "cnpg_pg_stat_replication_replay_diff_bytes",
+        "cnpg_pg_stat_replication_replay_lag_seconds",
+        "cnpg_pg_stat_replication_sent_diff_bytes",
+        "cnpg_pg_stat_replication_write_diff_bytes",
+        "cnpg_pg_stat_replication_write_lag_seconds"
+      ],
       "live_validation": "passed",
-      "timestamp_utc": "2026-10-23T14:03:15Z",
+      "timestamp_utc": "2026-10-23T14:42:00Z",
       "service_labels": [
         "app-prod-backend-80@kubernetes",
         "app-prod-frontend-80@kubernetes"
       ],
       "queries_executed": 78,
-      "max_query_roundtrip_ms": 57.87,
-      "median_query_roundtrip_ms": 11.43,
-      "no_finite_instant_observations": [
-        {
-          "dashboard": "liora-prod-operations",
-          "panel": "Firing incidents \u00b7 cluster scope",
-          "environment": "cluster",
-          "range": false,
-          "instant_series": 0,
-          "finite_instant_series": 0,
-          "range_series": 0,
-          "elapsed_ms": 10.41
-        }
-      ],
-      "source_scope": "all four existing dashboards plus new Operations definition",
-      "deployed": false
+      "max_query_roundtrip_ms": 58.38,
+      "median_query_roundtrip_ms": 8.67,
+      "no_finite_instant_observations": [],
+      "deployed": true,
+      "source_scope": "all four existing dashboards plus new Operations definition"
     }
   ],
   "deployment": {
     "nonprod": "new Operations ConfigMap deployed; legacy ConfigMap unchanged",
-    "prod": "not deployed; new ConfigMap absent; old dashboard fixes pending approval"
+    "prod": "explicitly approved; new Operations and legacy fixes deployed; five Grafana dashboard definitions match source"
   },
   "prod_browser_verification": {
     "cluster": "prod",
@@ -103,9 +182,14 @@
       "gitops-argocd",
       "prod-workloads"
     ],
-    "operations_deployed": false,
+    "operations_deployed": true,
     "query_errors": [],
-    "screenshots": []
+    "screenshots": [
+      "prod-operations.png",
+      "prod-capacity.png",
+      "prod-assurance.png"
+    ],
+    "all_sections_rendered": true
   },
   "nonprod_browser_verification": {
     "cluster": "nonprod",
@@ -160,7 +244,7 @@
   },
   "dashboard_configmap_sha256": {
     "nonprod": "4a842505e4807139c3673deabfea4fee5f09972eba899ac9262b4e043e4b29ad",
-    "prod": "e4653e7e2fed74e24abfd3e75cfbd8cc718ffdc1ed27a857d38afdd45d5854ec"
+    "prod": "2764983dc08e890ddca8b9ee64094ca6464e94f1351f9ce1447c3e7e42fbe24b"
   },
   "nonprod_snapshot": "/home/root-admin/.local/state/liora-grafana/20261023T135346Z/nonprod",
   "screenshots": {
@@ -178,6 +262,21 @@
       "sha256": "5594b1ad80bee50d6449f8146cf0f123880201c0009bbac5dce57e0df00e8917",
       "width": 1600,
       "height": 1500
+    },
+    "prod-operations.png": {
+      "sha256": "f5993e73f777eea259dcb4e80453c443527102398ad7a21376e8c83c6f57bd7d",
+      "width": 1600,
+      "height": 1500
+    },
+    "prod-capacity.png": {
+      "sha256": "065d2b6c39873601c85264524ecbb936fc9484dbcc839cc83f485a2752f8f14a",
+      "width": 1600,
+      "height": 1500
+    },
+    "prod-assurance.png": {
+      "sha256": "b354e8a2569aeb3c3e778640147ba295a68b6c6e1ac409dd07de470504d61708",
+      "width": 1600,
+      "height": 1500
     }
   },
   "final_nonprod_critical_observation": {
@@ -193,5 +292,14 @@
     "cluster": "nonprod",
     "count": 2,
     "handling": "Observed read-only; backup systems and alert rules not modified by this dashboard task"
+  },
+  "prod_snapshot": "/home/root-admin/.local/state/liora-grafana/20261023T144143Z/prod",
+  "final_prod_critical_observation": {
+    "alertname": "CNPGBackupTelemetryMissing",
+    "namespace": "app-prod",
+    "environment": "PROD",
+    "cluster": "prod",
+    "count": 1,
+    "handling": "Observed only; backup systems and alert rules unchanged"
   }
 }

@@ -155,7 +155,7 @@ def main():
             page.get_by_text('04  /  Capacity, requests & limits · USE', exact=True).click()
             page.get_by_text('06  /  Database, certificates & assurance gaps', exact=True).click()
             page.wait_for_load_state('networkidle', timeout=30000)
-            show_entire_panel('Assurance · not instrumented')
+            show_entire_panel('Assurance · not instrumented' if args.cluster == 'nonprod' else 'Assurance · coverage boundaries')
             expect(page.get_by_text('GRAFANA_OPERATIONS_DASHBOARDS.md', exact=True)).to_be_visible()
             page.wait_for_timeout(1500)
             screenshot('assurance')
