@@ -72,3 +72,4 @@ spec:
     path: /metrics/prod
     interval: 30s
     scrapeTimeout: 20s
+  serviceDiscoveryRole: EndpointSlice
