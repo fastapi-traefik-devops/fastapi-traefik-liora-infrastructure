@@ -80,6 +80,11 @@ spec:
         app: stage-observer
     spec:
       serviceAccountName: stage-observer
+      # The public origin is not reachable from vnet77 (no hairpin NAT). Reach STAGE
+      # through the private HAProxy edge with the same Host/SNI and trusted TLS.
+      hostAliases:
+      - ip: 192.168.77.240
+        hostnames: [stage.liora.aprt.info]
       imagePullSecrets:
       - name: ghcr-pull-secret
       securityContext:
@@ -169,6 +174,7 @@ spec:
     - ipBlock: {cidr: 192.168.77.201/32}
     - ipBlock: {cidr: 192.168.77.202/32}
     - ipBlock: {cidr: 192.168.77.203/32}
+    - ipBlock: {cidr: 192.168.77.240/32}
     ports:
     - {protocol: TCP, port: 443}
     - {protocol: TCP, port: 6443}
