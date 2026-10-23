@@ -1,12 +1,18 @@
 # Kubernetes implementation plan
 
-Implementation update: **2026-10-22**. Phases 0–7 are complete within their
+Implementation update: **2026-10-23**. Phases 0–7 are complete within their
 recorded acceptance boundaries. Phase 8 is deployed in both clusters and local
 functional/browser checks passed, including the NONPROD Jenkins foundation.
 The approved status guard resolved the ServiceLB incompatibility. The operator
 confirmed that all interfaces work through Tailscale and all passwords succeed
 on 2026-10-22. **Phase 8 is complete.**
 See [the Phase 8 report](PHASE8_REPORT.md).
+Phase 9's minimal main CI/publication/STAGE cycle remains active, with its
+separately delegated Jenkins backlog open. **Phase 10.1 fresh CNPG installation
+is complete** in DEV/STAGE/PROD; existing-image application checks passed and
+approved automation was restored. Full Jenkins CI/CD regression was not rerun.
+**R2 physical backup/WAL archiving and isolated restoration are pending** in
+10.2; no backup or recovery readiness is claimed.
 
 ## Target architecture
 
@@ -32,9 +38,11 @@ Services. Public ingress uses node pools `.201`–`.203` and `.211`–`.213`,
 separate from API VIPs and the new Admin VIPs. Keep this working path unchanged
 while adding private administration.
 
-The target database platform is CloudNativePG. The initial deployment below
-deliberately retains the application's current PostgreSQL Deployment and PVC;
-database migration is a later, separately verified change. The original kube-vip
+The database platform is CloudNativePG: DEV/STAGE each use one instance and
+PROD uses two asynchronously replicated instances on distinct nodes. Phase 10.1
+replaces the initial PostgreSQL Deployments with fresh databases under explicit
+disposable-data authorization. R2 physical backup/WAL archiving and isolated
+restoration remain the separate next database task. The original kube-vip
 DaemonSets serve the API only, and K3s ServiceLB serves public Traefik. Independent
 services-only DaemonSets now serve administrative Services in each cluster;
 do not repurpose the API DaemonSets or change public ingress ownership.
@@ -129,7 +137,8 @@ daemons and metrics endpoints do not receive administrative browser endpoints.
 | GitHub / GHCR | External existing services | Source, reviewed promotion changes and container registry |
 | Slack | Existing kind destination available; new-cluster destination not yet confirmed | Configure delivery only after destination agreement; no assumption of verified notification receipt |
 | Sealed Secrets | Separate controllers and keys; later platform phase | Cluster-specific encrypted Secret management |
-| CloudNativePG and backups | Later database phase | Replace PostgreSQL incrementally after backup/restore verification; backup destination remains to be selected |
+| CloudNativePG | Per-environment namespaces; Phase 10.1 | Fresh PostgreSQL 16 databases; DEV 1, STAGE 1, PROD 2 async instances on different nodes |
+| R2 database backups | Next database task; Phase 10.2 | Barman physical base backups plus WAL archive, then isolated restoration; no backup readiness claimed |
 
 VM 100, its legacy kind deployment and existing public administrative NAT
 rules are outside this implementation's change scope. The operator will retire
@@ -143,6 +152,7 @@ docs/testreports/           Plans and phase reports
 kubernetes/
   apps/liora/
     base/
+    components/cloudnative-pg/ database Cluster, connection patches and readiness wave
     overlays/dev/
     overlays/stage/
     overlays/prod/
@@ -150,6 +160,7 @@ kubernetes/
     nonprod/                 root app, project, DEV/STAGE apps, bootstrap
     prod/                    independent root app, project, PROD app, bootstrap
   platform/
+    cloudnative-pg/          shared pinned operator installed independently per cluster
     base/                    shared platform resources where appropriate
     nonprod/
       admin-access/          services-only kube-vip and private access resources
@@ -187,9 +198,10 @@ commit live credentials, controller private keys, or state.
   `.local-work/` tools; no temporary working checkout is needed.
 - The first migration copies `deploy/base/` and
   `deploy/overlays/{dev,stage,prod}/` from the application repository. The
-  later CloudNativePG migration replaces `configmap-db.yaml`,
-  `deployment-db.yaml`, `service-db.yaml`, and `pvc-db.yaml` in the active
-  base. Remove Adminer only after an alternative operational path works.
+  Phase 10 CNPG replacement removes the legacy database ConfigMap, Deployment
+  and PVC from the active base, retains `service-db.yaml` as the stable primary
+  endpoint and selects the database component independently per overlay.
+  Remove Adminer only after an alternative operational path works.
 - Adapt `argocd/app-dev.yaml`, `app-stage.yaml`, and `project.yaml` for
   the nonprod cluster. Create independent PROD equivalents, bootstrap
   resources, and root Applications. Each Argo CD points to this repository
@@ -745,7 +757,9 @@ extension form one acceptance checkpoint; partial setup does not qualify PROD.
 
 Keep unrelated imported jobs, nightly schedules and recurring multibranch
 indexing disabled. Vulnerability scans/remediation remain deferred. Preserve the
-current Jenkins admin, K3s PostgreSQL data and private recovery inputs throughout.
+current Jenkins admin and private recovery inputs throughout. Database contents
+remain protected during Jenkins work; the separately authorized Phase 10 fresh
+CNPG replacement is an explicit exception for application database data only.
 
 The earlier local-only boundary is superseded by the live authorization above.
 The authorized initial live actions and application integration are complete;
@@ -893,7 +907,8 @@ do not perform that cleanup as part of this implementation.
 
 ### 10.1 — Fresh CloudNativePG application databases
 
-Status: **authorized and in progress**. The operator approved fresh empty
+Status: **fresh installation and existing-image application checks complete**
+(2026-10-23). The operator approved fresh empty
 application databases and disposal of old DEV/STAGE/PROD database data. This
 supersedes logical dump/restore and the earlier requirement to test legacy
 backup restoration before this replacement. Jenkins and unrelated data remain
@@ -906,17 +921,17 @@ protected. Phase 9 deferred Jenkins work remains open and is not part of 10.1.
       DEV/STAGE one instance each, PROD two instances on distinct nodes with
       asynchronous streaming replication, no synchronous replication. Per
       instance: 250m/512 MiB requests, 1 CPU/1 GiB limits, 2 GiB local-path.
-- [ ] Drain and hold conflicting Jenkins work; pause Argo roots and children.
+- [x] Drain and hold conflicting Jenkins work; pause Argo roots and children.
       Use committed maintenance replicas and revision-bound explicit syncs.
-- [ ] Install the operator in both clusters; create fresh environment Clusters
+- [x] Install the operator in both clusters; create fresh environment Clusters
       and bootstrap `app_owner` using existing passwords. Keep `postgres`
       administrative access and existing initialization login credentials.
-- [ ] Complete DEV, then STAGE, then PROD: database readiness, stable `db`
+- [x] Complete DEV, then STAGE, then PROD: database readiness, stable `db`
       endpoint, Alembic initialization, unchanged application digests, HTTPS,
       login and disposable CRUD; verify PROD streaming/async placement.
-- [ ] Retire only obsolete application database Deployments/config/PVCs after
+- [x] Retire only obsolete application database Deployments/config/PVCs after
       each replacement works; verify Argo ownership and reconciliation.
-- [ ] Restore approved Argo and Jenkins polling/publication settings, preserve
+- [x] Restore approved Argo and Jenkins polling/publication settings, preserve
       unrelated Secrets/PVCs and Jenkins user/history inputs; record results.
 
 Procedure: [fresh CNPG installation](../../runbooks/18-cloudnative-pg.md).
@@ -939,6 +954,10 @@ is not a backup; backup/PITR/restoration readiness remains unproven.
 
 ### Other separately scoped improvements
 
+- [ ] Review automatic stale SQLAlchemy connection handling in a separate
+      application change. Until then, coordinate backend reconnect rollouts
+      after database/operator restarts as documented in runbook 18. This does
+      not require an application rebuild for the completed 10.1 checkpoint.
 - [ ] Reconcile the remaining ADR backlog; refine resource budgets and approve
       logging, external uptime checks, alert delivery, HPA/PDB, Secret encryption
       and the recovery kit before implementing them.

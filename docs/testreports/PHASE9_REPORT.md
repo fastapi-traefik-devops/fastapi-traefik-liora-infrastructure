@@ -30,6 +30,13 @@ The preserved optional observer remains outside the live initial path.
 The main/publisher jobs and necessary egress are active for the verified minimal
 cycle; automatic acceptance and PROD promotion remain blocked.
 
+The separately authorized [Phase 10 fresh CNPG installation](PHASE10_REPORT.md)
+supersedes database-data preservation for that database-only checkpoint. Phase 9
+Jenkins work remains pending; database checks do not satisfy automatic STAGE
+acceptance or authorize PROD image promotion. Jenkins login/history and private
+recovery inputs remain protected throughout. Subsequent Jenkins checks must
+use the current CNPG baseline, not require the retired `postgres-vol` PVCs.
+
 ## Next pending work
 
 Follow the [ordered Phase 9 checklist](IMPLEMENTATION_PLAN.md#next-pending-work--execution-order):
