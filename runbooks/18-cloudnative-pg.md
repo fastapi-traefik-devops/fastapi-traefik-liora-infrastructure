@@ -21,9 +21,13 @@ PROD requires different node hostnames for its primary and standby. Streaming
 replication is asynchronous; no synchronous replication is configured. Four
 instances total request 1 CPU, 2 GiB memory and 8 GiB disk. Each operator requests
 100m CPU/128 MiB and is limited to 500m CPU/256 MiB. This is a small lab budget,
-not a capacity benchmark. WAL and data share the per-instance volume. Replication
+not a capacity benchmark. Local-path claim sizes are planning requests, not
+filesystem quotas; monitor the underlying node filesystem too. WAL and data
+share the per-instance volume. Replication
 slots can retain WAL during standby trouble; monitor free space and expand before
-exhaustion. A second replica is not an off-host backup.
+exhaustion. A second replica is not an off-host backup. `enablePDB: false` keeps operator-generated
+disruption budgets outside this checkpoint, as requested; no HPA/PDB rollout
+is included.
 
 Record actual server versions, extensions, image digests, Secrets references,
 PVC/PV bindings, free capacity, Argo ownership and approved Jenkins states before
