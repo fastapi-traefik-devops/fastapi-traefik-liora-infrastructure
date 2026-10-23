@@ -2,11 +2,16 @@
 
 ## Status and ownership
 
-Prepared on 2026-10-23. These Git changes have **not been deployed**. No webhook
-was created, no Kubernetes Secret was changed, and no notification was sent.
-Slack delivery, including FIRING and RESOLVED, remains **unverified**.
+Deployed on **2026-10-23** after explicit user approval: NONPROD Helm revision
+**3**, then PROD revision **2** after NONPROD review. Both clusters loaded the
+expected routing and healthy alert inventory (15 NONPROD / 16 PROD).
+**FIRING and RESOLVED delivery to `#liora-alerts-testing` was confirmed by the
+user for both clusters.** Existing credential Secrets were preserved. See the
+[deployment evidence and rollback record](SLACK_ALERTING_DEPLOYMENT_2026-10-23.md).
+The commands below remain the procedure for future installations and changes;
+another deployment still requires review and approval.
 
-Read-only inspection reached both live clusters through the management server
+Initial read-only inspection reached both live clusters through the management server
 (`ssh root-admin@liora.aprt.info -p22100`). Each effective Alertmanager config
 still used `pending-destination`, matching Git; neither monitoring namespace had
 a Slack-named Secret. All eight original alerts were loaded with `health: ok`.
@@ -280,11 +285,13 @@ nodes, deleting resources or disabling monitoring.
 - [ ] Normal cluster routing evidence and alert template fields/severity/actions.
 - [ ] Deployment approval, Helm revisions, rollback inputs and time of verification.
 
-Remaining manual work: verify/manage the existing Slack app, securely create the
-four channel-bound webhooks and two cluster Secrets, approve and deploy NONPROD,
-observe both Slack messages, review, then approve PROD deployment/testing and
-capture evidence. Slack account access and webhook bindings were not available
-for direct verification in this session.
+Initial Secret preparation, approved sequential deployment and both clusters'
+FIRING/RESOLVED receipt checks are complete. Remaining manual work is to capture
+exam screenshots/permanent Slack message links and maintain the app, webhook
+rotation and access controls. Slack app administration and normal incident
+webhook bindings were not directly inspected; normal routing was checked without
+injecting alerts into incident channels. Testing-channel delivery was confirmed
+by the user, including pasted messages, for both clusters.
 
 Limitations: backup freshness/failure and public TLS expiry are not monitored by
 these additions. A partially missing exporter metric family, a removed NONPROD
