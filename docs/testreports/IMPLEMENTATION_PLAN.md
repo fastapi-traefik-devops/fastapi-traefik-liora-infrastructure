@@ -645,19 +645,25 @@ were verified on 2026-10-22 after the operator updated the installation.
 
 ### Initial working cycle — latest implementation priority
 
-**Live authorization received; blocked before activation.** The latest operator
-instruction authorizes reviewed pushes, existing-job/helper installation,
-necessary controller GitHub connectivity, the controlled cycle and subsequent
-main-only polling after success. This supersedes the earlier local-only boundary
-below. Application main rejected the push with GH013: PR required and required
-`continuous-integration/jenkins/pr-merge` missing. Infrastructure has no protected
-branch as confirmed by its owner; that is a separate repository. Do not change
-or bypass either repository's rules. See the
-[actual live-attempt/blocker report](PHASE9_LIVE_CYCLE.md).
+**Live activation in progress (2026-10-23).** The operator authorized reviewed
+pushes, existing-job/helper installation, controller GitHub connectivity, one
+controlled cycle, and main-only polling after manual STAGE verification.
+Application PR #62 passed its real required Jenkins check (13 gates/96 tests)
+and merged normally at `38a7f2aae320f3607b20ae1a5d14b8fa64768eca`. No branch
+rule or App permission was changed. Infrastructure main remains unprotected
+as confirmed by its owner. See the [live execution report](PHASE9_LIVE_CYCLE.md).
 
-- [ ] Integrate the reviewed application source through its required PR/check
-      path before activating existing main CI. Application remote still contains
-      the obsolete pipeline; do not execute it as a workaround.
+- [x] Integrate reviewed application source through its required PR/check path.
+      Preserve history and never execute the obsolete remote pipeline.
+- [x] Install reviewed existing main/publisher definitions and immutable helper
+      bundle `jenkins-publisher-ci-d87b3c9599c5`; enable only checkpoint jobs,
+      controller GitHub egress and one-time related PR checks. Keep recurring
+      folder indexing, nightly schedules and unrelated jobs disabled.
+      Main #13 exposed broken imported Declarative bookkeeping; publisher #33
+      exposed missing exact-script approval. Both were repaired under the hold,
+      with failed/interrupted attempts retained. Controlled retry main #15 and
+      publisher #34 succeeded; first STAGE manual verification
+      passed at `b8caf7e`. The polling proof remains pending.
 
 Get the existing CI/CD working on K3s first, then complete the target below.
 Reuse the current agents/DinD, 13 functional gates, tested-image export and trusted
@@ -680,9 +686,17 @@ Synced/Healthy, running pair and STAGE URL. Do not call that automated acceptanc
       for the initial STAGE writer. The earlier API 403 is an inspection limit,
       now resolved by owner confirmation; no push was used as a test. Recheck
       if rules change. No permission or branch-rule changes are authorized.
-- [ ] Run the authorized first minimal live cycle, then record manual STAGE
+- [x] Run the authorized first minimal live cycle and record manual STAGE
       verification tied to application SHA and both published/running digests.
-      Keep the current admin, PostgreSQL data, history and recovery inputs intact.
+      Main #15 / publisher #34 succeeded for `38a7f2a`; promotion `b8caf7e`
+      became Argo Synced/Healthy. Both running digests match; UI/API HTTPS
+      smoke passed through the existing private edge route with strict TLS.
+      Current admin profile hashes and database pod/PVC identities are unchanged.
+      This manual check is not automatic acceptance or a PROD gate.
+- [ ] Enable only main SCM polling (`H/2 * * * *`) after this verified cycle
+      and demonstrate a meaningful new main commit reaches STAGE automatically.
+      PR #63 is prepared and must pass its real required check before normal
+      merge. Keep nightly schedules and recurring folder indexing disabled.
 - [ ] After that cycle, integrate the preserved separate observer, automatic
       acceptance receipts and lock coverage through observation. Its manifests
       and fixture-tested helpers remain outside the initial activation path;
@@ -732,9 +746,9 @@ simply deferred behind the first working cycle. See
   main-branch rule exceptions before activation; repository write permissions
   alone do not restrict paths. DEV/PROD use manual reviewed changes.
 - The minimal live checkpoint is now explicitly authorized, including necessary
-  reviewed pushes. Jobs/polling remain disabled while application integration is
-  blocked; first run one controlled cycle and verify STAGE before enabling the
-  main-only poll. Do not change branch rules or App permissions.
+  reviewed pushes. Application integration is complete and controlled activation
+  is in progress; verify the first STAGE cycle before enabling the main-only
+  poll. Do not change branch rules or App permissions.
 - The operator authorized immediate stopping of the local legacy kind cluster
   and its Jenkins stack. Preserve containers, volumes, all recovery inputs and
   source; do not delete anything or change Proxmox NAT/VMs or remote K3s.
@@ -804,12 +818,12 @@ simply deferred behind the first working cycle. See
 - [x] Obtain explicit approval for the minimal live checkpoint, reviewed pushes,
       existing-job/helper setup and necessary GitHub connectivity. The owner
       authorized one controlled cycle followed by main-only polling and an
-      automatic demonstration after manual STAGE verification. Execution remains
-      blocked by application PR/check integration, not missing authorization.
-- [ ] After pipeline review, verify application build/publication credential
+      automatic demonstration after manual STAGE verification. Application PR/check
+      integration is complete; execution is in progress under that authorization.
+- [x] After pipeline review, verify application build/publication credential
       separation, artifact provenance, SHA image tags and existing CI gates in
-      controlled execution. Image vulnerability handling follows the explicit
-      educational-project deferral above; no further scans in this increment.
+      controlled execution (main #15 / publisher #34). Image vulnerability handling
+      follows the explicit educational-project deferral above; no further scans in this increment.
 - [x] Keep build/test and image publication source in the application repository.
       Change promotion tooling to update infrastructure STAGE directly, with
       manual DEV/PROD review, rather than application `deploy/overlays/`.

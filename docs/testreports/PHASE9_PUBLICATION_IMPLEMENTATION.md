@@ -1,9 +1,9 @@
 # Phase 9 — Local preparation of the initial STAGE cycle
 
 Latest update: the operator authorized live activation. The
-[live-attempt report](PHASE9_LIVE_CYCLE.md) records the application GH013 PR/check
-blocker and unchanged execution hold. The local-only status below is the
-historical preparation checkpoint, not the current authorization boundary.
+[live execution report](PHASE9_LIVE_CYCLE.md) records successful application
+PR/check integration and the successful first controlled STAGE cycle.
+The local-only status below is the historical preparation checkpoint, not the current authorization boundary.
 
 Date: 2026-10-22. Status: **locally implemented/tested; live activation NOT approved
 or performed; Phase 9 remains open**.

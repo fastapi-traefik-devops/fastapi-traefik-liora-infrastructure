@@ -3,10 +3,11 @@
 Latest continuation: the owner pushed `migration/phase9-k3s-bootstrap` and
 opened application [PR #62](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/pull/62)
 at `827b9be`. The existing required CI App identity matches `5369826`.
-The current bootstrap check is `app-ci/PR-62 #2`, running the existing functional
-profile on host-ci without export/publication. Main and trusted publisher remain
-disabled; all unrelated imported jobs remain disabled. This continuation is
-covered by the existing live authorization; branch rules/permissions are unchanged.
+Bootstrap check `app-ci/PR-62 #2` ran the existing functional
+profile on host-ci without export/publication and succeeded. Main and trusted
+publisher were then installed for the controlled cycle; all unrelated imported
+jobs remain disabled. See the dated retry section below for current progress.
+This continuation is covered by the existing live authorization; branch rules/permissions are unchanged.
 
 The one-time discovery changed the existing app-ci source to the application
 repository with `main PR-62` filtering and orphan pruning disabled to preserve
@@ -36,8 +37,8 @@ Jenkins recreates it from the reviewed definition. Original build records and
 credentials remain intact. The offline staging helper now drops that obsolete
 bookkeeping instead of deleting a nested field and leaving an invalid action;
 12 staging regression tests and the live-client credential test passed.
-Controlled retry main #14 is now running against `38a7f2a`; publisher #33 is its
-next intended trusted build, with polling still off.
+Controlled retry main #14 ran against `38a7f2a`; publisher #33 failed before
+script execution as detailed below. Polling remains off.
 
 The meaningful follow-up is documentation commit `ce4b8fa` in
 [PR #63](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/pull/63),
@@ -148,3 +149,48 @@ the queue empty, canceling quiet mode allowed it to settle: main #14 and PR #63
 #1 finalized ABORTED. Their records/artifacts are retained, without relabeling
 their results. Main #15 is the controlled retry against `38a7f2a`; it must finish
 SUCCESS before trusted publisher #34 may use its artifacts. Polling stays off.
+
+## Controlled CI and publication results
+
+- Application main: `38a7f2aae320f3607b20ae1a5d14b8fa64768eca`.
+- Existing `app-ci/main #15`: completed SUCCESS, 13 functional gates,
+  native JUnit 96 passed / 0 failed / 0 skipped; duration 1,588,191 ms.
+- Separate `trusted/publish #34`: completed SUCCESS, duration 329,533 ms.
+  Candidate source/build/hash checks passed before registry credentials were
+  bound; both immutable registry artifacts were verified.
+- Direct infrastructure STAGE commit:
+  `b8caf7e2ee1d4ded226b6bce61fa1d76c59cb3bf`, changing only STAGE
+  `kustomization.yaml` and `promotion.json`. Local infrastructure fast-forwarded
+  normally while retaining the uncommitted documentation edits.
+
+| Image | Published digest |
+| --- | --- |
+| Backend | `sha256:cc32c4e72a58a5b1b579e1909d9c31c455ebee3cba0a431bd957ecf51e9c2d0c` |
+| Frontend | `sha256:87acf879741853a6e3d43c766ad0d93d488adf12b4e89891b9295739d6f6b0b5` |
+
+Both use immutable tags `sha-38a7f2aae320f3607b20ae1a5d14b8fa64768eca`.
+Manual verification completed at 2026-10-23 05:46 UTC:
+
+- Argo automatically reconciled to `b8caf7e`: Synced/Healthy, operation Succeeded.
+  No manual refresh/sync was requested. The existing prestart hook succeeded.
+- Backend `backend-988c5d898-twsr6` and frontend `frontend-546bb6c455-c8lnd`
+  are Ready and their actual `imageID` digests exactly match the table above.
+- `https://stage.liora.aprt.info/` returned HTTP 200 with the application root;
+  `/api/v1/utils/health-check/` returned HTTP 200 and JSON `true`. Strict TLS
+  verification passed. These checks used Phase 7's existing resolver override
+  to private HAProxy `192.168.77.240`, preserving Host/SNI/certificate checks.
+  Public-origin TCP from this management host is refused; fresh external public
+  reachability is not claimed and DNS/NAT were not changed.
+- Current persisted user hashes match baseline. DEV/STAGE/PROD database pod UIDs,
+  PVC UIDs and bound volume names are unchanged. No SQL/data migration or reseed
+  was performed by the operator; normal application prestart ran during sync.
+- Main #15/publisher #34 are kept forever alongside failed/interrupted attempts
+  and imported history. Private evidence is under
+  `.local-work/private/phase9/live-cycle-20261022/first-stage/`.
+
+This is operator-invoked manual verification, not automatic acceptance:
+`automatic_acceptance=false`, `prod_gate_satisfied=false`. No acceptance receipt
+was committed. Observer resources remain inactive and PROD remains blocked.
+Polling remains disabled until the related PR check completes and the worker
+settles; PR #63 must pass its required check before normal merge for the later
+polling demonstration.

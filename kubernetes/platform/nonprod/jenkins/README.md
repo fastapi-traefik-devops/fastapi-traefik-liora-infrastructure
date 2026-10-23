@@ -78,9 +78,9 @@ those helpers nor applies the bundle. The application checkout is read-only;
 mutable working-tree changes are excluded. The reviewed source commit and bundle
 hash are recorded in annotations. Existing output is never overwritten.
 
-The live publisher still mounts the earlier `jenkins-publisher-ci-b98a22e48527`;
-retain that immutable bundle for rollback. No helper or workload was applied by
-this preparation. `--observer` emits a separate one-file, immutable
+The authorized live cycle installed `jenkins-publisher-ci-d87b3c9599c5`;
+retain the earlier `jenkins-publisher-ci-b98a22e48527` bundle for rollback.
+`--observer` emits a separate one-file, immutable
 `jenkins-acceptance-ci-d87b3c9599c5` bundle for the zero-replica standalone
 [`acceptance/`](acceptance/kustomization.yaml) overlay. That overlay is not included
 by `agents/`; its limited STAGE read-only RBAC and future inbound node require
@@ -91,16 +91,19 @@ checkout. Its presence does not authorize executing the preserved legacy
 promotion workflow. The deployment helper prepares the same bundle directly
 and retains a private copy alongside the deployment evidence.
 
-## Prepared initial cycle
+## Initial live cycle
 
 `initial-cycle/` composes the existing two-agent overlay with the controller DNS
 and public HTTPS egress needed for GitHub polling/App token generation. It does
 not include `acceptance/` or an observer node. Applying it relaxes the current
-egress hold and requires explicit live approval; it has NOT been applied.
-The existing jobs remain disabled until separately installed/approved. Main CI
-uses one SCM poll; the initial publisher stops after the STAGE update and the
-operator verifies the first deployment manually. PROD is explicitly blocked
-until automatic acceptance is implemented and live-verified. Retain prepared
+egress hold and requires explicit live approval. Under that received approval,
+the controller GitHub egress policy and reviewed publisher helper/job definition
+are installed. Main #15 / publisher #34 completed the first controlled STAGE
+cycle and manual deployment verification passed. Main polling is still off
+while the related required PR check completes; the next checkpoint enables
+only its SCM poll and demonstrates automatic deployment. The initial publisher
+stops after the STAGE update; deployment verification remains manual.
+PROD is explicitly blocked until automatic acceptance is implemented and live-verified. Retain prepared
 observer work for that later increment.
 
 ## Connected workers under the hold

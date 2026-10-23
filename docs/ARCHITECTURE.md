@@ -15,8 +15,10 @@ Phase 8 is complete. See the
 [implementation plan](testreports/IMPLEMENTATION_PLAN.md).
 Phase 9 has restored Jenkins state to a separate NONPROD home while retaining
 the current administrator login. The CI/DinD worker and separate publisher are
-connected; a Docker build/bind-path smoke passed. The controller remains quiet
-with imported jobs disabled; application CI/publication is not active. See the
+connected; a Docker build/bind-path smoke passed and imported state is retained.
+The first Phase 9 controlled CI/publication cycle passed and Argo deployed
+STAGE; manual running-digest and HTTPS checks passed. The main polling proof
+remains pending; unrelated imported jobs remain disabled. See the
 [Phase 9 report](testreports/PHASE9_REPORT.md).
 
 ## Host and private network
@@ -356,16 +358,21 @@ do not preserve that cluster's state.
 One Jenkins controller now runs in the DEV/STAGE cluster's `jenkins` namespace,
 with a separate 5Gi local-path `JENKINS_HOME` PVC and native HTTP/login at
 `192.168.77.16:8085`. It reuses the unchanged PoC image/plugin set, published to
-GHCR and pinned by digest. The restored state contains 30 configured items,
-139 build records and three persisted users. The current K3s admin account and
-password are retained; legacy admin data remains only in the recovery archive.
+GHCR and pinned by digest. The restoration baseline contained 30 configured items,
+139 build records and three persisted users; subsequent reviewed CI adds records
+and related PR jobs without pruning imported history. The current K3s admin
+account and password are retained; legacy admin data remains only in the
+recovery archive.
 Native browser/API login passed, credential IDs/scopes and decryption were checked,
 and original encryption/user-directory keys were retained. It requests 100m/512Mi,
 limits 1 CPU/768Mi and caps its heap at 384Mi. No PROD controller is planned.
-Jobs, multibranch scanning and Pipeline resume are disabled; controller executors,
-running builds and queued work are zero. Two agents are connected, each with
-one executor and its preserved label. A startup hook enters quiet mode
-and a selected egress NetworkPolicy blocks controller outbound connections.
+The restored baseline held all jobs, multibranch scanning and Pipeline resume.
+Authorized Phase 9 controlled execution now enables only the existing main CI,
+trusted publisher and one-time related PR checks; unrelated jobs and recurring
+indexing/nightly schedules remain disabled. Controller executors remain zero.
+Two agents are connected, each with one executor and its preserved label.
+The startup quiet-mode hook is retained; a controller GitHub egress policy
+permits DNS/public HTTPS for the authorized cycle.
 An init check prevents the restored-state overlay from starting on an incomplete
 home. The original foundation PVC and a consistent foundation backup are retained.
 Migration is staged:
@@ -376,9 +383,9 @@ Migration is staged:
   from the existing image/plugin/tool locks, Dockerfiles, JCasC, Job DSL,
   pipelines, users, credential IDs/scopes, history and artifacts. Keep CI and
   trusted publication separate. Current pipeline sources/settings remain preserved
-  with the newly approved promotion adaptation prepared locally. The current
-  target supersedes human review for every GitOps PR: successful CI of the exact
-  resulting application main commit publishes immutable images, directly commits
+  with the reviewed promotion adaptation installed for controlled execution.
+  The current target supersedes human review for every GitOps PR: successful CI
+  of the exact resulting application main commit publishes immutable images, directly commits
   the pair to infrastructure main and lets Argo CD deploy STAGE automatically.
   DEV/PROD remain manual; PROD reuses a successfully STAGE-accepted pair without
   rebuilding. Application code/build pipelines stay in the application repository.
@@ -387,11 +394,14 @@ Migration is staged:
   tied to source/pair is mandatory before PROD. Rollback remains manual.
   The trusted writer restricts direct commits to STAGE image, promotion and
   acceptance files; unrelated concurrent infrastructure changes are preserved.
-  App grants/branch exceptions require verification before activation. No jobs,
-  publication or deployment are enabled by this local preparation.
-  The latest implementation priority is a minimal first working STAGE cycle.
-  Its existing main job will use one SCM poll; the publisher stops after the
-  STAGE update, and the first deployment is verified manually. The separate
+  App grants were verified; the owner confirmed no infrastructure main
+  protection. Application integration used its required real CI check and
+  normal PR merge, without changing branch rules or permissions.
+  The first minimal live cycle passed with main #15 and publisher #34:
+  Argo automatically deployed `b8caf7e`, with exact running-digest and strict
+  HTTPS checks through the private edge route. Main-only SCM polling and its
+  automatic demonstration remain pending. The publisher stops after the STAGE
+  update; deployment verification is currently manual. The separate
   observer/automatic acceptance and expanded promotion workflows are preserved
   but deferred outside that initial path. PROD is explicitly blocked until the
   agreed automated acceptance gate is implemented and live-verified. This is a

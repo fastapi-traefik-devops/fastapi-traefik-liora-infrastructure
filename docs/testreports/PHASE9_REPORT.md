@@ -1,17 +1,18 @@
 # Phase 9 — Jenkins CI migration
 
-Latest live attempt: [application PR/check integration blocker](PHASE9_LIVE_CYCLE.md).
-The minimal live cycle is authorized, but the application main push was rejected
-with GH013 (PR required; `continuous-integration/jenkins/pr-merge` expected).
-Infrastructure prepared commits were published; Jenkins remains exactly held.
-No CI/publication/deployment ran. Resolve application integration through existing
-rules; do not change permissions, bypass checks or run the obsolete remote pipeline.
+Latest execution: [authorized minimal live cycle](PHASE9_LIVE_CYCLE.md).
+Application PR #62 passed its real required CI check and merged normally at
+`38a7f2a`. The existing main/publisher jobs now use the reviewed repository split
+and immutable helper bundle; no branch rule or App permission was changed.
+Main #15 and trusted publisher #34 succeeded; Argo automatically deployed
+`b8caf7e`. Manual STAGE verification passed with exact running digests and
+strict-TLS UI/API smoke through the existing private edge route. Failed and
+interrupted attempts are preserved. The main polling proof is still pending.
 
-Started: 2026-10-22. Status: **functional CI accepted; Jenkins jobs/publication
-remain held; Phase 9 publication/promotion work remains open**. See the
-[worker report](PHASE9_WORKERS.md) and detailed
-[state restore report](PHASE9_STATE_RESTORE.md). Earlier observations below describe
-the preparation baseline; the latest decisions supersede its approval boundaries.
+Started: 2026-10-22. Status: **Phase 9 in progress; minimal live STAGE cycle
+manually verified, polling proof pending**. Earlier sections below describe
+their historical checkpoints; the linked live report records current results. Current K3s admin, retained
+Jenkins state, recovery inputs and PostgreSQL content remain protected.
 
 Latest review: [publisher and promotion repository split](PHASE9_PUBLICATION_REVIEW.md).
 The operator approved local implementation with automatic direct STAGE commits,
