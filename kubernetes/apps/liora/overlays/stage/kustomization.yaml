@@ -18,9 +18,9 @@ images:
   digest: sha256:87acf879741853a6e3d43c766ad0d93d488adf12b4e89891b9295739d6f6b0b5
 replicas:
 - name: backend
-  count: 0
+  count: 1
 - name: frontend
-  count: 0
+  count: 1
 patches:
 - target:
     kind: ConfigMap

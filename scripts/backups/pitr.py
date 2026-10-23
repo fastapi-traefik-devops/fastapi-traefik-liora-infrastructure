@@ -166,7 +166,10 @@ def application_check(config, namespace, source_namespace, record):
                 self.send_response(response.status)
                 for k,v in response.getheaders():
                     if k.lower() not in ['transfer-encoding','connection','content-length']:self.send_header(k,v)
-                self.send_header('Content-Length',str(len(data)));self.end_headers();self.wfile.write(data);connection.close()
+                self.send_header('Content-Length',str(len(data)));self.end_headers()
+                try:self.wfile.write(data)
+                except (BrokenPipeError,ConnectionResetError):pass  # Browser navigation cancelled a response.
+                finally:connection.close()
             do_GET=do_POST=do_PUT=do_DELETE=do_OPTIONS=handle_request
             def log_message(self,*args):pass
         server=ThreadingHTTPServer(('127.0.0.1',0),Proxy)
@@ -218,7 +221,7 @@ def run(args):
         following_wal=sql(cfg,live,primary,'SELECT pg_walfile_name(pg_current_wal_insert_lsn());')
         sql(cfg,live,primary,'SELECT pg_switch_wal();')
         record.update(recovery_target=target,required_wal_segments=sorted({target_wal,following_wal}));save()
-        private=yaml.safe_load((ROOT/'recovery/recovery.yaml').read_text())['database_backups']
+        private=yaml.safe_load((args.recovery_dir/'recovery.yaml').read_text())['database_backups']
         s3=boto3.client('s3',endpoint_url=private['endpoint'],region_name='auto',aws_access_key_id=private['access_key_id'],
             aws_secret_access_key=private['secret_access_key'],config=Config(connect_timeout=10,read_timeout=20,retries={'max_attempts':0}))
         started=time.monotonic()
@@ -249,14 +252,14 @@ def run(args):
         else:raise RuntimeError('PITR database readiness timeout')
         record['database_ready_seconds']=round(time.monotonic()-began,3);primary=restored['status']['currentPrimary']
         contents=sql(cfg,ns,primary,'SELECT json_agg(name ORDER BY name) FROM public.'+table+';');assert json.loads(contents)==['included']
-        state=json.loads(sql(cfg,ns,primary,"SELECT json_build_object('owner',(SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname='app'),'migration',(SELECT version_num FROM alembic_version),'recovery',pg_is_in_recovery(),'version',current_setting('server_version'),'user_table_owner',(SELECT tableowner FROM pg_tables WHERE schemaname='public' AND tablename='user'),'item_table_owner',(SELECT tableowner FROM pg_tables WHERE schemaname='public' AND tablename='item'));"))
+        state=json.loads(sql(cfg,ns,primary,"SELECT json_build_object('owner',(SELECT pg_get_userbyid(datdba) FROM pg_database WHERE datname='app'),'migration',(SELECT version_num FROM alembic_version),'recovery',pg_is_in_recovery(),'version',current_setting('server_version'),'user_table_owner',(SELECT tableowner FROM pg_tables WHERE schemaname='public' AND tablename='user'),'item_table_owner',(SELECT tableowner FROM pg_tables WHERE schemaname='public' AND tablename='item'),'extensions',(SELECT json_agg(extname) FROM pg_extension));"))
         expected=sql(cfg,live,source['status']['currentPrimary'],'SELECT version_num FROM alembic_version;')
-        assert state['owner']==state['user_table_owner']==state['item_table_owner']=='app_owner';assert state['migration']==expected;assert not state['recovery'];assert state['version'].startswith('16.15')
+        assert state['owner']==state['user_table_owner']==state['item_table_owner']=='app_owner';assert state['migration']==expected;assert not state['recovery'];assert state['version'].startswith('16.15');assert 'uuid-ossp' in state['extensions']
         record.update(included_marker_present=True,excluded_marker_absent=True,restored_database=state)
         application_check(cfg,ns,live,record)
         record['application_usable_seconds']=round(time.monotonic()-began,3);record['rto_target_seconds']=3600 if env=='prod' else 14400
         record['observed_rto_within_objective']=record['application_usable_seconds']<=record['rto_target_seconds'];assert record['observed_rto_within_objective']
-        assert 'plugins' not in restored['spec'];assert 'retentionPolicy' not in store['spec']
+        assert not restored['spec'].get('plugins');assert 'retentionPolicy' not in store['spec']
         record['source_archive_write_and_cleanup_disabled']=True;record['success']=True;save()
         cleanup(cfg,record);save()
         print(json.dumps(record))
@@ -268,7 +271,7 @@ def run(args):
 if __name__=='__main__':
     os.umask(0o077);p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--environment',choices=['dev','stage','prod'],required=True);p.add_argument('--backup',required=True)
-    p.add_argument('--evidence',type=Path,required=True);args=p.parse_args()
+    p.add_argument('--evidence',type=Path,required=True);p.add_argument('--recovery-dir',type=Path,default=ROOT/'recovery');args=p.parse_args()
     try:run(args)
     except BaseException as error:
         print('PITR checkpoint stopped: '+type(error).__name__+'; inspect private evidence, do not advance',file=sys.stderr);sys.exit(1)
