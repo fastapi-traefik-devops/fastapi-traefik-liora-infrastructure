@@ -27,6 +27,9 @@ class InstallationTests(unittest.TestCase):
             with tempfile.TemporaryDirectory(dir=ROOT / 'kubernetes/apps/liora/overlays') as tmp:
                 candidate = copy.deepcopy(current)
                 candidate['components'] = ['../../components/cloudnative-pg']
+                # This fixture exercises CNPG without the later R2 component.
+                candidate['patches'] = [p for p in candidate.get('patches', [])
+                                        if '/spec/plugins/' not in p.get('patch', '')]
                 # Existing same-directory files are referenced explicitly.
                 candidate['resources'] = [str(overlay / x) if not x.startswith('..') else x for x in candidate['resources']]
                 Path(tmp, 'kustomization.yaml').write_text(yaml.safe_dump(candidate))
@@ -62,8 +65,11 @@ class InstallationTests(unittest.TestCase):
                 with patch.dict(os.environ, render_dir=tmp, namespace='app-'+env), patch('sys.stdout', io.StringIO()):
                     runpy.run_path(str(ROOT/'scripts/kubernetes/split-application-render.py'))
                 database=list(yaml.safe_load_all(Path(tmp, 'database.yaml').read_text()))
-                self.assertEqual(len(database), 2)
+                self.assertEqual(len(database), 3)
+                self.assertEqual(database[0]['kind'], 'ObjectStore')
                 self.assertTrue(any(x['kind']=='Service' and x['metadata']['name']=='db' for x in database))
+                config=list(yaml.safe_load_all(Path(tmp, 'config-storage.yaml').read_text()))
+                self.assertTrue(any(x['kind']=='Certificate' and x['metadata']['name']=='app-tls' for x in config))
 
     def test_operator_bootstrap_image_is_digest_pinned(self):
         operator=next(x for x in render(ROOT/'kubernetes/platform/cloudnative-pg') if x['kind']=='Deployment')
