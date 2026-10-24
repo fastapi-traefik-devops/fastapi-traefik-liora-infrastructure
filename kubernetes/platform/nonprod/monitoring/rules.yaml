@@ -183,7 +183,10 @@ spec:
         "kube_pod_info", "", "") or label_replace(absent(kube_pod_status_phase), "metric", "kube_pod_status_phase",
         "", "") or label_replace(absent(prometheus_notifications_errors_total), "metric", "prometheus_notifications_errors_total",
         "", "") or label_replace(absent(alertmanager_notifications_failed_total{integration="slack"}), "metric",
-        "alertmanager_notifications_failed_total", "", "")
+        "alertmanager_notifications_failed_total", "", "") or label_replace(absent(kube_pod_spec_volumes_persistentvolumeclaims_info),
+        "metric", "kube_pod_spec_volumes_persistentvolumeclaims_info", "", "") or label_replace(absent(kube_persistentvolumeclaim_status_phase),
+        "metric", "kube_persistentvolumeclaim_status_phase", "", "") or label_replace(absent(kube_persistentvolumeclaim_info),
+        "metric", "kube_persistentvolumeclaim_info", "", "")
       for: 10m
       labels:
         severity: warning

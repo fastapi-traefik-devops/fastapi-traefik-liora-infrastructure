@@ -130,6 +130,24 @@ alertmanager:
       - cluster
       - namespace
       - name
+    - source_matchers:
+      - alertname="PVCBackingFilesystemSpaceCritical"
+      - purpose!="test"
+      target_matchers:
+      - alertname="PVCBackingFilesystemSpaceLow"
+      - purpose!="test"
+      equal:
+      - cluster
+      - node
+    - source_matchers:
+      - alertname="PVCBackingFilesystemInodesCritical"
+      - purpose!="test"
+      target_matchers:
+      - alertname="PVCBackingFilesystemInodesLow"
+      - purpose!="test"
+      equal:
+      - cluster
+      - node
     global:
       resolve_timeout: 5m
     route:

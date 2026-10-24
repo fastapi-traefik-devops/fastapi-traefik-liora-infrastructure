@@ -379,3 +379,10 @@ References: [Alertmanager configuration](https://prometheus.io/docs/alerting/lat
 [Slack incoming webhooks and channel binding](https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/),
 [K3s certificate metric implementation](https://github.com/k3s-io/k3s/blob/main/pkg/certmonitor/certmonitor.go),
 [K3s certificate operations](https://docs.k3s.io/cli/certificate).
+
+## PVC filesystem and PROD standby alerts
+
+See [storage and replication alert operations](STORAGE_REPLICATION_ALERTS.md) for
+thresholds, shared local-path filesystem interpretation, missing-telemetry checks
+and PROD asynchronous standby diagnostics. These additions use existing metrics
+and retain independent backup/WAL critical alerts.

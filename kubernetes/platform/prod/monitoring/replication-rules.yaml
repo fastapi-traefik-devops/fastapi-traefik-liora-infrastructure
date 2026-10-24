@@ -1,0 +1,99 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: prod-replication
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+  - name: prod-replication
+    rules:
+    - alert: CNPGStandbyUnavailable
+      expr: max((count(((cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1) and on(namespace,pod,instance) (cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1) and on(namespace,pod,instance) (up{namespace="app-prod",job="monitoring/cnpg-backup-prod"} == 1))
+        and on(namespace,pod,instance) (cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1)) != 1) or absent(((cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1) and on(namespace,pod,instance) (cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1) and on(namespace,pod,instance) (up{namespace="app-prod",job="monitoring/cnpg-backup-prod"} == 1))
+        and on(namespace,pod,instance) (cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1)) or (max((cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        and on(namespace,pod,instance) (cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 0) and on(namespace,pod,instance) (cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1) and on(namespace,pod,instance) (up{namespace="app-prod",job="monitoring/cnpg-backup-prod"} == 1)))
+        < 1) or absent((cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        and on(namespace,pod,instance) (cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 0) and on(namespace,pod,instance) (cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1) and on(namespace,pod,instance) (up{namespace="app-prod",job="monitoring/cnpg-backup-prod"} == 1))))
+      for: 5m
+      labels:
+        cluster: prod
+        environment: PROD
+        namespace: app-prod
+        severity: critical
+      annotations:
+        summary: Expected one observable streaming PROD standby and a healthy primary connection are not confirmed
+        description: Expected one observable streaming PROD standby and a healthy primary connection are not confirmed
+        action: Inspect both CNPG instances, coherent scrape/collector/recovery/receiver metrics and primary streaming
+          count. Do not infer a safe standby from lag=0 alone.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/STORAGE_REPLICATION_ALERTS.md
+    - alert: CNPGStandbyReplicationLagHigh
+      expr: max by(namespace,pod) (cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        and on(namespace,pod,instance) (((cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1) and on(namespace,pod,instance) (cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1) and on(namespace,pod,instance) (up{namespace="app-prod",job="monitoring/cnpg-backup-prod"} == 1))))
+        > 60
+      for: 5m
+      labels:
+        cluster: prod
+        environment: PROD
+        namespace: app-prod
+        severity: warning
+      annotations:
+        summary: PROD standby replay lag exceeds 60 seconds for five minutes
+        description: PROD standby replay lag exceeds 60 seconds for five minutes
+        action: Inspect WAL receiver, primary writes, replica CPU/storage and replay progress; asynchronous replication
+          is unchanged.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/STORAGE_REPLICATION_ALERTS.md
+    - alert: CNPGStandbyReplicationLagCritical
+      expr: max by(namespace,pod) (cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        and on(namespace,pod,instance) (((cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1) and on(namespace,pod,instance) (cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1) and on(namespace,pod,instance) (up{namespace="app-prod",job="monitoring/cnpg-backup-prod"} == 1))))
+        > 300
+      for: 5m
+      labels:
+        cluster: prod
+        environment: PROD
+        namespace: app-prod
+        severity: critical
+      annotations:
+        summary: PROD standby replay lag exceeds 300 seconds for five minutes
+        description: PROD standby replay lag exceeds 300 seconds for five minutes
+        action: Investigate replication/replay bottlenecks promptly; lag is not an R2 archive delay metric and is
+          not a failover instruction.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/STORAGE_REPLICATION_ALERTS.md
+    - alert: CNPGReplicationTelemetryMissing
+      expr: max by(namespace,pod) (((up{namespace="app-prod",job="monitoring/cnpg-backup-prod"} == 1) unless on(namespace,pod,instance)
+        (cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod"} == 1)) or ((up{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1) unless on(namespace,pod,instance) ((cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 0) or (cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod"} == 1)))
+        or ((up{namespace="app-prod",job="monitoring/cnpg-backup-prod"} == 1) unless on(namespace,pod,instance)
+        (cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod"} >= 0)) or ((up{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1) unless on(namespace,pod,instance) ((cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 0) or (cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod"}
+        == 1))) or ((up{namespace="app-prod",job="monitoring/cnpg-backup-prod"} == 1) unless on(namespace,pod,instance)
+        (cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod"} >= 0)))
+      for: 5m
+      labels:
+        cluster: prod
+        environment: PROD
+        namespace: app-prod
+        severity: warning
+      annotations:
+        summary: Reachable PROD database exporter lacks valid replication telemetry
+        description: Reachable PROD database exporter lacks valid replication telemetry
+        action: Inspect exporter/query errors and the installed default monitoring query; absence or invalid values
+          do not prove healthy replication.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/STORAGE_REPLICATION_ALERTS.md

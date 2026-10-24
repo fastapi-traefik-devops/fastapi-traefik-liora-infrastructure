@@ -1,0 +1,770 @@
+evaluation_interval: 1m
+tests:
+- name: Shared filesystem claims emit one node-level warning
+  interval: 1m
+  input_series:
+  - series: kubelet_volume_stats_available_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 15x25
+  - series: kubelet_volume_stats_capacity_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  - series: kubelet_volume_stats_inodes_free{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 90x25
+  - series: kubelet_volume_stats_inodes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  - series: kubelet_volume_stats_available_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="second",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 15x25
+  - series: kubelet_volume_stats_capacity_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="second",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  - series: kubelet_volume_stats_inodes_free{namespace="TEST_NAMESPACE",persistentvolumeclaim="second",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 90x25
+  - series: kubelet_volume_stats_inodes{namespace="TEST_NAMESPACE",persistentvolumeclaim="second",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  promql_expr_test:
+  - expr: PVCBackingFilesystemSpaceLow
+    eval_time: 20m
+    exp_samples:
+    - labels: '{node="n1"}'
+      value: 0.15
+  - expr: PVCBackingFilesystemSpaceCritical
+    eval_time: 20m
+    exp_samples: []
+- name: Critical bytes and inode pressure remain distinguishable
+  interval: 1m
+  input_series:
+  - series: kubelet_volume_stats_available_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 5x25
+  - series: kubelet_volume_stats_capacity_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  - series: kubelet_volume_stats_inodes_free{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 3x25
+  - series: kubelet_volume_stats_inodes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  promql_expr_test:
+  - expr: PVCBackingFilesystemSpaceCritical
+    eval_time: 20m
+    exp_samples:
+    - labels: '{node="n1"}'
+      value: 0.05
+  - expr: PVCBackingFilesystemInodesLow
+    eval_time: 20m
+    exp_samples:
+    - labels: '{node="n1"}'
+      value: 0.03
+  - expr: PVCBackingFilesystemInodesCritical
+    eval_time: 20m
+    exp_samples:
+    - labels: '{node="n1"}'
+      value: 0.03
+- name: Proxy duplicates and claim request sizes do not create false quota alarms
+  interval: 1m
+  input_series:
+  - series: kubelet_volume_stats_available_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 90x25
+  - series: kubelet_volume_stats_capacity_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  - series: kubelet_volume_stats_inodes_free{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 90x25
+  - series: kubelet_volume_stats_inodes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  - series: kubelet_volume_stats_available_bytes{namespace="default",persistentvolumeclaim="data",node="n1",job="apiserver",metrics_path="/metrics"}
+    values: '0x25'
+  - series: kubelet_volume_stats_capacity_bytes{namespace="default",persistentvolumeclaim="data",node="n1",job="apiserver",metrics_path="/metrics"}
+    values: 100x25
+  - series: kubelet_volume_stats_inodes_free{namespace="default",persistentvolumeclaim="data",node="n1",job="apiserver",metrics_path="/metrics"}
+    values: '0x25'
+  - series: kubelet_volume_stats_inodes{namespace="default",persistentvolumeclaim="data",node="n1",job="apiserver",metrics_path="/metrics"}
+    values: 100x25
+  - series: kube_persistentvolumeclaim_resource_requests_storage_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data"}
+    values: 2x25
+  promql_expr_test:
+  - expr: PVCBackingFilesystemSpaceLow
+    eval_time: 20m
+    exp_samples: []
+  - expr: PVCBackingFilesystemInodesLow
+    eval_time: 20m
+    exp_samples: []
+- name: Mounted Bound PVC requires observable metrics
+  interval: 1m
+  input_series:
+  - series: kube_pod_spec_volumes_persistentvolumeclaims_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",persistentvolumeclaim="data"}
+    values: 1x25
+  - series: kube_pod_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",phase="Running"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",phase="Bound"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",volumemode="Filesystem"}
+    values: 1x25
+  promql_expr_test:
+  - expr: PVCFilesystemTelemetryMissing
+    eval_time: 20m
+    exp_samples:
+    - labels: '{namespace="TEST_NAMESPACE",persistentvolumeclaim="data"}'
+      value: 1
+- name: Unmounted retained claims do not require volume stats
+  interval: 1m
+  input_series:
+  - series: kube_pod_spec_volumes_persistentvolumeclaims_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",persistentvolumeclaim="data"}
+    values: 1x25
+  - series: kube_pod_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",phase="Succeeded"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",phase="Bound"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",volumemode="Filesystem"}
+    values: 1x25
+  promql_expr_test:
+  - expr: PVCFilesystemTelemetryMissing
+    eval_time: 20m
+    exp_samples: []
+- name: Raw block claims do not require filesystem stats
+  interval: 1m
+  input_series:
+  - series: kube_pod_spec_volumes_persistentvolumeclaims_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",persistentvolumeclaim="data"}
+    values: 1x25
+  - series: kube_pod_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",phase="Running"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",phase="Bound"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",volumemode="Block"}
+    values: 1x25
+  promql_expr_test:
+  - expr: PVCFilesystemTelemetryMissing
+    eval_time: 20m
+    exp_samples: []
+- name: Healthy mounted filesystem does not alert
+  interval: 1m
+  input_series:
+  - series: kube_pod_spec_volumes_persistentvolumeclaims_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",persistentvolumeclaim="data"}
+    values: 1x25
+  - series: kube_pod_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",phase="Running"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",phase="Bound"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",volumemode="Filesystem"}
+    values: 1x25
+  - series: kubelet_volume_stats_available_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 90x25
+  - series: kubelet_volume_stats_capacity_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  - series: kubelet_volume_stats_inodes_free{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 90x25
+  - series: kubelet_volume_stats_inodes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  promql_expr_test:
+  - expr: PVCFilesystemTelemetryMissing
+    eval_time: 20m
+    exp_samples: []
+  - expr: PVCBackingFilesystemSpaceCritical
+    eval_time: 20m
+    exp_samples: []
+- name: Zero capacity is unknown rather than a trustworthy ratio
+  interval: 1m
+  input_series:
+  - series: kube_pod_spec_volumes_persistentvolumeclaims_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",persistentvolumeclaim="data"}
+    values: 1x25
+  - series: kube_pod_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",phase="Running"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",phase="Bound"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",volumemode="Filesystem"}
+    values: 1x25
+  - series: kubelet_volume_stats_available_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: '0x25'
+  - series: kubelet_volume_stats_capacity_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: '0x25'
+  - series: kubelet_volume_stats_inodes_free{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 90x25
+  - series: kubelet_volume_stats_inodes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  promql_expr_test:
+  - expr: PVCFilesystemTelemetryMissing
+    eval_time: 20m
+    exp_samples:
+    - labels: '{namespace="TEST_NAMESPACE",persistentvolumeclaim="data"}'
+      value: 1
+  - expr: PVCBackingFilesystemSpaceCritical
+    eval_time: 20m
+    exp_samples: []
+- name: Missing byte metric is not healthy
+  interval: 1m
+  input_series:
+  - series: kube_pod_spec_volumes_persistentvolumeclaims_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",persistentvolumeclaim="data"}
+    values: 1x25
+  - series: kube_pod_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",phase="Running"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",phase="Bound"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",volumemode="Filesystem"}
+    values: 1x25
+  - series: kubelet_volume_stats_capacity_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  - series: kubelet_volume_stats_inodes_free{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 90x25
+  - series: kubelet_volume_stats_inodes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  promql_expr_test:
+  - expr: PVCFilesystemTelemetryMissing
+    eval_time: 20m
+    exp_samples:
+    - labels: '{namespace="TEST_NAMESPACE",persistentvolumeclaim="data"}'
+      value: 1
+- name: Byte metric NaN is not healthy
+  interval: 1m
+  input_series:
+  - series: kube_pod_spec_volumes_persistentvolumeclaims_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",persistentvolumeclaim="data"}
+    values: 1x25
+  - series: kube_pod_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",phase="Running"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",phase="Bound"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",volumemode="Filesystem"}
+    values: 1x25
+  - series: kubelet_volume_stats_available_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN
+  - series: kubelet_volume_stats_capacity_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  - series: kubelet_volume_stats_inodes_free{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 90x25
+  - series: kubelet_volume_stats_inodes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  promql_expr_test:
+  - expr: PVCFilesystemTelemetryMissing
+    eval_time: 20m
+    exp_samples:
+    - labels: '{namespace="TEST_NAMESPACE",persistentvolumeclaim="data"}'
+      value: 1
+  - expr: PVCBackingFilesystemSpaceLow
+    eval_time: 20m
+    exp_samples: []
+- name: Valid inode exhaustion is pressure not missing telemetry
+  interval: 1m
+  input_series:
+  - series: kube_pod_spec_volumes_persistentvolumeclaims_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",persistentvolumeclaim="data"}
+    values: 1x25
+  - series: kube_pod_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",phase="Running"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",phase="Bound"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",volumemode="Filesystem"}
+    values: 1x25
+  - series: kubelet_volume_stats_available_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 90x25
+  - series: kubelet_volume_stats_capacity_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  - series: kubelet_volume_stats_inodes_free{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: '0x25'
+  - series: kubelet_volume_stats_inodes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  promql_expr_test:
+  - expr: PVCBackingFilesystemInodesCritical
+    eval_time: 20m
+    exp_samples:
+    - labels: '{node="n1"}'
+      value: 0
+  - expr: PVCFilesystemTelemetryMissing
+    eval_time: 20m
+    exp_samples: []
+- name: Missing inode metric is not healthy
+  interval: 1m
+  input_series:
+  - series: kube_pod_spec_volumes_persistentvolumeclaims_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",persistentvolumeclaim="data"}
+    values: 1x25
+  - series: kube_pod_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",phase="Running"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",phase="Bound"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",volumemode="Filesystem"}
+    values: 1x25
+  - series: kubelet_volume_stats_available_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 90x25
+  - series: kubelet_volume_stats_capacity_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  - series: kubelet_volume_stats_inodes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  promql_expr_test:
+  - expr: PVCFilesystemTelemetryMissing
+    eval_time: 20m
+    exp_samples:
+    - labels: '{namespace="TEST_NAMESPACE",persistentvolumeclaim="data"}'
+      value: 1
+- name: Identical claim names in different namespaces do not cross-match
+  interval: 1m
+  input_series:
+  - series: kube_pod_spec_volumes_persistentvolumeclaims_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",persistentvolumeclaim="data"}
+    values: 1x25
+  - series: kube_pod_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",pod="db",phase="Running"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_status_phase{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",phase="Bound"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_info{job="kube-state-metrics",namespace="TEST_NAMESPACE",persistentvolumeclaim="data",volumemode="Filesystem"}
+    values: 1x25
+  - series: kube_pod_spec_volumes_persistentvolumeclaims_info{job="kube-state-metrics",namespace="monitoring",pod="db",persistentvolumeclaim="data"}
+    values: 1x25
+  - series: kube_pod_status_phase{job="kube-state-metrics",namespace="monitoring",pod="db",phase="Running"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_status_phase{job="kube-state-metrics",namespace="monitoring",persistentvolumeclaim="data",phase="Bound"}
+    values: 1x25
+  - series: kube_persistentvolumeclaim_info{job="kube-state-metrics",namespace="monitoring",persistentvolumeclaim="data",volumemode="Filesystem"}
+    values: 1x25
+  - series: kubelet_volume_stats_available_bytes{namespace="monitoring",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 90x25
+  - series: kubelet_volume_stats_capacity_bytes{namespace="monitoring",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  - series: kubelet_volume_stats_inodes_free{namespace="monitoring",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 90x25
+  - series: kubelet_volume_stats_inodes{namespace="monitoring",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  promql_expr_test:
+  - expr: PVCFilesystemTelemetryMissing
+    eval_time: 20m
+    exp_samples:
+    - labels: '{namespace="TEST_NAMESPACE",persistentvolumeclaim="data"}'
+      value: 1
+- name: Critical space hold and recovery are respected
+  interval: 1m
+  input_series:
+  - series: kubelet_volume_stats_available_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 5x6 90x18
+  - series: kubelet_volume_stats_capacity_bytes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  - series: kubelet_volume_stats_inodes_free{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 90x25
+  - series: kubelet_volume_stats_inodes{namespace="TEST_NAMESPACE",persistentvolumeclaim="data",node="n1",job="kubelet",metrics_path="/metrics"}
+    values: 100x25
+  alert_rule_test:
+  - eval_time: 4m
+    alertname: PVCBackingFilesystemSpaceCritical
+    exp_alerts: []
+  - eval_time: 6m
+    alertname: PVCBackingFilesystemSpaceCritical
+    exp_alerts:
+    - exp_labels:
+        cluster: TEST_CLUSTER
+        environment: TEST_PLATFORM_ENV
+        node: n1
+        severity: critical
+      exp_annotations:
+        summary: PVC backing filesystem available space below 10 percent
+        description: One or more mounted PVCs on this node share a filesystem below the threshold. This is backing
+          filesystem headroom, not per-claim quota usage.
+        action: Inspect canonical kubelet volume stats and PVC-to-node mapping; identify growth and filesystem capacity
+          before considering expansion or cleanup. Do not delete data blindly.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/STORAGE_REPLICATION_ALERTS.md
+  - eval_time: 20m
+    alertname: PVCBackingFilesystemSpaceCritical
+    exp_alerts: []
+- name: 'prod: idle caught-up streaming pair remains healthy'
+  interval: 1m
+  input_series:
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  promql_expr_test:
+  - expr: CNPGStandbyUnavailable
+    eval_time: 20m
+    exp_samples: []
+  - expr: CNPGStandbyReplicationLagHigh
+    eval_time: 20m
+    exp_samples: []
+  - expr: CNPGStandbyReplicationLagCritical
+    eval_time: 20m
+    exp_samples: []
+  - expr: CNPGReplicationTelemetryMissing
+    eval_time: 20m
+    exp_samples: []
+- name: 'prod: missing standby is not healthy'
+  interval: 1m
+  input_series:
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  promql_expr_test:
+  - expr: CNPGStandbyUnavailable
+    eval_time: 20m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+- name: 'prod: failed scrape cannot reuse stale SQL state'
+  interval: 1m
+  input_series:
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  promql_expr_test:
+  - expr: CNPGStandbyUnavailable
+    eval_time: 20m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+- name: 'prod: disconnected receiver can have zero idle lag'
+  interval: 1m
+  input_series:
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  promql_expr_test:
+  - expr: CNPGStandbyUnavailable
+    eval_time: 20m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: CNPGStandbyReplicationLagHigh
+    eval_time: 20m
+    exp_samples: []
+- name: 'prod: primary must observe a streaming connection'
+  interval: 1m
+  input_series:
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  promql_expr_test:
+  - expr: CNPGStandbyUnavailable
+    eval_time: 20m
+    exp_samples:
+    - labels: '{}'
+      value: 0
+- name: 'prod: replay lag warning does not mean missing standby'
+  interval: 1m
+  input_series:
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 90x25
+  promql_expr_test:
+  - expr: CNPGStandbyReplicationLagHigh
+    eval_time: 20m
+    exp_samples:
+    - labels: '{namespace="app-prod",pod="liora-db-2"}'
+      value: 90
+  - expr: CNPGStandbyReplicationLagCritical
+    eval_time: 20m
+    exp_samples: []
+  - expr: CNPGStandbyUnavailable
+    eval_time: 20m
+    exp_samples: []
+- name: 'prod: critical replay lag remains observable'
+  interval: 1m
+  input_series:
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 350x25
+  promql_expr_test:
+  - expr: CNPGStandbyReplicationLagCritical
+    eval_time: 20m
+    exp_samples:
+    - labels: '{namespace="app-prod",pod="liora-db-2"}'
+      value: 350
+- name: 'prod: missing lag metric is not a healthy zero'
+  interval: 1m
+  input_series:
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  promql_expr_test:
+  - expr: CNPGReplicationTelemetryMissing
+    eval_time: 20m
+    exp_samples:
+    - labels: '{namespace="app-prod",pod="liora-db-2"}'
+      value: 1
+  - expr: CNPGStandbyReplicationLagHigh
+    eval_time: 20m
+    exp_samples: []
+- name: 'prod: invalid lag metric is not a healthy zero'
+  interval: 1m
+  input_series:
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN NaN
+  promql_expr_test:
+  - expr: CNPGReplicationTelemetryMissing
+    eval_time: 20m
+    exp_samples:
+    - labels: '{namespace="app-prod",pod="liora-db-2"}'
+      value: 1
+- name: 'prod: failed collector invalidates cached standby state'
+  interval: 1m
+  input_series:
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  promql_expr_test:
+  - expr: CNPGStandbyUnavailable
+    eval_time: 20m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: CNPGReplicationTelemetryMissing
+    eval_time: 20m
+    exp_samples:
+    - labels: '{namespace="app-prod",pod="liora-db-2"}'
+      value: 1
+- name: 'prod: complete metric disappearance fails closed'
+  interval: 1m
+  input_series: []
+  promql_expr_test:
+  - expr: CNPGStandbyUnavailable
+    eval_time: 20m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+- name: 'prod: SQL roles and instance identity survive a role swap'
+  interval: 1m
+  input_series:
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 999x25
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: 1x25
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="primary"}
+    values: '0x25'
+  promql_expr_test:
+  - expr: CNPGStandbyUnavailable
+    eval_time: 20m
+    exp_samples: []
+  - expr: CNPGStandbyReplicationLagHigh
+    eval_time: 20m
+    exp_samples: []
+- name: 'prod: incorrect two-standby topology is not accepted'
+  interval: 1m
+  input_series:
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-1",instance="liora-db-1:9187",role="replica"}
+    values: '0x25'
+  - series: up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_collector_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_in_recovery{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_is_wal_receiver_up{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: 1x25
+  - series: cnpg_pg_replication_streaming_replicas{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  - series: cnpg_pg_replication_lag{namespace="app-prod",job="monitoring/cnpg-backup-prod",pod="liora-db-2",instance="liora-db-2:9187",role="replica"}
+    values: '0x25'
+  promql_expr_test:
+  - expr: CNPGStandbyUnavailable
+    eval_time: 20m
+    exp_samples:
+    - labels: '{}'
+      value: 2

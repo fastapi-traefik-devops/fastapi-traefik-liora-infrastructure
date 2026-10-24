@@ -27,13 +27,13 @@ def audit(cluster):
     result = {'cluster': cluster, 'issues': [], 'rule_groups': [], 'metrics': {}}
     groups = get(base + ':9090/api/v1/rules')['data']['groups']
     expected = {}
-    for section in ['monitoring', 'backup-monitoring']:
-        source = yaml.safe_load((ROOT / f'kubernetes/platform/{cluster}/{section}/rules.yaml').read_text())
+    for path in sorted((ROOT / f'kubernetes/platform/{cluster}').glob('*monitoring/*rules.yaml')):
+        source = yaml.safe_load(path.read_text())
         live = subprocess.run(['kubectl', '--kubeconfig=' + str(config), '--request-timeout=30s',
                                '-n', 'monitoring', 'get', 'prometheusrule', source['metadata']['name'], '-o', 'json'],
                               capture_output=True, timeout=45, check=True)
         if json.loads(live.stdout)['spec'] != source['spec']:
-            result['issues'].append('Rule source/live resource mismatch: ' + section)
+            result['issues'].append('Rule source/live resource mismatch: ' + path.name)
         expected.update({g['name']: len(g['rules']) for g in source['spec']['groups']})
     for group in groups:
         rules = [{'name': r.get('name'), 'query': r.get('query'), 'state': r.get('state'),
@@ -62,6 +62,16 @@ def audit(cluster):
                'sum(increase(alertmanager_notifications_failed_total{integration="slack"}[10m]))',
                'sum(alertmanager_notifications_total{integration="slack"})',
                'sum(increase(prometheus_notifications_errors_total[10m]))']
+    queries.extend([
+        'min by(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_available_bytes{job="kubelet",metrics_path="/metrics"})',
+        'max by(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_capacity_bytes{job="kubelet",metrics_path="/metrics"})',
+        'min by(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_inodes_free{job="kubelet",metrics_path="/metrics"})',
+        'max by(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_inodes{job="kubelet",metrics_path="/metrics"})',
+    ])
+    if cluster == 'prod':
+        queries.extend([f'{metric}{{namespace="app-prod",job="monitoring/cnpg-backup-prod"}}' for metric in [
+            'cnpg_pg_replication_lag', 'cnpg_pg_replication_in_recovery',
+            'cnpg_pg_replication_is_wal_receiver_up', 'cnpg_pg_replication_streaming_replicas', 'cnpg_collector_up', 'up']])
     for query in queries:
         data = get(base + ':9090/api/v1/query?' + urllib.parse.urlencode({'query': query}))
         result['metrics'][query] = data['data']['result']

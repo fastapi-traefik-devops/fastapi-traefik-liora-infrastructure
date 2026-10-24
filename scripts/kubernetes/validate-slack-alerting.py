@@ -41,7 +41,9 @@ def main():
             values = yaml.safe_load((directory / 'values.yaml').read_text())
             config = values['alertmanager']['config']
             protected = ['CNPGFullBackupFailed', 'CNPGFullBackupOverdue', 'CNPGWALArchivingFailure',
-                         'CNPGWALArchiveDelayed', 'CNPGBackupCycleBlocked', 'ProductionDeploymentUnavailable']
+                         'CNPGWALArchiveDelayed', 'CNPGBackupCycleBlocked', 'ProductionDeploymentUnavailable',
+                         'PVCBackingFilesystemSpaceCritical', 'PVCBackingFilesystemInodesCritical',
+                         'CNPGStandbyUnavailable', 'CNPGStandbyReplicationLagCritical']
             for inhibition in config.get('inhibit_rules', []):
                 assert 'purpose!="test"' in inhibition['source_matchers']
                 assert 'purpose!="test"' in inhibition['target_matchers']
@@ -117,6 +119,8 @@ def main():
                               '--template.data=' + str(data), '--template.text={{ template "title" . }}'])
                 assert '[RESOLVED]' in output
             rule_doc = yaml.safe_load((directory / 'rules.yaml').read_text())
+            for extra in sorted(directory.glob('*-rules.yaml')):
+                rule_doc['spec']['groups'].extend(yaml.safe_load(extra.read_text())['spec']['groups'])
             rule_file = work / f'{cluster}-rules.yaml'
             rule_file.write_text(yaml.safe_dump({'groups': rule_doc['spec']['groups']}))
             run([args.promtool, 'check', 'rules', rule_file])
@@ -124,6 +128,10 @@ def main():
             additional = (ROOT / 'scripts/kubernetes/tests/alerting-regressions.yaml').read_text()
             additional = additional.replace('TEST_NAMESPACE', 'app-prod' if cluster == 'prod' else 'app-dev')
             fixtures['tests'].extend(yaml.safe_load(additional)['tests'])
+            storage = (ROOT / 'scripts/kubernetes/tests/storage-replication-regressions.yaml').read_text()
+            storage = storage.replace('TEST_NAMESPACE', 'app-prod' if cluster == 'prod' else 'app-dev')
+            storage = storage.replace('TEST_CLUSTER', cluster).replace('TEST_PLATFORM_ENV', 'PROD' if cluster == 'prod' else 'PLATFORM')
+            fixtures['tests'].extend(yaml.safe_load(storage)['tests'])
             fixtures['rule_files'] = [str(rule_file)]
             if cluster == 'nonprod':
                 fixtures['tests'] = [t for t in fixtures['tests'] if not t.get('name', '').startswith('prod:')]

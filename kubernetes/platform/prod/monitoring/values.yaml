@@ -263,6 +263,43 @@ alertmanager:
       - cluster
       - namespace
       - name
+    - source_matchers:
+      - alertname="PVCBackingFilesystemSpaceCritical"
+      - purpose!="test"
+      target_matchers:
+      - alertname="PVCBackingFilesystemSpaceLow"
+      - purpose!="test"
+      equal:
+      - cluster
+      - node
+    - source_matchers:
+      - alertname="PVCBackingFilesystemInodesCritical"
+      - purpose!="test"
+      target_matchers:
+      - alertname="PVCBackingFilesystemInodesLow"
+      - purpose!="test"
+      equal:
+      - cluster
+      - node
+    - source_matchers:
+      - alertname="CNPGStandbyReplicationLagCritical"
+      - purpose!="test"
+      target_matchers:
+      - alertname="CNPGStandbyReplicationLagHigh"
+      - purpose!="test"
+      equal:
+      - cluster
+      - namespace
+      - pod
+    - source_matchers:
+      - alertname="CNPGStandbyUnavailable"
+      - purpose!="test"
+      target_matchers:
+      - alertname="CNPGReplicationTelemetryMissing"
+      - purpose!="test"
+      equal:
+      - cluster
+      - namespace
   alertmanagerSpec:
     secrets:
     - monitoring-slack-prod

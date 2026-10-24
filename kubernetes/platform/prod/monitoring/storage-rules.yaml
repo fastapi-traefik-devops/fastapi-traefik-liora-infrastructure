@@ -1,0 +1,97 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: prod-storage
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+  - name: prod-storage
+    rules:
+    - alert: PVCBackingFilesystemSpaceLow
+      expr: min by(node) ((min by(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_available_bytes{job="kubelet",metrics_path="/metrics",node!=""}
+        >= 0)) / on(namespace,persistentvolumeclaim,node) (max by(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_capacity_bytes{job="kubelet",metrics_path="/metrics",node!=""}
+        > 0))) < 0.2
+      for: 15m
+      labels:
+        cluster: prod
+        environment: PROD
+        severity: warning
+      annotations:
+        summary: PVC backing filesystem available space below 20 percent
+        description: One or more mounted PVCs on this node share a filesystem below the threshold. This is backing
+          filesystem headroom, not per-claim quota usage.
+        action: Inspect canonical kubelet volume stats and PVC-to-node mapping; identify growth and filesystem capacity
+          before considering expansion or cleanup. Do not delete data blindly.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/STORAGE_REPLICATION_ALERTS.md
+    - alert: PVCBackingFilesystemSpaceCritical
+      expr: min by(node) ((min by(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_available_bytes{job="kubelet",metrics_path="/metrics",node!=""}
+        >= 0)) / on(namespace,persistentvolumeclaim,node) (max by(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_capacity_bytes{job="kubelet",metrics_path="/metrics",node!=""}
+        > 0))) < 0.1
+      for: 5m
+      labels:
+        cluster: prod
+        environment: PROD
+        severity: critical
+      annotations:
+        summary: PVC backing filesystem available space below 10 percent
+        description: One or more mounted PVCs on this node share a filesystem below the threshold. This is backing
+          filesystem headroom, not per-claim quota usage.
+        action: Inspect canonical kubelet volume stats and PVC-to-node mapping; identify growth and filesystem capacity
+          before considering expansion or cleanup. Do not delete data blindly.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/STORAGE_REPLICATION_ALERTS.md
+    - alert: PVCBackingFilesystemInodesLow
+      expr: min by(node) ((min by(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_inodes_free{job="kubelet",metrics_path="/metrics",node!=""}
+        >= 0)) / on(namespace,persistentvolumeclaim,node) (max by(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_inodes{job="kubelet",metrics_path="/metrics",node!=""}
+        > 0))) < 0.1
+      for: 15m
+      labels:
+        cluster: prod
+        environment: PROD
+        severity: warning
+      annotations:
+        summary: PVC backing filesystem free inodes below 10 percent
+        description: One or more mounted PVCs on this node share a filesystem below the threshold. This is backing
+          filesystem headroom, not per-claim quota usage.
+        action: Inspect canonical kubelet volume stats and PVC-to-node mapping; identify growth and filesystem capacity
+          before considering expansion or cleanup. Do not delete data blindly.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/STORAGE_REPLICATION_ALERTS.md
+    - alert: PVCBackingFilesystemInodesCritical
+      expr: min by(node) ((min by(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_inodes_free{job="kubelet",metrics_path="/metrics",node!=""}
+        >= 0)) / on(namespace,persistentvolumeclaim,node) (max by(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_inodes{job="kubelet",metrics_path="/metrics",node!=""}
+        > 0))) < 0.05
+      for: 5m
+      labels:
+        cluster: prod
+        environment: PROD
+        severity: critical
+      annotations:
+        summary: PVC backing filesystem free inodes below 5 percent
+        description: One or more mounted PVCs on this node share a filesystem below the threshold. This is backing
+          filesystem headroom, not per-claim quota usage.
+        action: Inspect canonical kubelet volume stats and PVC-to-node mapping; identify growth and filesystem capacity
+          before considering expansion or cleanup. Do not delete data blindly.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/STORAGE_REPLICATION_ALERTS.md
+    - alert: PVCFilesystemTelemetryMissing
+      expr: ((((max by(namespace,persistentvolumeclaim) (kube_pod_spec_volumes_persistentvolumeclaims_info{job="kube-state-metrics"}
+        and on(namespace,pod) (kube_pod_status_phase{job="kube-state-metrics",phase="Running"} == 1))) and on(namespace,persistentvolumeclaim)
+        (max by(namespace,persistentvolumeclaim) (kube_persistentvolumeclaim_status_phase{job="kube-state-metrics",phase="Bound"})
+        == 1))) unless on(namespace,persistentvolumeclaim) (kube_persistentvolumeclaim_info{job="kube-state-metrics",volumemode="Block"}
+        == 1)) unless on(namespace,persistentvolumeclaim) ((((min by(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_available_bytes{job="kubelet",metrics_path="/metrics",node!=""}
+        >= 0)) and on(namespace,persistentvolumeclaim,node) (max by(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_capacity_bytes{job="kubelet",metrics_path="/metrics",node!=""}
+        > 0)))) and on(namespace,persistentvolumeclaim,node) ((kubelet_volume_stats_inodes_free{job="kubelet",metrics_path="/metrics",node!=""}
+        >= 0) and on(namespace,persistentvolumeclaim,node) (kubelet_volume_stats_inodes{job="kubelet",metrics_path="/metrics",node!=""}
+        > 0)))
+      for: 15m
+      labels:
+        cluster: prod
+        environment: PROD
+        severity: warning
+      annotations:
+        summary: Mounted Bound filesystem PVC has incomplete canonical capacity telemetry
+        description: A Running Pod references this Bound filesystem PVC, but canonical kubelet /metrics byte or
+          inode samples are missing or invalid. Unmounted retained PVCs and known raw block claims are excluded.
+        action: Check kubelet target, volume mount and metrics support; missing telemetry does not establish healthy
+          disk space.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/STORAGE_REPLICATION_ALERTS.md

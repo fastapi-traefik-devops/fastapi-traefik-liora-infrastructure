@@ -5,5 +5,7 @@ resources:
 - operations-dashboard.yaml
 - monitors.yaml
 - rules.yaml
+- storage-rules.yaml
+- replication-rules.yaml
 - services.yaml
 - ../backup-monitoring
