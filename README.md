@@ -27,6 +27,7 @@ disaster recovery or routine backup/recovery operations. The manuals separate
 empty database initialization from data restoration and isolated PITR exercises.
 
 - [Architecture](docs/ARCHITECTURE.md): desired topology, ownership and delivery policy.
+- [Infrastructure diagrams](docs/project-schemes.drawio): editable topology, cluster, traffic, CI/CD, backup, monitoring and recovery views.
 - [Backup operations](runbooks/19-cnpg-r2-backup-pitr.md): scheduled/manual cycles and failure recovery.
 - [Backup verification](docs/operations/POSTGRESQL_BACKUP_VERIFICATION.md): monthly isolated PITR and WAL-delivery measurements.
 - [Monitoring operations](docs/operations/SLACK_ALERTING.md): alert response and notification delivery.

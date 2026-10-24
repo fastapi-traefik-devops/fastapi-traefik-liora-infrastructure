@@ -1,6 +1,7 @@
 # Infrastructure architecture
 
 This document defines the desired architecture of the Liora platform.
+Editable infrastructure diagrams: [project-schemes.drawio](project-schemes.drawio).
 Operating procedures belong in the [operator manuals](../runbooks/README.md).
 Implementation order, migration history and execution results belong in the
 [implementation plan](testreports/IMPLEMENTATION_PLAN.md) and [phase reports](testreports/README.md).

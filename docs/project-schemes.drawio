@@ -1,0 +1,893 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" type="device" version="24.7.17">
+  <diagram id="topology" name="1. Platform topology">
+    <mxGraphModel dx="1800" dy="1180" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1180" math="0" shadow="0" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="topology-title" value="LIORA / PLATFORM TOPOLOGY" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=28;fontStyle=1;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="1720" height="43" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-subtitle" value="One Proxmox host · Two independent K3s control planes · Three isolated application environments" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=14;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="76" width="1720" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-footer" value="LIORA  |  Solid: service/data flow   ·   Dashed: configuration/control   |   Source: ARCHITECTURE.md + repository manifests" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=11;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1128" width="1720" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-users" value="DEV / STAGE browsers&lt;br&gt;Public HTTPS" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="145" width="245" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-cloudflare" value="Cloudflare&lt;br&gt;DEV / STAGE: proxy + Access&lt;br&gt;PROD: DNS-only" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="340" y="135" width="290" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-prodclient" value="PROD browser&lt;br&gt;DNS-only resolution&lt;br&gt;Direct public origin" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eee8f8;strokeColor=#9274b7;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="710" y="135" width="250" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-github" value="GitHub / GHCR&lt;br&gt;Application + infrastructure repositories&lt;br&gt;Immutable frontend/backend images" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="135" width="345" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-r2" value="Cloudflare R2 · private&lt;br&gt;liora-backup&lt;br&gt;Physical base backups + WAL" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="135" width="340" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-host" value="PROXMOX HOST  |  vnet77 · 192.168.77.0/24 · gateway .1" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#f4f6fa;swimlaneFillColor=#ffffff;strokeColor=#90a1b5;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="295" width="1720" height="680" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-edge" value="VM 240 · HAProxy&lt;br&gt;192.168.77.240&lt;br&gt;HTTP redirect / TLS SNI passthrough" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="topology-host">
+          <mxGeometry x="35" y="65" width="320" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-mgmt" value="VM 200 · management&lt;br&gt;192.168.77.200&lt;br&gt;Terraform / Ansible / kubectl" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#f4f6fa;strokeColor=#90a1b5;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="topology-host">
+          <mxGeometry x="35" y="230" width="320" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-router" value="VM 250 · Tailscale router&lt;br&gt;192.168.77.250&lt;br&gt;Subnet route + backup coordinator" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="topology-host">
+          <mxGeometry x="35" y="395" width="320" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-np" value="NONPROD  |  separate K3s cluster" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#e8f0fd;swimlaneFillColor=#ffffff;strokeColor=#608dc8;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="topology-host">
+          <mxGeometry x="450" y="70" width="560" height="475" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-npnodes" value="VMs 201–203 · .201 / .202 / .203&lt;br&gt;3 K3s servers · embedded etcd (quorum 2/3)&lt;br&gt;Flannel VXLAN + embedded NetworkPolicy" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e8f0fd;strokeColor=#608dc8;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="topology-np">
+          <mxGeometry x="20" y="60" width="520" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-npapps" value="app-dev: 1 frontend + 1 backend + 1 CNPG&lt;br&gt;app-stage: 1 frontend + 1 backend + 1 CNPG&lt;br&gt;Independent databases, Secrets and image pairs" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e6f4ed;strokeColor=#4e9a77;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="topology-np">
+          <mxGeometry x="20" y="205" width="520" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-npplat" value="Argo CD · monitoring · Jenkins + CI/publisher/observer&lt;br&gt;API VIP .11:6443 · Admin VIP .16&lt;br&gt;Public ingress: Traefik ServiceLB nodes" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="topology-np">
+          <mxGeometry x="20" y="350" width="520" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-pr" value="PROD  |  independent K3s cluster" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#eee8f8;swimlaneFillColor=#ffffff;strokeColor=#9274b7;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="topology-host">
+          <mxGeometry x="1090" y="70" width="560" height="475" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-prnodes" value="VMs 211–213 · .211 / .212 / .213&lt;br&gt;3 K3s servers · embedded etcd (quorum 2/3)&lt;br&gt;Flannel VXLAN + embedded NetworkPolicy" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eee8f8;strokeColor=#9274b7;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="topology-pr">
+          <mxGeometry x="20" y="60" width="520" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-prapps" value="app-prod: 2 frontend + 2 backend&lt;br&gt;CNPG: primary + asynchronous standby&lt;br&gt;Database instances on different nodes" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="topology-pr">
+          <mxGeometry x="20" y="205" width="520" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-prplat" value="Own Argo CD · own Prometheus / Grafana / Alertmanager&lt;br&gt;API VIP .12:6443 · Admin VIP .17&lt;br&gt;No PROD Jenkins controller" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="topology-pr">
+          <mxGeometry x="20" y="350" width="520" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-boundary" value="Availability boundary: host, power and local storage are shared. HAProxy and Tailscale each run on one VM.&lt;br&gt;API/VIP leadership, database replication and off-host backup address different failure modes." style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#fff2df;strokeColor=#c79142;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1015" width="1720" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-edge-users-cf" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="topology-users" target="topology-cloudflare">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="topology-edge-cf-edge" value="origin 80/443" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="topology-cloudflare" target="topology-edge">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="690" y="185" />
+              <mxPoint x="690" y="270" />
+              <mxPoint x="235" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="topology-edge-prod-origin" value="direct origin" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="topology-prodclient" target="topology-edge">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="835" y="285" />
+              <mxPoint x="260" y="285" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="topology-edge-edge-np" value="DEV / STAGE" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="topology-edge" target="topology-npnodes">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="430" y="417" />
+              <mxPoint x="430" y="477" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="topology-edge-edge-prod" value="PROD" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="topology-edge" target="topology-prnodes">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="445" y="417" />
+              <mxPoint x="445" y="335" />
+              <mxPoint x="1110" y="335" />
+              <mxPoint x="1110" y="477" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="topology-edge-np-r2" value="base backups + WAL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="topology-npapps" target="topology-r2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1090" y="622" />
+              <mxPoint x="1090" y="265" />
+              <mxPoint x="1590" y="265" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="topology-edge-prod-r2" value="base backups + WAL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="topology-prapps" target="topology-r2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1730" y="622" />
+              <mxPoint x="1730" y="270" />
+              <mxPoint x="1700" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="topology-placement" value="Storage: node-local local-path volumes on Proxmox-backed VM disks. R2 is outside the host failure domain. Private credentials and state stay outside Git." style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=13;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="450" y="890" width="1260" height="55" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="p2" name="2. NONPROD">
+    <mxGraphModel dx="1800" dy="1180" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1180" math="0" shadow="0" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="p2-title" value="LIORA / NONPROD CLUSTER" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=28;fontStyle=1;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="1720" height="43" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-subtitle" value="VMs 201–203 · DEV and STAGE own namespaces/data · API 192.168.77.11:6443 · Admin 192.168.77.16" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=14;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="76" width="1720" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-footer" value="LIORA  |  Solid: service/data flow   ·   Dashed: configuration/control   |   Source: ARCHITECTURE.md + repository manifests" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=11;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1128" width="1720" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-repo" value="Infrastructure repository · main&lt;br&gt;Kustomize base + environment overlays" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="430" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-argo" value="argocd namespace&lt;br&gt;Own root App-of-Apps + app-dev / app-stage&lt;br&gt;Application auto-sync + self-heal + prune&lt;br&gt;Root automatic pruning disabled" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e8f0fd;strokeColor=#608dc8;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="560" y="130" width="590" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-registry" value="GHCR&lt;br&gt;Pull existing frontend/backend digests" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1290" y="140" width="470" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-edge-gitops" value="read desired state" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p2-repo" target="p2-argo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-dev" value="app-dev  |  dev.liora.aprt.info" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#e6f4ed;swimlaneFillColor=#ffffff;strokeColor=#4e9a77;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="310" width="800" height="390" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-stage" value="app-stage  |  stage.liora.aprt.info" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#e8f0fd;swimlaneFillColor=#ffffff;strokeColor=#608dc8;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="920" y="310" width="840" height="390" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-devfe" value="frontend Service&lt;br&gt;1 frontend replica" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e6f4ed;strokeColor=#4e9a77;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p2-dev">
+          <mxGeometry x="25" y="65" width="210" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-devbe" value="backend Service&lt;br&gt;1 backend replica · 1 worker" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e6f4ed;strokeColor=#4e9a77;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p2-dev">
+          <mxGeometry x="280" y="65" width="245" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-devdb" value="db:5432 → CNPG primary&lt;br&gt;liora-db · PostgreSQL 16&lt;br&gt;1 instance · 2 GiB local-path PVC" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p2-dev">
+          <mxGeometry x="280" y="215" width="245" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-devconfig" value="Own ConfigMap + private Secrets&lt;br&gt;GHCR pull Secret · app-tls&lt;br&gt;prestart / Alembic before workloads" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p2-dev">
+          <mxGeometry x="555" y="65" width="220" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-devadminer" value="Adminer · native DB login&lt;br&gt;Private VIP port 8081" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#f4f6fa;strokeColor=#90a1b5;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p2-dev">
+          <mxGeometry x="25" y="235" width="210" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-edge-devapi" value="/api" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p2-devfe" target="p2-devbe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-edge-devsql" value="app / app_owner" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="p2-devbe" target="p2-devdb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-edge-devsync" value="reconcile" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="p2-argo" target="p2-devbe">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="855" y="270" />
+              <mxPoint x="442" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2-stagefe" value="frontend Service&lt;br&gt;1 frontend replica" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e8f0fd;strokeColor=#608dc8;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p2-stage">
+          <mxGeometry x="25" y="65" width="210" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-stagebe" value="backend Service&lt;br&gt;1 backend replica · 1 worker" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e8f0fd;strokeColor=#608dc8;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p2-stage">
+          <mxGeometry x="280" y="65" width="245" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-stagedb" value="db:5432 → CNPG primary&lt;br&gt;liora-db · PostgreSQL 16&lt;br&gt;1 instance · 2 GiB local-path PVC" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p2-stage">
+          <mxGeometry x="280" y="215" width="245" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-stageconfig" value="Own ConfigMap + private Secrets&lt;br&gt;GHCR pull Secret · app-tls&lt;br&gt;prestart / Alembic before workloads" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p2-stage">
+          <mxGeometry x="555" y="65" width="260" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-stageadminer" value="Adminer · native DB login&lt;br&gt;Private VIP port 8082" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#f4f6fa;strokeColor=#90a1b5;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p2-stage">
+          <mxGeometry x="25" y="235" width="210" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-edge-stageapi" value="/api" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p2-stagefe" target="p2-stagebe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-edge-stagesql" value="app / app_owner" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="p2-stagebe" target="p2-stagedb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-edge-stagesync" value="reconcile" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="p2-argo" target="p2-stagebe">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="890" y="270" />
+              <mxPoint x="1322" y="270" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p2-platform" value="CLUSTER PLATFORM  |  independent service ownership" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#f4f6fa;swimlaneFillColor=#ffffff;strokeColor=#90a1b5;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="755" width="1720" height="330" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-system" value="kube-system&lt;br&gt;CoreDNS · metrics-server · local-path&lt;br&gt;Traefik ServiceLB nodes .201–.203&lt;br&gt;API kube-vip + separate kube-vip-admin" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p2-platform">
+          <mxGeometry x="25" y="70" width="365" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-monitoring" value="monitoring&lt;br&gt;Own Prometheus + Alertmanager + Grafana&lt;br&gt;Node exporter + kube-state-metrics&lt;br&gt;Dashboards, rules and scoped monitors" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p2-platform">
+          <mxGeometry x="425" y="70" width="390" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-jenkins" value="CI namespaces&lt;br&gt;jenkins · jenkins-ci&lt;br&gt;jenkins-publisher · jenkins-acceptance&lt;br&gt;Persistent controller; separate trusted publisher" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p2-platform">
+          <mxGeometry x="850" y="70" width="400" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-operators" value="Database / certificates&lt;br&gt;cnpg-system: CNPG + Barman plugin&lt;br&gt;cert-manager: internal TLS + DNS-01&lt;br&gt;Platform installation outside app Argo roots" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p2-platform">
+          <mxGeometry x="1285" y="70" width="410" height="170" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="p3" name="3. PROD">
+    <mxGraphModel dx="1800" dy="1180" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1180" math="0" shadow="0" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="p3-title" value="LIORA / PROD CLUSTER" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=28;fontStyle=1;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="1720" height="43" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-subtitle" value="VMs 211–213 · app-prod · API 192.168.77.12:6443 · Admin 192.168.77.17 · independent credentials/control plane" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=14;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="76" width="1720" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-footer" value="LIORA  |  Solid: service/data flow   ·   Dashed: configuration/control   |   Source: ARCHITECTURE.md + repository manifests" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=11;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1128" width="1720" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-repo" value="Infrastructure repository · main&lt;br&gt;PROD image pair selected through manual promotion" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="490" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-argo" value="argocd namespace&lt;br&gt;Own root + app-prod&lt;br&gt;Auto-sync / self-heal · no automatic prune" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eee8f8;strokeColor=#9274b7;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="650" y="140" width="490" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-edge-gitops" value="read desired state" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p3-repo" target="p3-argo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-app" value="app-prod  |  https://liora.aprt.info" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#eee8f8;swimlaneFillColor=#ffffff;strokeColor=#9274b7;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="315" width="1720" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-ing" value="Traefik → app Ingress&lt;br&gt;TLS termination with app-tls&lt;br&gt;Public node pool .211 / .212 / .213" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eee8f8;strokeColor=#9274b7;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p3-app">
+          <mxGeometry x="30" y="85" width="320" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-fe" value="frontend Service&lt;br&gt;2 replicas" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p3-app">
+          <mxGeometry x="420" y="65" width="270" height="85" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-be" value="backend Service&lt;br&gt;2 replicas · 1 worker per Pod" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p3-app">
+          <mxGeometry x="420" y="225" width="270" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-db" value="db:5432&lt;br&gt;Primary selector" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p3-app">
+          <mxGeometry x="790" y="225" width="210" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-primary" value="CNPG primary&lt;br&gt;PostgreSQL 16&lt;br&gt;2 GiB local-path PVC" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p3-app">
+          <mxGeometry x="1095" y="70" width="245" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-standby" value="CNPG standby&lt;br&gt;Different K3s node&lt;br&gt;2 GiB local-path PVC" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p3-app">
+          <mxGeometry x="1415" y="70" width="245" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-config" value="Own ConfigMap / private Secrets / registry pull Secret&lt;br&gt;app database owner: app_owner&lt;br&gt;prestart / Alembic after CNPG readiness" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#fcecef;strokeColor=#c37889;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p3-app">
+          <mxGeometry x="1095" y="245" width="565" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-edge-web" value="/" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p3-ing" target="p3-fe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-edge-api" value="/api" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p3-ing" target="p3-be">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="425" y="530" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p3-edge-sql" value="SQL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p3-be" target="p3-db">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-edge-primary" value="primary endpoint" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p3-db" target="p3-primary">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1100" y="590" />
+              <mxPoint x="1100" y="435" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p3-edge-replication" value="async WAL stream" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p3-primary" target="p3-standby">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-platform" value="PROD PLATFORM  |  separate from NONPROD" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#f4f6fa;swimlaneFillColor=#ffffff;strokeColor=#90a1b5;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="795" width="1720" height="285" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-mon" value="Own monitoring&lt;br&gt;Prometheus · Alertmanager · Grafana&lt;br&gt;Slack: #liora-alerts-prod" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p3-platform">
+          <mxGeometry x="25" y="65" width="390" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-admin" value="Private administration&lt;br&gt;Argo :8080 · Grafana :3000&lt;br&gt;Prometheus :9090 · Alertmanager :9093&lt;br&gt;Adminer :8081 (HTTP)" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p3-platform">
+          <mxGeometry x="450" y="65" width="390" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-backup" value="CNPG / Barman plugin&lt;br&gt;Physical backups + WAL → R2 prod/&lt;br&gt;14-day recovery window" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p3-platform">
+          <mxGeometry x="875" y="65" width="390" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="p3-boundaries" value="Service boundaries&lt;br&gt;Separate API/admin VIP leaders&lt;br&gt;No Jenkins controller&lt;br&gt;No application HPA/PDB configured" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#fff2df;strokeColor=#c79142;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="p3-platform">
+          <mxGeometry x="1300" y="65" width="395" height="130" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="traffic" name="4. Routing and access">
+    <mxGraphModel dx="1800" dy="1180" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1180" math="0" shadow="0" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="traffic-title" value="LIORA / TRAFFIC AND ADMINISTRATIVE ACCESS" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=28;fontStyle=1;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="1720" height="43" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-subtitle" value="Public applications and private operational interfaces use separate paths and controller ownership" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=14;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="76" width="1720" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-footer" value="LIORA  |  Solid: service/data flow   ·   Dashed: configuration/control   |   Source: ARCHITECTURE.md + repository manifests" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=11;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1128" width="1720" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-pub" value="PUBLIC APPLICATION PATH" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#eaf0f8;swimlaneFillColor=#ffffff;strokeColor=#6c8eaf;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="1720" height="420" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-np" value="DEV / STAGE browser&lt;br&gt;Cloudflare proxy + Access" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e8f0fd;strokeColor=#608dc8;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="traffic-pub">
+          <mxGeometry x="25" y="70" width="280" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-prod" value="PROD browser&lt;br&gt;DNS-only resolution" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eee8f8;strokeColor=#9274b7;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="traffic-pub">
+          <mxGeometry x="25" y="240" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-nat" value="Proxmox public IPv4&lt;br&gt;TCP 80/443 DNAT&lt;br&gt;Application hostnames only" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#f4f6fa;strokeColor=#90a1b5;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="traffic-pub">
+          <mxGeometry x="385" y="145" width="270" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-edge" value="VM 240 · 192.168.77.240&lt;br&gt;HAProxy HTTP redirect / TLS SNI&lt;br&gt;Reject unknown/admin hostnames" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="traffic-pub">
+          <mxGeometry x="735" y="145" width="320" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-traefik" value="Traefik ServiceLB node pools&lt;br&gt;NONPROD .201–.203 · PROD .211–.213&lt;br&gt;TLS termination → app Services" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="traffic-pub">
+          <mxGeometry x="1140" y="145" width="515" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-edge-np-nat" value="origin HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="traffic-np" target="traffic-nat">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="390" y="260" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="traffic-edge-prod-nat" value="public origin" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="traffic-prod" target="traffic-nat">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="390" y="425" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="traffic-edge-nat-edge" value="80 / 443" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="traffic-nat" target="traffic-edge">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-edge-edge-ing" value="SNI passthrough" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="traffic-edge" target="traffic-traefik">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-cf-boundary" value="Cloudflare Access applies at the edge. Direct-origin access remains possible. API and Admin VIPs are not public ingress backends." style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=13;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="70" y="490" width="1650" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-private" value="PRIVATE ADMINISTRATIVE PATH  |  no public NAT / ingress / DNS" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#e6f4ed;swimlaneFillColor=#ffffff;strokeColor=#4e9a77;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="625" width="1720" height="450" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-admin" value="Trusted administrator&lt;br&gt;Tailscale client" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e6f4ed;strokeColor=#4e9a77;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="traffic-private">
+          <mxGeometry x="25" y="80" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-router" value="VM 250 · .250&lt;br&gt;Subnet route&lt;br&gt;192.168.77.0/24" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e6f4ed;strokeColor=#4e9a77;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="traffic-private">
+          <mxGeometry x="355" y="80" width="280" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-npvip" value="NONPROD Admin VIP · .16&lt;br&gt;Argo HTTPS :8080 · Grafana HTTP :3000&lt;br&gt;Prometheus :9090 · Alertmanager :9093&lt;br&gt;Adminer DEV :8081 / STAGE :8082&lt;br&gt;Jenkins HTTP :8085" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e8f0fd;strokeColor=#608dc8;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="traffic-private">
+          <mxGeometry x="730" y="65" width="445" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-prvip" value="PROD Admin VIP · .17&lt;br&gt;Argo HTTPS :8080 · Grafana HTTP :3000&lt;br&gt;Prometheus :9090 · Alertmanager :9093&lt;br&gt;Adminer HTTP :8081" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eee8f8;strokeColor=#9274b7;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="traffic-private">
+          <mxGeometry x="1230" y="65" width="445" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-edge-vpn" value="trusted subnet access" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="traffic-admin" target="traffic-router">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-edge-vpnnp" value="IP : port" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="traffic-router" target="traffic-npvip">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="traffic-edge-vpnprod" value="IP : port" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="1" source="traffic-router" target="traffic-prvip">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="715" y="805" />
+              <mxPoint x="715" y="900" />
+              <mxPoint x="1492" y="900" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="traffic-control" value="Control-plane access (separate): API VIP .11:6443 / .12:6443.&lt;br&gt;Admin Services: explicit class liora.aprt.info/admin-vip; NodePort allocation off; dedicated status-owner guard.&lt;br&gt;One administrative VIP leader per cluster; its lease is independent of the API VIP lease." style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#fff2df;strokeColor=#c79142;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="traffic-private">
+          <mxGeometry x="25" y="300" width="1650" height="100" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="p1" name="5. CI-CD delivery">
+    <mxGraphModel dx="1800" dy="1180" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1180" math="0" shadow="0" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="p1-title" value="LIORA / BUILD, PUBLICATION AND DEPLOYMENT" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=28;fontStyle=1;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="1720" height="43" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-subtitle" value="Application and infrastructure histories stay separate · Immutable frontend/backend digest pairs · No release rebuild" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=14;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="76" width="1720" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-footer" value="LIORA  |  Solid: service/data flow   ·   Dashed: configuration/control   |   Source: ARCHITECTURE.md + repository manifests" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=11;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1128" width="1720" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-app" value="Application repository&lt;br&gt;main merge / selected DEV branch&lt;br&gt;Jenkinsfiles + ci/ source" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="145" width="355" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-controller" value="Jenkins controller · NONPROD&lt;br&gt;Main SCM polling ≈ 2 minutes&lt;br&gt;Manual dev-build entry&lt;br&gt;0 controller executors" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e8f0fd;strokeColor=#608dc8;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="490" y="145" width="380" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-ci" value="host-ci agent + privileged DinD&lt;br&gt;Build + configured CI gates&lt;br&gt;Export exact image archives / evidence&lt;br&gt;No GitOps or registry-write credentials" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e8f0fd;strokeColor=#608dc8;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="975" y="145" width="410" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-art" value="Successful CI artifacts&lt;br&gt;Exact source SHA&lt;br&gt;Frontend/backend archives + attestation" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="145" width="310" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-edge-poll" value="SCM / operator" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1-app" target="p1-controller">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-edge-build" value="job allocation" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1-controller" target="p1-ci">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-edge-artifacts" value="archive" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1-ci" target="p1-art">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-publisher" value="Trusted registry-publisher agent&lt;br&gt;Pinned helpers + allowlisted source build&lt;br&gt;GHCR-write + GitOps App credentials&lt;br&gt;Serialized publication / promotion lock" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#fcecef;strokeColor=#c37889;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1030" y="365" width="460" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-ghcr" value="GHCR&lt;br&gt;Publish immutable SHA tags + digests&lt;br&gt;Existing images reused for promotion" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="45" y="380" width="400" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-edge-transfer" value="copy exact SUCCESS build" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1-art" target="p1-publisher">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1605" y="315" />
+              <mxPoint x="1260" y="315" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p1-edge-publish" value="push exact archives" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1-publisher" target="p1-ghcr">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-infra" value="Infrastructure main&lt;br&gt;STAGE kustomization + promotion record&lt;br&gt;Exact application-main recheck before write&lt;br&gt;Skip superseded builds; preserve concurrent edits" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="45" y="590" width="460" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-edge-write" value="direct STAGE digest commit" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1-publisher" target="p1-infra">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="980" y="435" />
+              <mxPoint x="980" y="550" />
+              <mxPoint x="275" y="550" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="p1-argo" value="NONPROD Argo CD&lt;br&gt;Automatic STAGE sync / self-heal" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e8f0fd;strokeColor=#608dc8;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="620" y="605" width="380" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-observer" value="Separate stage-observer agent&lt;br&gt;Read-only Argo / Deployment / Pod checks&lt;br&gt;Ready running pair + HTTPS smoke" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="590" width="445" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-edge-sync" value="GitOps" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1-infra" target="p1-argo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-edge-observe" value="observe deployed state" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="p1-argo" target="p1-observer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-receipt" value="Trusted writer stores acceptance.json&lt;br&gt;Application SHA + both digests&lt;br&gt;Infrastructure / Argo revisions + checks" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="825" width="445" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-edge-receipt" value="acceptance result" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="p1-observer" target="p1-receipt">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-dev" value="DEV: operator selects application branch&lt;br&gt;dev-build → trusted publish → DEV overlay&lt;br&gt;Argo deploys; independent of STAGE" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e6f4ed;strokeColor=#4e9a77;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="45" y="845" width="460" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-prod" value="PROD: manual release-tag promotion&lt;br&gt;Exact accepted STAGE pair; no rebuild&lt;br&gt;Workflow remains disabled (PROD_ENABLED=False)" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#fff2df;strokeColor=#c79142;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="620" y="845" width="390" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-edge-prod-gate" value="required acceptance gate" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="p1-receipt" target="p1-prod">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p1-serialization" value="STAGE lock covers publication, infrastructure update, observation and receipt. Failed acceptance blocks release qualification; rollback is manual." style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=14;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1035" width="1720" height="45" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="backups" name="6. Database backups">
+    <mxGraphModel dx="1800" dy="1180" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1180" math="0" shadow="0" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="backups-title" value="LIORA / PHYSICAL BACKUPS AND WAL ARCHIVING" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=28;fontStyle=1;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="1720" height="43" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-subtitle" value="CloudNativePG + supported Barman Cloud Plugin · lz4 compression · source archive and environment identities stay separate" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=14;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="76" width="1720" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-footer" value="LIORA  |  Solid: service/data flow   ·   Dashed: configuration/control   |   Source: ARCHITECTURE.md + repository manifests" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=11;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1128" width="1720" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-coordinator" value="VM 250 · systemd coordinator&lt;br&gt;02:00 UTC daily · local lock + global Lease/session fence&lt;br&gt;PROD → STAGE → DEV; next only after terminal state&lt;br&gt;Creates/observes Backup resources; no backup data relay" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="140" width="700" height="145" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-failure" value="Failure handling&lt;br&gt;Definitive failure: alert; continue; no automatic retry&lt;br&gt;Running/unknown: retain intent and block advancement&lt;br&gt;WAL archiving continues independently of this VM" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#fff2df;strokeColor=#c79142;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="950" y="140" width="810" height="145" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-DEV" value="DEV  |  app-dev" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#e6f4ed;swimlaneFillColor=#ffffff;strokeColor=#4e9a77;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="365" width="520" height="325" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-DEVdb" value="CNPG liora-db&lt;br&gt;1 instance&lt;br&gt;Barman plugin sidecar&lt;br&gt;archive_timeout = 300s" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="backups-DEV">
+          <mxGeometry x="25" y="70" width="470" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-DEVstore" value="ObjectStore r2-backup&lt;br&gt;Archive identity: liora-dev&lt;br&gt;s3://liora-backup/dev/&lt;br&gt;Recovery window: 7 days" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="backups-DEV">
+          <mxGeometry x="25" y="215" width="470" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-edge-DEVstore" value="archive identity" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="backups-DEVdb" target="backups-DEVstore">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-STAGE" value="STAGE  |  app-stage" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#e8f0fd;swimlaneFillColor=#ffffff;strokeColor=#608dc8;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="640" y="365" width="520" height="325" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-STAGEdb" value="CNPG liora-db&lt;br&gt;1 instance&lt;br&gt;Barman plugin sidecar&lt;br&gt;archive_timeout = 300s" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="backups-STAGE">
+          <mxGeometry x="25" y="70" width="470" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-STAGEstore" value="ObjectStore r2-backup&lt;br&gt;Archive identity: liora-stage&lt;br&gt;s3://liora-backup/stage/&lt;br&gt;Recovery window: 7 days" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="backups-STAGE">
+          <mxGeometry x="25" y="215" width="470" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-edge-STAGEstore" value="archive identity" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="backups-STAGEdb" target="backups-STAGEstore">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-PROD" value="PROD  |  app-prod" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#eee8f8;swimlaneFillColor=#ffffff;strokeColor=#9274b7;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="365" width="520" height="325" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-PRODdb" value="CNPG liora-db&lt;br&gt;Primary + asynchronous standby&lt;br&gt;Barman plugin sidecar&lt;br&gt;archive_timeout = 300s" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="backups-PROD">
+          <mxGeometry x="25" y="70" width="470" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-PRODstore" value="ObjectStore r2-backup&lt;br&gt;Archive identity: liora-prod&lt;br&gt;s3://liora-backup/prod/&lt;br&gt;Recovery window: 14 days" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="backups-PROD">
+          <mxGeometry x="25" y="215" width="470" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-edge-PRODstore" value="archive identity" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="backups-PRODdb" target="backups-PRODstore">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-edge-create-backup" value="scoped Backup API" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="backups-coordinator" target="backups-PRODdb">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="390" y="325" />
+              <mxPoint x="1500" y="325" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="backups-r2" value="PRIVATE R2 BUCKET · liora-backup&lt;br&gt;Physical base backups + continuous WAL (lz4)&lt;br&gt;One bucket-scoped S3 pair; prefixes separate data, not credentials&lt;br&gt;Barman retention preserves anchor backup + required WAL; no independent age-deletion rule" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="360" y="790" width="1080" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="backups-edge-DEVr2" value="direct data transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="backups-DEVstore" target="backups-r2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="300" y="750" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="backups-edge-STAGEr2" value="direct data transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="backups-STAGEstore" target="backups-r2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="900" y="750" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="backups-edge-PRODr2" value="direct data transfer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="backups-PRODstore" target="backups-r2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1500" y="750" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="backups-objectives" value="Recovery objectives (working K3s + R2 → usable app): PROD RPO ≤15 min / RTO ≤1 h; DEV/STAGE RPO ≤1 h / RTO ≤4 h.&lt;br&gt;Monthly isolated PITR checks run DEV → STAGE → PROD, one temporary instance at a time; they never switch live endpoints." style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#fff2df;strokeColor=#c79142;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="995" width="1720" height="95" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="monitoring" name="7. Monitoring">
+    <mxGraphModel dx="1800" dy="1180" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1180" math="0" shadow="0" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="monitoring-title" value="LIORA / MONITORING AND NOTIFICATION FLOWS" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=28;fontStyle=1;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="1720" height="43" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-subtitle" value="Independent cluster-local Prometheus, Alertmanager and Grafana · private endpoints · Git/Helm ownership" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=14;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="76" width="1720" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-footer" value="LIORA  |  Solid: service/data flow   ·   Dashed: configuration/control   |   Source: ARCHITECTURE.md + repository manifests" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=11;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1128" width="1720" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-nonprod" value="NONPROD  |  monitoring namespace" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#e8f0fd;swimlaneFillColor=#ffffff;strokeColor=#608dc8;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="145" width="810" height="700" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-nonprodsources" value="Cluster-local metrics&lt;br&gt;Node exporter / kube-state-metrics / kubelet&lt;br&gt;Argo CD / Traefik / CNPG / cert-manager" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="monitoring-nonprod">
+          <mxGeometry x="30" y="70" width="750" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-nonprodprom" value="Prometheus&lt;br&gt;Rules + target discovery&lt;br&gt;Own local-path metrics PVC" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="monitoring-nonprod">
+          <mxGeometry x="40" y="260" width="310" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-nonprodgraf" value="Grafana&lt;br&gt;Own cluster-local datasource&lt;br&gt;Dashboards provisioned from Git" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e8f0fd;strokeColor=#608dc8;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="monitoring-nonprod">
+          <mxGeometry x="430" y="260" width="340" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-nonprodam" value="Alertmanager&lt;br&gt;Cluster-scoped routes + recovery notifications&lt;br&gt;Own local-path state PVC" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e8f0fd;strokeColor=#608dc8;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="monitoring-nonprod">
+          <mxGeometry x="40" y="500" width="360" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-nonprodslack" value="Slack · FastAPI Monitoring&lt;br&gt;#liora-alerts-nonprod&lt;br&gt;Synthetic route: #liora-alerts-testing" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="monitoring-nonprod">
+          <mxGeometry x="460" y="500" width="310" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-edge-nonprodscrape" value="scrape" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="monitoring-nonprodsources" target="monitoring-nonprodprom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-edge-nonprodquery" value="PromQL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="monitoring-nonprodgraf" target="monitoring-nonprodprom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-edge-nonprodalerts" value="firing / resolved" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="monitoring-nonprodprom" target="monitoring-nonprodam">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-edge-nonprodnotify" value="HTTPS webhook" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="monitoring-nonprodam" target="monitoring-nonprodslack">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-prod" value="PROD  |  monitoring namespace" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#eee8f8;swimlaneFillColor=#ffffff;strokeColor=#9274b7;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="950" y="145" width="810" height="700" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-prodsources" value="Cluster-local metrics&lt;br&gt;Node exporter / kube-state-metrics / kubelet&lt;br&gt;Argo CD / Traefik / CNPG / cert-manager" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="monitoring-prod">
+          <mxGeometry x="30" y="70" width="750" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-prodprom" value="Prometheus&lt;br&gt;Rules + target discovery&lt;br&gt;Own local-path metrics PVC" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="monitoring-prod">
+          <mxGeometry x="40" y="260" width="310" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-prodgraf" value="Grafana&lt;br&gt;Own cluster-local datasource&lt;br&gt;Dashboards provisioned from Git" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eee8f8;strokeColor=#9274b7;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="monitoring-prod">
+          <mxGeometry x="430" y="260" width="340" height="115" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-prodam" value="Alertmanager&lt;br&gt;Cluster-scoped routes + recovery notifications&lt;br&gt;Own local-path state PVC" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eee8f8;strokeColor=#9274b7;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="monitoring-prod">
+          <mxGeometry x="40" y="500" width="360" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-prodslack" value="Slack · FastAPI Monitoring&lt;br&gt;#liora-alerts-prod&lt;br&gt;Synthetic route: #liora-alerts-testing" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="monitoring-prod">
+          <mxGeometry x="460" y="500" width="310" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-edge-prodscrape" value="scrape" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="monitoring-prodsources" target="monitoring-prodprom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-edge-prodquery" value="PromQL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="monitoring-prodgraf" target="monitoring-prodprom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-edge-prodalerts" value="firing / resolved" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="monitoring-prodprom" target="monitoring-prodam">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-edge-prodnotify" value="HTTPS webhook" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="monitoring-prodam" target="monitoring-prodslack">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-co" value="VM 250 backup metrics · private :9899&lt;br&gt;/metrics/nonprod and /metrics/prod&lt;br&gt;Coordinator/Backup observation + all-page R2 usage" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="360" y="915" width="1080" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="monitoring-edge-np-backups" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="monitoring-nonprodprom" target="monitoring-co">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="235" y="565" />
+              <mxPoint x="880" y="565" />
+              <mxPoint x="880" y="875" />
+              <mxPoint x="700" y="875" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="monitoring-edge-prod-backups" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="monitoring-prodprom" target="monitoring-co">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1145" y="565" />
+              <mxPoint x="920" y="565" />
+              <mxPoint x="920" y="875" />
+              <mxPoint x="1100" y="875" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="monitoring-rules" value="Coverage: node/workload health · target/metric absence · PVC bytes/inodes · PROD standby/lag · backup/WAL/coordinator · TLS expiry · delivery errors.&lt;br&gt;R2 usage warning &amp;gt;10 GiB is informational, not a quota. UptimeRobot checks public application availability/certificates independently." style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=13;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1040" width="1720" height="65" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="certificates" name="8. Certificates and secrets">
+    <mxGraphModel dx="1800" dy="1180" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1180" math="0" shadow="0" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="certificates-title" value="LIORA / CERTIFICATES AND PRIVATE CONFIGURATION" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=28;fontStyle=1;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="1720" height="43" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-subtitle" value="One cert-manager per cluster · public ACME DNS-01 and CNPG/plugin internal TLS · no edge certificate distribution" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=14;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="76" width="1720" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-footer" value="LIORA  |  Solid: service/data flow   ·   Dashed: configuration/control   |   Source: ARCHITECTURE.md + repository manifests" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=11;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1128" width="1720" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-nonprod" value="NONPROD CLUSTER" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#e8f0fd;swimlaneFillColor=#ffffff;strokeColor=#608dc8;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="145" width="810" height="450" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-nonprodcm" value="cert-manager&lt;br&gt;letsencrypt-cloudflare issuer&lt;br&gt;Exact application DNS-name solvers" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e8f0fd;strokeColor=#608dc8;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="certificates-nonprod">
+          <mxGeometry x="30" y="70" width="345" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-nonprodcert" value="Environment Certificate / app-tls Secret&lt;br&gt;dev.liora.aprt.info&lt;br&gt;stage.liora.aprt.info&lt;br&gt;Traefik terminates TLS using the Secret" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="certificates-nonprod">
+          <mxGeometry x="430" y="70" width="350" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-nonprodinternal" value="CNPG ↔ Barman plugin&lt;br&gt;Internal certificate resources / mutual TLS&lt;br&gt;Separate from public application Certificates" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="certificates-nonprod">
+          <mxGeometry x="30" y="285" width="750" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-edge-nonprodrenew" value="issue / renew" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="certificates-nonprodcm" target="certificates-nonprodcert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-edge-nonprodinternal" value="internal TLS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="certificates-nonprodcm" target="certificates-nonprodinternal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-prod" value="PROD CLUSTER" style="swimlane;html=1;whiteSpace=wrap;startSize=42;rounded=1;arcSize=10;fillColor=#eee8f8;swimlaneFillColor=#ffffff;strokeColor=#9274b7;fontColor=#203653;fontFamily=Helvetica;fontSize=17;fontStyle=1;align=left;spacingLeft=16;collapsible=0;" vertex="1" parent="1">
+          <mxGeometry x="950" y="145" width="810" height="450" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-prodcm" value="cert-manager&lt;br&gt;letsencrypt-cloudflare issuer&lt;br&gt;Exact application DNS-name solvers" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eee8f8;strokeColor=#9274b7;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="certificates-prod">
+          <mxGeometry x="30" y="70" width="345" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-prodcert" value="Environment Certificate / app-tls Secret&lt;br&gt;liora.aprt.info&lt;br&gt;Traefik terminates TLS using the Secret" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="certificates-prod">
+          <mxGeometry x="430" y="70" width="350" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-prodinternal" value="CNPG ↔ Barman plugin&lt;br&gt;Internal certificate resources / mutual TLS&lt;br&gt;Separate from public application Certificates" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#b0bfce;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="certificates-prod">
+          <mxGeometry x="30" y="285" width="750" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-edge-prodrenew" value="issue / renew" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="certificates-prodcm" target="certificates-prodcert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-edge-prodinternal" value="internal TLS" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="certificates-prodcm" target="certificates-prodinternal">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-cf" value="Cloudflare DNS API · aprt.info&lt;br&gt;Only the three application hostnames / their challenge records&lt;br&gt;Unrelated subdomains and routing records stay unchanged" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="710" width="810" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-le" value="Let&amp;#x27;s Encrypt&lt;br&gt;ACME DNS-01 validation&lt;br&gt;Separate cluster-local ACME account keys" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="950" y="710" width="810" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-edge-dns" value="DNS-01" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="certificates-nonprodcm" target="certificates-cf">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="55" y="275" />
+              <mxPoint x="55" y="655" />
+              <mxPoint x="445" y="655" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="certificates-edge-acme" value="ACME" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="certificates-prodcm" target="certificates-le">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="965" y="275" />
+              <mxPoint x="965" y="655" />
+              <mxPoint x="1355" y="655" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="certificates-edge-validation" value="validate challenge" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="certificates-le" target="certificates-cf">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-both-apis" value="Each cluster independently uses both APIs: ACME account/order operations and narrowly scoped Cloudflare DNS-01 challenge updates." style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=13;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="855" width="1720" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="certificates-private" value="PRIVATE OPERATOR INPUTS / RECOVERY KIT (outside Git)&lt;br&gt;Application/database/signing credentials · GHCR access · GitHub App keys · Cloudflare DNS token · R2 S3 pair · platform logins / Slack webhooks&lt;br&gt;Provision through reviewed helpers / Ansible / private operator procedures. Git stores references and fake examples, not live Secret payloads." style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#fcecef;strokeColor=#c37889;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="930" width="1720" height="140" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="recovery" name="9. Provisioning and recovery">
+    <mxGraphModel dx="1800" dy="1180" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1180" math="0" shadow="0" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="recovery-title" value="LIORA / PROVISIONING, STATE AND RECOVERY" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=28;fontStyle=1;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="25" width="1720" height="43" as="geometry" />
+        </mxCell>
+        <mxCell id="recovery-subtitle" value="Shared build procedures · fresh installation initializes empty databases · disaster recovery restores application PostgreSQL from R2" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=14;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="76" width="1720" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="recovery-footer" value="LIORA  |  Solid: service/data flow   ·   Dashed: configuration/control   |   Source: ARCHITECTURE.md + repository manifests" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=11;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1128" width="1720" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="recovery-repo" value="Infrastructure Git&lt;br&gt;Terraform / Ansible / Kustomize&lt;br&gt;Pinned components + operator procedures" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#eaf0f8;strokeColor=#6c8eaf;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="145" width="490" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="recovery-inputs" value="Protected off-host recovery kit&lt;br&gt;Credentials, keys, module state, platform config&lt;br&gt;Jenkins home archive + encryption material" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#fcecef;strokeColor=#c37889;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="650" y="145" width="490" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="recovery-mgmt" value="Trusted workstation → VM 200&lt;br&gt;Proxmox access + operator tools&lt;br&gt;Explicit cluster kubeconfigs" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#f4f6fa;strokeColor=#90a1b5;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="145" width="490" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="recovery-edge-source" value="reviewed configuration" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="recovery-repo" target="recovery-infra">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="285" y="435" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="recovery-edge-private" value="restore private inputs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="recovery-inputs" target="recovery-mgmt">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="recovery-infra" value="Rebuild infrastructure&lt;br&gt;Proxmox / vnet77 / VM template&lt;br&gt;VM 200 / VM 250 / VM 240&lt;br&gt;Two K3s clusters + pinned platform operators" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#f4f6fa;strokeColor=#90a1b5;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="650" y="365" width="490" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="recovery-edge-provision" value="Terraform / Ansible" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="recovery-mgmt" target="recovery-infra">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1515" y="310" />
+              <mxPoint x="895" y="310" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="recovery-fresh" value="FRESH APPLICATION DEPLOYMENT&lt;br&gt;Empty CNPG initdb → prestart / Alembic&lt;br&gt;Selected application image pair&lt;br&gt;No restored application rows/history" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e6f4ed;strokeColor=#4e9a77;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="635" width="490" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="recovery-restore" value="DISASTER RECOVERY&lt;br&gt;R2 physical base backup + WAL → selected UTC point&lt;br&gt;Restore database, credentials and compatible app images&lt;br&gt;Protect source archive; configure post-recovery archive" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#e5f2fa;strokeColor=#4c92b6;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="650" y="635" width="600" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="recovery-jenkins" value="JENKINS / PLATFORM STATE&lt;br&gt;Restore complete stopped-controller home&lt;br&gt;Retain users, jobs, history + credential keys&lt;br&gt;Hold execution until identity/configuration checks" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#fcecef;strokeColor=#c37889;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="635" width="440" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="recovery-edge-fresh-route" value="fresh route" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="recovery-infra" target="recovery-fresh">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="895" y="565" />
+              <mxPoint x="285" y="565" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="recovery-edge-restore-route" value="recovery route" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="recovery-infra" target="recovery-restore">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="recovery-edge-state-route" value="platform recovery" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;dashPattern=6 4;" edge="1" parent="1" source="recovery-infra" target="recovery-jenkins">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="895" y="555" />
+              <mxPoint x="1540" y="555" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="recovery-accept" value="APPLICATION RELEASE GATES&lt;br&gt;Database owner/schema + expected data · HTTPS / login / disposable CRUD · existing image digests&lt;br&gt;Argo resource ownership/diffs · PROD async standby placement · restore approved automation and backup protection" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#fff2df;strokeColor=#c79142;strokeWidth=1.5;fontColor=#203653;fontFamily=Helvetica;fontSize=14;spacing=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="320" y="910" width="1190" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="recovery-edge-fresh-checks" value="application checks" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="recovery-fresh" target="recovery-accept">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="285" y="850" />
+              <mxPoint x="600" y="850" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="recovery-edge-restore-checks" value="recovery checks" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeColor=#607b99;strokeWidth=1.7;fontFamily=Helvetica;fontSize=12;fontColor=#3e5877;labelBackgroundColor=#ffffff;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="recovery-restore" target="recovery-accept">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="recovery-coverage" value="Scope: R2 database archives do not contain Jenkins home, Terraform state or private credentials. Isolated PITR is a separate backup-verification exercise." style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontFamily=Helvetica;fontColor=#203653;fontSize=13;fontStyle=0;spacing=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="1070" width="1720" height="40" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
