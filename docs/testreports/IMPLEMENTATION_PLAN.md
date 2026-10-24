@@ -1093,8 +1093,10 @@ verification gap; the execution host's earlier connection refusal is historical.
 
 UptimeRobot monitors availability and certificates for `liora.aprt.info`,
 `dev.liora.aprt.info` and `stage.liora.aprt.info`, as confirmed by the owner.
-An additional internal certificate-expiry alert integration is not required for
-this checkpoint. Alert-delivery testing was not separately reported.
+An additional internal certificate-expiry integration was not required to close
+that checkpoint. It was subsequently added by the separately authorized alerting
+hardening below, complementing UptimeRobot. Real certificate-failure delivery
+was not induced; threshold, routing and transport checks are recorded separately.
 
 - [x] Obtain external verification of all three application HTTPS domains.
 - [x] Confirm external availability and certificate monitoring through UptimeRobot.
@@ -1106,6 +1108,22 @@ confirms Cloudflare protection/Access enabled for DEV/STAGE and removal of
 legacy VM100 administrative DNAT. The certificate migration itself did not
 perform those owner-managed changes; no fresh Access or NAT test is claimed
 by this documentation update.
+
+### Subsequent alerting hardening — 2026-10-24
+
+- [x] Review all 55 previously loaded definitions and fix coordinator namespace
+      ingestion and direct-event fingerprint identity without changing backups.
+- [x] Add capacity/accounting, scheduling, notification and public-certificate
+      diagnostics using existing metrics; retain independent critical signals.
+- [x] Deploy NONPROD then PROD; verify 81 rules, 60 healthy targets, no pending/
+      firing conditions, preserved Secret/PVC identities and unchanged timer.
+- [x] Record source/live audit commands, fixture/routing tests, results and further
+      proposals in [the hardening report](ALERTING_OPTIMIZATION_2026-10-24.md).
+
+These alerting checks do not complete delegated Phase 9 work or replace monthly
+PITR. Before another Terraform apply, compare the current VM memory fix/private
+overrides with the tracked 2048 MiB minimum default; VM policy was not changed
+by alerting work. Post-rollout Slack receipt is distinct from transport success.
 
 ### DHCP and static address alignment
 

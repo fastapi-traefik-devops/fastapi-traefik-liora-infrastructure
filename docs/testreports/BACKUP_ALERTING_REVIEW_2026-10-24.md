@@ -1,10 +1,15 @@
 # Backup alerting and Slack delivery review — 2026-10-24
 
-Status: **real Slack delivery confirmed; a live rule/label defect remains**.
+Status at the original review: **real Slack delivery confirmed; a live rule/label defect remained**.
 Read-only review at approximately 13:02–13:04 UTC, after
 [the blocked-cycle recovery](BACKUP_INCIDENT_2026-10-24.md).
 No alert rules, scrape settings, receivers, credentials, silences or live
 workloads were changed by this review.
+
+**Subsequent authorized remediation:** the label/identity issues were corrected,
+coverage and routing hardened, and both clusters live-verified later the same
+day. See [the implementation report](ALERTING_OPTIMIZATION_2026-10-24.md). The
+observations and unapplied proposals below retain their original review context.
 
 ## Verified operational facts
 

@@ -131,6 +131,10 @@ freshness or restoreability. Notification receipt does not replace PITR evidence
 
 ## Additional operational guards
 
+The current native inventory is **43 NONPROD / 38 PROD alert definitions**.
+All definitions, tests and live results are listed in the hardening report.
+
+
 Both clusters now define guards for:
 
 - Unexpected Kubernetes memory capacity below 7 GiB for the configured 8 GiB
@@ -174,6 +178,17 @@ the existing Helm release plus the native monitoring manifests, NONPROD first.
 Do not edit generated Alertmanager Secrets. Inspect live labels, loaded rules,
 errors, target health and notifications after rollout; never intentionally fail
 live databases just to exercise alerts. Preserve existing receiver Secrets/PVCs.
+
+Recheck the source/live inventory, rule evaluation, targets, active conditions
+and coordinator labels without reading Secrets:
+
+```sh
+bash scripts/local-python.sh scripts/kubernetes/audit-monitoring-alerts.py --output .local-work/private/alerting-audit.json
+```
+
+[Standalone read-only audit](../../scripts/kubernetes/audit-monitoring-alerts.py).
+A nonzero result calls for inspection; do not clear conditions just to make the
+check green. This does not validate actual Slack receipt or every failure mode.
 
 ## Slack application and secure credentials
 
