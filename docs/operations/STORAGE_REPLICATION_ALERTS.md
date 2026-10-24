@@ -30,9 +30,9 @@ retained claims without Running Pods are excluded. Missing, invalid or NaN
 telemetry is not evidence of sufficient free space. Missing KSM inventory inputs
 are covered separately by `MonitoringMetricsMissing`.
 
-Inspect the named node, its filesystem capacity/inodes, mounted PVCs, logs and
-retention before choosing remediation. Do not delete database files or unrelated
-PVCs. Increasing a local-path PVC request alone does not increase the backing
+- [ ] Inspect the named node, its filesystem capacity/inodes, mounted PVCs, logs and retention before choosing remediation.
+
+Do not delete database files or unrelated PVCs. Increasing a local-path PVC request alone does not increase the backing
 filesystem. Proxmox/ZFS pool capacity is a separate monitoring concern.
 
 ## PROD standby interpretation and response
@@ -50,9 +50,9 @@ separate availability rule remains essential. Missing or invalid query metrics
 raise a telemetry warning. These checks do not establish an RPO or verify backup
 restorability.
 
-Inspect CNPG Cluster status, Pod placement/events, receiver and primary streaming
-state, storage and resource pressure. Follow the database runbooks before any
-repair. Do not promote a standby, reset a database, or delete a PVC solely to
+- [ ] Inspect CNPG Cluster status, Pod placement/events, receiver and primary streaming state, storage and resource pressure.
+
+Follow the database runbooks before any repair. Do not promote a standby, reset a database, or delete a PVC solely to
 clear an alert.
 
 Critical pressure/lag inhibits only its corresponding warning for the same
@@ -62,7 +62,9 @@ alerts remain enabled. Test-purpose alerts are excluded from inhibition.
 
 ## Read-only verification
 
-Run from the infrastructure checkout with the existing administrator kubeconfigs:
+**Where:** Infrastructure checkout with explicit administrator kubeconfigs.
+
+- [ ] Run the read-only audit:
 
 ```sh
 bash scripts/local-python.sh scripts/kubernetes/audit-monitoring-alerts.py \
@@ -72,7 +74,6 @@ bash scripts/local-python.sh scripts/kubernetes/audit-monitoring-alerts.py \
 The audit compares Git rule specifications with cluster resources, checks loaded
 rule health and scrape targets, and records relevant metrics and active alerts.
 Its nonzero status requires investigation; it does not modify resources.
-Regression fixtures exercise pressure, missing metrics, idle replicas, receiver
-loss, role changes, lag and alert hold/recovery timing without disrupting live
-workloads. See `scripts/kubernetes/validate-slack-alerting.py` for pinned local
-validation tool arguments and the dated test report for execution evidence.
+Use [alert configuration validation](SLACK_ALERTING.md#2-validate-and-reconcile-configuration) before changing thresholds or inhibition.
+
+**Done when:** The affected filesystem or replica condition is corrected, telemetry is present, and the matching alert resolves.
