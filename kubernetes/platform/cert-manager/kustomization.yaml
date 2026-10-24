@@ -30,8 +30,7 @@ patches:
     \      memory: 256Mi\n- op: replace\n  path: /spec/template/spec/containers/0/args\n\
     \  value:\n  - --v=2\n  - --cluster-resource-namespace=$(POD_NAMESPACE)\n  - --leader-election-namespace=kube-system\n\
     \  - --acme-http01-solver-image=quay.io/jetstack/cert-manager-acmesolver:v1.21.2@sha256:699b40d622211ab7accad8a21b04c5fbaa1841ef7a12621e8de492dbe27b2503\n\
-    \  - --max-concurrent-challenges=60\n  - --controllers=certificates-trigger,certificates-issuing,certificates-key-manager,certificates-request-manager,certificates-readiness,certificates-revision-manager,certificaterequests-issuer-selfsigned,certificaterequests-approver,issuers,clusterissuers\n\
-    \  - --namespace=cnpg-system\n"
+    \  - --max-concurrent-challenges=60\n"
 - target:
     kind: Deployment
     name: cert-manager-webhook

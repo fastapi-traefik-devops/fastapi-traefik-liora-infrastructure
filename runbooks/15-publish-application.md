@@ -3,8 +3,9 @@
 **Where:** Reviewed infrastructure checkout and private management access.
 
 > [!IMPORTANT]
-> Run during authorized Phase 7. Preserve the independent cluster,
-> namespace, database, and GitOps boundaries established in Phases 3–6.
+> Preserve independent cluster, namespace, database and GitOps boundaries.
+> This procedure provisions routing and certificates; it does not restore
+> application data or change application image versions.
 
 ## 1. Inspect and provision the edge
 
@@ -32,7 +33,7 @@ ansible-playbook -i edge/haproxy/ansible/inventory.yml edge/haproxy/ansible/site
       identity is authorized on the new VM; a forwarded agent can avoid
       copying private keys onto VM 200.
 - [ ] Validate `/etc/haproxy/haproxy.cfg` with `haproxy -c -f`. Require
-      active `haproxy` and `liora-acme-webroot` services.
+      an active `haproxy` service. Certificate issuance runs in Kubernetes.
 
 > [!NOTE]
 > HAProxy accepts application Host/SNI names only. TLS passes through to
@@ -56,132 +57,108 @@ ansible-playbook -i edge/haproxy/ansible/inventory.yml edge/haproxy/ansible/site
 | `dev.liora.aprt.info` | Same public IPv4 |
 | `stage.liora.aprt.info` | Same public IPv4 |
 
-> [!NOTE]
-> The observed origin at Phase 7 discovery was `151.115.96.5`; it may
-> change during recovery. A scoped Cloudflare DNS token may be used from a
-> protected local file, or the operator may create the records. Recovery
-> schema version 1 has no Cloudflare token field.
+Do not change unrelated DNS records, proxy settings or Access rules. The
+DNS-01 issuer is restricted to the three exact names above. Its only DNS writes
+are their `_acme-challenge` TXT records, including cleanup after validation.
 
-> [!WARNING]
-> Do not add unsupported credentials to recovery YAML, commit tokens,
-> remove unrelated records, or silently change zone-wide SSL settings.
+## 3. Provision cluster-local certificate management
 
-## 3. Publish HTTP for ACME, preserving existing NAT
+These steps can run after the environment namespaces exist and before
+application deployment. An empty database and public HTTP routing are not
+prerequisites for DNS-01 issuance.
 
-- [ ] On Proxmox, inspect all of `/etc/nftables.d/custom77-nat.nft`, active
-      rules, public interface, and loader. Confirm no other service or rule
-      owns public ports 80/443.
-
-> [!NOTE]
-> The current public interface is `vmbr0`. VM 200 SSH and unrelated rules
-> must remain intact.
-
-- [ ] Copy the NAT helper to Proxmox and run it as root. Its default
-      publishes **only port 80**:
+- [ ] Use the existing pinned cert-manager installation in each cluster. On a
+      fresh cluster, install it before applying Certificate resources:
 
 ```sh
-python3 /path/to/configure-liora-edge-nat.py
+kubectl --kubeconfig="$HOME/.kube/config-dev-stage" apply -k kubernetes/platform/cert-manager
+kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n cert-manager rollout status deployment/cert-manager --timeout=180s
+kubectl --kubeconfig="$HOME/.kube/config-prod" apply -k kubernetes/platform/cert-manager
+kubectl --kubeconfig="$HOME/.kube/config-prod" -n cert-manager rollout status deployment/cert-manager --timeout=180s
 ```
 
-Standalone script: [Preserve and extend the project NAT table](../scripts/proxmox/configure-liora-edge-nat.py).
-The helper accepts the existing single-chain table layout, rejects conflicting
-port ownership, validates the candidate with `nft -c`, creates a timestamped
-backup and applies only the project table. It never flushes the complete ruleset.
-Reuse the existing `custom77-nat.service` loader; do not add a second loader.
+The same installation retains CNPG/Barman internal certificate management.
+Do not install another controller or restore the old namespace-only controller
+flags. Wait for the webhook and cainjector Deployments too on a fresh cluster.
 
-- [ ] Write a temporary non-secret file under
-      `/var/lib/liora-acme/.well-known/acme-challenge/` on the edge.
-      Check it from **outside** the private network for every hostname,
-      then remove it.
-- [ ] Confirm unknown HTTP Host names return 403.
-
-> [!WARNING]
-> Stop before requesting certificates if the external challenge check
-> fails. Private routing does not prove that ACME can reach the origin.
-
-## 4. Issue and install namespace-local certificates
-
-> [!NOTE]
-> The edge has Certbot and a loopback-only HTTP webroot service.
-
-- [ ] For each hostname with working public DNS and HTTP challenge path,
-      issue a **separate** certificate on the edge. Use the operator's real
-      ACME email or explicitly choose Certbot's no-email option:
+- [ ] Restore `recovery/cloudflare-dns-token` privately (mode `0600`) from the
+      encrypted recovery kit, or supply a new zone-scoped token. Use
+      `Zone:DNS:Edit` and `Zone:Zone:Read` for `aprt.info` only; never reuse R2 keys.
+- [ ] Validate and provision the token into `cert-manager` in both clusters:
 
 ```sh
-sudo certbot certonly --webroot --webroot-path /var/lib/liora-acme \
-  --cert-name liora-prod -d liora.aprt.info
+python3 scripts/kubernetes/bootstrap-cloudflare-dns.py --apply
 ```
 
-- [ ] Repeat with `liora-dev` / `dev.liora.aprt.info` and
-      `liora-stage` / `stage.liora.aprt.info`. Preserve certificate state
-      under root-only `/etc/letsencrypt`, outside Git.
+[Standalone credential provisioning helper](../scripts/kubernetes/bootstrap-cloudflare-dns.py).
 
-> [!TIP]
-> An untested network path may first use the ACME staging directory.
-> Staging certificates are not trusted acceptance evidence.
-
-- [ ] Transfer each certificate chain and private key through private SSH
-      to a protected operator-owned directory. Set private keys to mode 0600.
-- [ ] Install each namespace-local `app-tls` Secret using the matching files.
-      The helper checks SAN, validity, and matching keys. For PROD:
+- [ ] Apply the issuer independently in both clusters. Its account keys are
+      separate Kubernetes Secrets; after disaster recovery it can register fresh
+      ACME accounts and reissue certificates without the old edge private keys.
 
 ```sh
-python3 scripts/kubernetes/install-application-tls.py prod \
-  --certificate "$HOME/liora-tls/prod/fullchain.pem" \
-  --private-key "$HOME/liora-tls/prod/privkey.pem"
+kubectl --kubeconfig="$HOME/.kube/config-dev-stage" apply -k kubernetes/platform/public-certificates
+kubectl --kubeconfig="$HOME/.kube/config-dev-stage" wait clusterissuer/letsencrypt-cloudflare --for=condition=Ready --timeout=120s
+kubectl --kubeconfig="$HOME/.kube/config-prod" apply -k kubernetes/platform/public-certificates
+kubectl --kubeconfig="$HOME/.kube/config-prod" wait clusterissuer/letsencrypt-cloudflare --for=condition=Ready --timeout=120s
 ```
 
-[Standalone TLS installer](../scripts/kubernetes/install-application-tls.py).
-Repeat with `dev` and `stage` and their matching certificate files. The
-helper selects the intended kubeconfig, checks its API VIP, and changes only
-`app-tls` in the selected namespace.
+## 4. Issue, monitor and renew application certificates
 
-> [!WARNING]
-> Do not print private keys, expose them in process arguments, or commit
-> generated Secret manifests. This step does not rotate application or
-> database credentials.
-
-> [!NOTE]
-> Edge renewal alone does not update Kubernetes Secrets. VM 200 runs a daily
-> distribution timer using its SSH identity and explicit cluster kubeconfigs.
-> No private key needs copying between management hosts.
-
-- [ ] Verify the edge host key privately before unattended SSH. The helper
-      requires an existing known-hosts entry.
-- [ ] Install both helpers under
-      `/home/root-admin/liora-phase7-edge/certificate-sync/`, then install
-      and start the supplied systemd units:
+- [ ] Each application overlay includes its `certificate.yaml`. For a manual
+      fresh deployment the render splitter places it in `config-storage.yaml`;
+      Argo CD manages it after application adoption. The Argo projects allow
+      namespaced Certificate resources but do not grant cluster-wide writes.
+- [ ] For each environment, wait for its namespace-local Certificate:
 
 ```sh
-sudo install -m 0644 edge/haproxy/liora-certificate-sync.service /etc/systemd/system/
-sudo install -m 0644 edge/haproxy/liora-certificate-sync.timer /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now liora-certificate-sync.timer
-sudo systemctl start liora-certificate-sync.service
-sudo systemctl show liora-certificate-sync.service -p Result -p ExecMainStatus
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" wait certificate/app-tls --for=condition=Ready --timeout=300s
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" get certificates,certificaterequests,orders,challenges
 ```
 
-- [ ] Confirm `Result=success`, `ExecMainStatus=0`, an enabled timer,
-      matching served certificate serials, and a successful
-      `certbot renew --dry-run --no-random-sleep-on-renew` for each
-      production certificate. Monitor timer runs and certificate expiry.
+Traefik keeps using `app-tls`. Keys rotate on renewal; cert-manager updates the
+Secret without restarting application Pods. Inspect `status.renewalTime`,
+`status.notAfter`, Ready/Issuing conditions and Order/Challenge events. DNS
+propagation can take minutes. Do not delete working TLS Secrets to retry or run
+legacy Secret distribution alongside cert-manager.
 
-> [!NOTE]
-> Keep [the TLS installer](../scripts/kubernetes/install-application-tls.py)
-> beside [the synchronization helper](../scripts/kubernetes/sync-edge-certificates.py).
-> The service uses system Python with `cryptography`. It pulls only the
-> three fixed certificate paths, uses private temporary storage, and removes
-> copies after installation. The management account's existing sudo access
-> on the edge can be narrowed later. A successful issuance/distribution
-> test does not prove a later unattended renewal.
+- [ ] Verify the exact issued certificate, trust chain and hostname at all
+      ingress nodes and HAProxy (example DEV):
+
+```sh
+bash scripts/local-python.sh scripts/kubernetes/verify-public-certificate.py dev --output .local-work/tls/dev.json
+```
+
+[Standalone TLS verification helper](../scripts/kubernetes/verify-public-certificate.py).
+Add `--public` from a network with a working public path. Without that flag the
+check establishes trusted private ingress/edge serving, not Internet reachability.
+Repeat with STAGE and PROD. Store results with the operational incident/exercise.
+
+- [ ] To test renewal deliberately, install the checksum-pinned CLI and renew
+      only the selected application Certificate (example NONPROD DEV):
+
+```sh
+bash scripts/kubernetes/install-cmctl.sh
+.local-work/tools/cmctl-v2.6.1 --kubeconfig="$HOME/.kube/config-dev-stage" renew app-tls -n app-dev
+```
+
+[Standalone pinned CLI installer](../scripts/kubernetes/install-cmctl.sh).
+Record the prior revision/serial, wait for a larger revision and Ready condition,
+then repeat certificate verification and application acceptance. A Ready condition
+alone can remain true for the old certificate during renewal. Do not use
+`--all` or renew unrelated CNPG certificates as part of this exercise.
+
+If issuance/renewal fails, inspect DNS-01 events, token validity/scope,
+Cloudflare and ACME API access and DNS propagation. Preserve the currently
+served Secret while fixing the cause. Changing a token uses the provisioning
+helper; do not print Secret data or API responses. Alerting integration specific
+to public certificate expiry is not implemented by this procedure.
 
 ## 5. Align HTTPS configuration and publish 443
 
 - [ ] Keep STAGE/PROD HTTPS origins and TLS references. Change DEV's
-      origin/CORS to `https://dev.liora.aprt.info`, retain its documented
-      environment setting and single-worker command, and add a DEV
-      `app-tls` reference.
+      origin/CORS to `https://dev.liora.aprt.info` where needed; retain its
+      documented environment setting, single-worker command and `app-tls` reference.
 - [ ] Publish the reviewed infrastructure change and confirm Argo CD
       reconciliation. Keep administrative Services private, with no ingress.
 
@@ -201,7 +178,7 @@ python3 /path/to/configure-liora-edge-nat.py --https
 
 > [!NOTE]
 > [The NAT helper](../scripts/proxmox/configure-liora-edge-nat.py) leaves HTTP
-> for challenge serving and HTTPS redirection. A syntax check and enabled
+> for HTTPS redirection. A syntax check and enabled
 > loader do not establish reboot persistence; verify that in a separately
 > scheduled reboot.
 
@@ -258,15 +235,18 @@ bash scripts/local-python.sh scripts/kubernetes/verify-application-ui.py
 > configuration or prior reviewed ingress commit. Do not flush host rules,
 > delete a namespace/PVC, or replace unrelated DNS records.
 
-### Close out Phase 7
+### Historical migration and recovery
 
-- [ ] Record actual results and pending checks in
-      `docs/testreports/PHASE7_REPORT.md`.
+The one-time edge Certbot/distribution handover, preserved private rollback
+artifacts and execution evidence belong in
+[the Phase 11 report](../docs/testreports/PHASE11_REPORT.md). Do not install the
+legacy distribution timer on fresh deployments or disaster recovery.
 
-> [!NOTE]
-> Stop before Phase 8. Monitoring and database replacement are separate
-> phases.
+Rebuild infrastructure with the [recovery navigator](../01-Disaster_recovery.md),
+then provision the DNS token/issuer and reissue certificates using this runbook.
+Application database restoration is a separate recovery step; certificate
+readiness does not establish restored data or application acceptance.
 
 References: [K3s ServiceLB](https://docs.k3s.io/networking/networking-services),
 [ACME challenge types](https://letsencrypt.org/docs/challenge-types/), and
-[Certbot webroot and renewal](https://eff-certbot.readthedocs.io/en/stable/using.html).
+[cert-manager Cloudflare DNS-01](https://cert-manager.io/docs/configuration/acme/dns01/cloudflare/).

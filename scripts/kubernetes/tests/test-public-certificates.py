@@ -19,11 +19,25 @@ SPEC.loader.exec_module(MODULE)
 class CertificateTests(unittest.TestCase):
     def test_independent_certificates_use_existing_secret_and_exact_host(self):
         for env in ['dev', 'stage', 'prod']:
-            obj = yaml.safe_load((ROOT / 'kubernetes/platform/public-certificates/certificates' / (env + '.yaml')).read_text())
+            obj = yaml.safe_load((ROOT / 'kubernetes/apps/liora/overlays' / env / 'certificate.yaml').read_text())
             self.assertEqual(obj['metadata']['namespace'], 'app-' + env)
             self.assertEqual(obj['spec']['secretName'], 'app-tls')
             self.assertEqual(obj['spec']['dnsNames'], ['liora.aprt.info' if env == 'prod' else env + '.liora.aprt.info'])
             self.assertEqual(obj['spec']['privateKey']['rotationPolicy'], 'Always')
+
+    def test_dns_solver_is_restricted_to_exact_application_names(self):
+        obj = yaml.safe_load((ROOT / 'kubernetes/platform/public-certificates/issuer.yaml').read_text())
+        solvers = obj['spec']['acme']['solvers']
+        self.assertEqual(len(solvers), 1)
+        self.assertEqual(solvers[0]['selector'], {'dnsNames': ['dev.liora.aprt.info', 'stage.liora.aprt.info', 'liora.aprt.info']})
+
+    def test_controller_supports_acme_and_existing_internal_tls(self):
+        import subprocess
+        objects = yaml.safe_load_all(subprocess.check_output(['kubectl', 'kustomize', str(ROOT / 'kubernetes/platform/cert-manager')]))
+        controller = next(x for x in objects if x.get('kind') == 'Deployment' and x['metadata']['name'] == 'cert-manager')
+        args = controller['spec']['template']['spec']['containers'][0]['args']
+        self.assertFalse(any(x.startswith(('--controllers=', '--namespace=')) for x in args))
+        self.assertIn('--cluster-resource-namespace=$(POD_NAMESPACE)', args)
 
     def test_secret_and_api_errors_do_not_leak_token(self):
         fixture = 'fixture-DNS-token-never-print-123456789'

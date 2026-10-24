@@ -268,5 +268,6 @@ this file in the encrypted recovery kit. Validate it with
 the YAML/environment schema checked by `check_credentials.sh`.
 
 See [certificate preparation and activation](../kubernetes/platform/public-certificates/README.md).
-Live DNS-01 issuance and renewal remain pending until recorded in
+Use [runbook 15](../runbooks/15-publish-application.md) to reissue certificates
+after rebuilding clusters. Historical migration and renewal evidence is in
 [the Phase 11 report](../docs/testreports/PHASE11_REPORT.md).

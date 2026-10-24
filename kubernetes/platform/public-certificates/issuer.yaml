@@ -9,8 +9,10 @@ spec:
       name: letsencrypt-cloudflare-account
     solvers:
     - selector:
-        dnsZones:
-        - aprt.info
+        dnsNames:
+        - dev.liora.aprt.info
+        - stage.liora.aprt.info
+        - liora.aprt.info
       dns01:
         cloudflare:
           apiTokenSecretRef:

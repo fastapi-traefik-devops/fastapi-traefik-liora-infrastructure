@@ -90,7 +90,9 @@ at the Cloudflare edge; the direct-origin path is not restricted to Cloudflare.
 Each cluster has its own cert-manager installation and issuer configuration.
 Let's Encrypt issues application certificates through ACME DNS-01 validation.
 cert-manager creates the required TXT records through the Cloudflare DNS API
-and renews certificates into the environment's TLS Secret.
+and renews certificates into the environment's TLS Secret. Issuer solvers select
+only `dev.liora.aprt.info`, `stage.liora.aprt.info` and `liora.aprt.info`; unrelated
+subdomains and application routing records remain outside this lifecycle.
 
 Cloudflare credentials are scoped to the required zone and permissions. Private
 recovery inputs provision those credentials into Kubernetes. Each TLS Secret

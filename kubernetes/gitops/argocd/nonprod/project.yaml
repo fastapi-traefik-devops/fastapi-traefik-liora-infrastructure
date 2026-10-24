@@ -30,3 +30,5 @@ spec:
     kind: Cluster
   - group: barmancloud.cnpg.io
     kind: ObjectStore
+  - group: cert-manager.io
+    kind: Certificate
