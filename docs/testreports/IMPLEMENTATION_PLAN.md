@@ -1,18 +1,23 @@
 # Kubernetes implementation plan
 
-Implementation update: **2026-10-23**. Phases 0–7 are complete within their
-recorded acceptance boundaries. Phase 8 is deployed in both clusters and local
-functional/browser checks passed, including the NONPROD Jenkins foundation.
-The approved status guard resolved the ServiceLB incompatibility. The operator
-confirmed that all interfaces work through Tailscale and all passwords succeed
-on 2026-10-22. **Phase 8 is complete.**
-See [the Phase 8 report](PHASE8_REPORT.md).
-Phase 9's minimal main CI/publication/STAGE cycle remains active, with its
-separately delegated Jenkins backlog open. **Phase 10.1 fresh CNPG installation
-is complete** in DEV/STAGE/PROD; existing-image application checks passed and
-approved automation was restored. Full Jenkins CI/CD regression was not rerun.
-**R2 physical backup/WAL archiving and isolated restoration are pending** in
-10.2; no backup or recovery readiness is claimed.
+Documentation alignment update: **2026-10-24**. Permanent procedures now
+separate [fresh deployment](../../00-Installation_from-0.md),
+[disaster recovery](../../01-Disaster_recovery.md) and
+[backup/recovery operations](../../runbooks/19-cnpg-r2-backup-pitr.md).
+Historical transitional commands/evidence remain in phase reports and their
+[procedure archives](OPERATIONAL_DOCUMENTATION_REVIEW_2026-10-24.md#historical-procedure-preservation).
+
+Phases 0–8, fresh CNPG installation (10.1), R2 backups/isolated PITR (10.2)
+and the defined Phase 11 certificate/DHCP scope have completed checkpoints.
+Phase 9 remains open. The latest Jenkins review observed automatic STAGE
+acceptance and manual DEV publication running; older Phase 9 sections below
+retain their original checkpoint statements. Restart behavior, scheduling-policy
+alignment, remaining acceptance/failure checks, manual PROD and rollback work
+are not closed by this documentation update.
+
+The [recovery capability register](OPERATIONAL_DOCUMENTATION_REVIEW_2026-10-24.md#recovery-capability-register)
+separates implemented isolated PITR from full live disaster restoration, generic
+Jenkins backup/restore, etcd/off-host kit work and full-system recovery exercises.
 
 ## Target architecture
 
@@ -30,7 +35,7 @@ data. PROD runs on its own cluster.
 | Private administration | Admin VIP `192.168.77.16`; services-only kube-vip | Admin VIP `192.168.77.17`; independent services-only kube-vip |
 | Application | `app-dev` and `app-stage` namespaces | `app-prod` namespace |
 | GitOps | Own Argo CD, AppProject, and root Application | Independent Argo CD, AppProject, and root Application |
-| Sync | Reviewed PR, then auto-sync, self-heal, and reviewed pruning | Reviewed PR, then auto-sync and self-heal; no automatic pruning |
+| Sync | STAGE direct digest commits after CI; DEV manual; auto-sync/self-heal and reviewed pruning | Manual reviewed promotion after acceptance; auto-sync/self-heal, no automatic pruning |
 | Secrets | Private recovery inputs; Ansible/helpers/manual provisioning; GHCR credentials per namespace | Independent private PROD inputs and Secret provisioning |
 | Data | Separate DEV and STAGE databases | PROD database with tested backups and restore |
 | Monitoring | Cluster monitoring and administrative Grafana | Separate monitoring and controlled access to PROD metrics |
@@ -50,7 +55,8 @@ The database platform is CloudNativePG: DEV/STAGE each use one instance and
 PROD uses two asynchronously replicated instances on distinct nodes. Phase 10.1
 replaces the initial PostgreSQL Deployments with fresh databases under explicit
 disposable-data authorization. R2 physical backup/WAL archiving and isolated
-restoration remain the separate next database task. The original kube-vip
+restoration are implemented in 10.2; continuing operations and full live recovery
+are tracked separately. The original kube-vip
 DaemonSets serve the API only, and K3s ServiceLB serves public Traefik. Independent
 services-only DaemonSets now serve administrative Services in each cluster;
 do not repurpose the API DaemonSets or change public ingress ownership.
@@ -368,7 +374,7 @@ changed. A bootstrap length guard now prevents that error.
 At Phase 3 completion the DEV marker was recorded in
 `/home/root-admin/liora-render/dev/acceptance.json` for Phase 4 isolation checks.
 All synthetic markers were subsequently removed, and old evidence was archived;
-see [local workspace guidance](../LOCAL_WORKSPACE.md). Public routing and
+see [local workspace guidance](../../runbooks/11-install-management-tools.md#operator-python-and-browser-tools). Public routing and
 trusted TLS were unverified at that point and were completed in Phase 7.
 At Phase 3 completion STAGE/PROD application workloads were not deployed.
 STAGE was subsequently deployed and verified in Phase 4 below.
@@ -730,6 +736,14 @@ Synced/Healthy, running pair and STAGE URL. Do not call that automated acceptanc
       folder indexing remain disabled.
 
 ### Next pending work — execution order
+
+**2026-10-24 reconciliation:** automatic STAGE receipts and manual DEV are
+present in live builds; treat items 2–4 below as completion/coverage review,
+not instructions to build duplicate components. Reconcile the actual nightly/
+indexing/PR-job settings with the approved policy. Preserve the current state
+until that review is authorized; do not restore a historical main-only snapshot
+as a side effect of documentation maintenance. See the
+[current documentation review](OPERATIONAL_DOCUMENTATION_REVIEW_2026-10-24.md#jenkins-documentation-boundary).
 
 The following work remains in Phase 9. The initial cycle is complete; the whole
 phase remains open. This documentation update does not activate any pending
@@ -1157,3 +1171,16 @@ retired, and the documented DHCP allocation no longer overlaps static addresses.
 
 This completes item 2 of the alerting hardening report's proposed improvements.
 It does not replace PITR verification or complete pending Phase 9 work.
+
+## Operational documentation and full recovery completion
+
+- [x] Separate permanent fresh deployment, disaster recovery and backup/PITR operating procedures.
+- [x] Preserve migration-specific commands and evidence under `docs/testreports/`; retain operator scripts.
+- [x] Remove historical status/educational framing from operational runbooks and desired architecture.
+- [ ] Exercise the documented live CNPG restore/cutover route and complete its operator tooling: selected target, source archive protection, stable endpoint, Argo ownership, post-recovery archive identity and application checks.
+- [ ] Complete generic current-K3s Jenkins stopped-home backup/restore and a reproducible fresh agent/job bootstrap independent of one-time transfer markers.
+- [ ] Complete project-specific off-host etcd/state/private-kit capture/retrieval and a full-system disaster recovery exercise.
+- [ ] Record monitoring history coverage explicitly; PostgreSQL R2 backups do not restore Prometheus/Alertmanager volume data.
+
+These remaining capabilities are not inferred from successful isolated PITR,
+controller migration, or this documentation-only rewrite.

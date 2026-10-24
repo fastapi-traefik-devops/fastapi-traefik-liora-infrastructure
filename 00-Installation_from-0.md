@@ -1,52 +1,57 @@
-# 00 — New project installation from scratch
+# Fresh deployment
 
-## Before you start
+**Result:** Infrastructure, platform services and application environments with empty databases.
+**Data rule:** Do not restore application rows or Jenkins history on this route.
 
-- [ ] Obtain a provider-supplied bare-metal server with Proxmox, root access through SSH or the provider console, and its current public IPv4 address.
-- [ ] Prepare a trusted PC/laptop with an SSH client and access to this repository.
-- [ ] Prepare an encrypted credential archive or a secure place to create one. Keep its password separately.
+## 1. Prepare the operator and host
 
-Each checklist link opens one local runbook. Complete the linked actions in order.
+**Where:** Trusted administrator workstation and Proxmox console.
 
-## Steps 1–6 — Work from your PC/laptop
+- [ ] Obtain provider console/root access and record the current public IPv4 address.
+- [ ] Prepare the reviewed repository revision and protected credential storage.
+- [ ] [Check Proxmox VE 9](runbooks/00-check-proxmox-9.md).
+- [ ] [Create the private VNet](runbooks/01-create-private-vnet.md).
+- [ ] [Prepare the administrator SSH identity](runbooks/02-prepare-ssh-identity.md).
+- [ ] [Create Debian template 9013](runbooks/03-create-debian13-template.md).
+- [ ] [Create VM 200](runbooks/04-create-management-vm-200.md).
+- [ ] [Configure its SSH DNAT](runbooks/05-configure-vm200-ssh-dnat.md).
 
-VM 200 does not exist yet. Use your PC/laptop to administer the Proxmox host.
+## 2. Build management access and clusters
 
-1. **Confirm the Proxmox baseline.** Require Proxmox VE 9 and use nftables for custom host NAT rules.
-   - [ ] [Check Proxmox 9](runbooks/00-check-proxmox-9.md).
-2. **Create the private network.** Configure `vnet77`, `192.168.77.0/24`, gateway `192.168.77.1`, and outbound SNAT.
-   - [ ] [Create the private VNet](runbooks/01-create-private-vnet.md).
-3. **Prepare an administrator SSH key.** Generate a new pair on the trusted client; keep the private key in the local, Git-ignored `recovery/` directory.
-   - [ ] [Prepare SSH identity](runbooks/02-prepare-ssh-identity.md).
-4. **Create the Debian 13 template.** Use VM ID **9013** and select the host's VM disk storage before running the script.
-   - [ ] [Create template 9013](runbooks/03-create-debian13-template.md).
-5. **Create the management VM.** Clone template 9013 to **VM 200** at `192.168.77.200/24`; inject the public key through Cloud-Init.
-   - [ ] [Create management VM 200](runbooks/04-create-management-vm-200.md).
-6. **Enable initial SSH access.** Forward public TCP port **22200** to `192.168.77.200:22` with persistent nftables DNAT.
-   - [ ] [Configure VM 200 SSH DNAT](runbooks/05-configure-vm200-ssh-dnat.md).
+**Where:** VM 200, repository root unless the linked procedure says otherwise.
 
-## Handoff after step 6 — Move to management VM 200
+- [ ] [Bootstrap the management checkout](runbooks/06-bootstrap-management-checkout.md).
+- [ ] [Install management tools](runbooks/11-install-management-tools.md).
+- [ ] [Configure Proxmox API access](runbooks/12-create-proxmox-api-token.md).
+- [ ] Prepare private recovery inputs using the [schema](recovery/README.md).
+- [ ] [Provision Tailscale VM 250 and approve the subnet route](runbooks/07-tailscale-private-access.md).
+- [ ] [Provision cluster VMs](runbooks/08-provision-cluster-vms.md).
+- [ ] [Install both K3s clusters](runbooks/09-install-k3s-clusters.md).
 
-Run all subsequent infrastructure commands on **VM 200**. Use your PC/laptop as the SSH client. A runbook explicitly identifies checks that must run elsewhere, such as VPN connectivity or public domain resolution.
+## 3. Prepare platform dependencies
 
-7. **Prepare VM 200 as the control machine.** Connect over SSH, clone this repository, install tools, and prepare Proxmox API access.
-   - [ ] [Bootstrap the management checkout](runbooks/06-bootstrap-management-checkout.md).
-   - [ ] [Install Ansible and Terraform](runbooks/11-install-management-tools.md).
-   - [ ] [Prepare Proxmox API access](runbooks/12-create-proxmox-api-token.md).
-8. **Provide private VPN access.** Provision VM 250 and advertise the private subnet.
-   - [ ] [Provision Tailscale access](runbooks/07-tailscale-private-access.md).
-9. **Build the two Kubernetes clusters.** Prepare dev/stage VMs **201–203** and prod VMs **211–213**, then install K3s.
-   - [ ] [Provision the cluster VMs](runbooks/08-provision-cluster-vms.md).
-   - [ ] [Install K3s on both clusters](runbooks/09-install-k3s-clusters.md).
-10. **Deploy and verify the application manifests.** Use the assigned cluster and isolated namespace for each environment; complete this step only when its deployment phase is authorized.
-    - [ ] [Deploy the application manifests](runbooks/13-deploy-application-manifests.md).
+- [ ] Prepare the operator Python/browser tools using the [workspace guide](runbooks/11-install-management-tools.md#operator-python-and-browser-tools).
+- [ ] Create `app-dev` and `app-stage` namespaces on NONPROD and `app-prod` on PROD using [runbook 13, section 2](runbooks/13-deploy-application-manifests.md#2-prepare-namespace-credentials-and-storage).
+- [ ] Install the CNPG operator in both clusters using [runbook 18, section 1](runbooks/18-cloudnative-pg.md#1-install-the-operator). Do not create database Clusters yet.
+- [ ] Install cert-manager/Barman and provision R2 access using [runbook 19, section 1](runbooks/19-cnpg-r2-backup-pitr.md#1-install-backup-dependencies-and-access).
+- [ ] Provision VM 240, application DNS and certificate issuers using [runbook 15, sections 1–3](runbooks/15-publish-application.md#1-inspect-and-provision-the-edge).
 
-11. **Install separate GitOps controllers.** After manual application acceptance, review and adopt each cluster's deployment independently.
-    - [ ] [Install Argo CD and adopt the application](runbooks/14-install-argocd.md).
+## 4. Initialize application environments
 
-12. **Publish the application over HTTPS.** Configure the dedicated edge, preserve host forwarding rules, and verify all three domains and certificates.
-    - [ ] [Publish application routing and TLS](runbooks/15-publish-application.md).
+- [ ] Deploy DEV using [runbook 13](runbooks/13-deploy-application-manifests.md): private inputs → CNPG credentials → empty database → prestart/Alembic → application workloads.
+- [ ] Complete certificate issuance, edge configuration and HTTPS serving using [runbook 15](runbooks/15-publish-application.md).
+- [ ] Require DEV login and disposable create/read/update/delete.
+- [ ] Repeat for STAGE, then PROD, preserving environment separation and the selected image digest pairs.
+- [ ] Require two PROD database instances on different nodes with asynchronous streaming replication.
 
-13. **Establish private operational access and monitoring.** Apply the approved status guard before Admin VIP Services, verify NONPROD before PROD, then install the isolated Jenkins foundation.
-    - [ ] [Private platform access and monitoring](runbooks/16-private-platform-access.md).
-    - Preserve monitoring/Jenkins PVCs and private credential inputs; fresh manifests do not restore their data. Working CI migration is a separate step.
+## 5. Establish continuous operation
+
+- [ ] [Install Argo CD and adopt the environment resources](runbooks/14-install-argocd.md), NONPROD before PROD.
+- [ ] [Configure private Admin VIPs and monitoring](runbooks/16-private-platform-access.md).
+- [ ] [Install Jenkins](runbooks/17-migrate-jenkins-ci.md) using a fresh controller home and reviewed job/agent configuration.
+- [ ] [Install the VM 250 backup coordinator](runbooks/19-cnpg-r2-backup-pitr.md#2-install-the-coordinator-on-vm-250).
+- [ ] Run the first coordinated full backups. Complete [separate backup verification](docs/operations/POSTGRESQL_BACKUP_VERIFICATION.md), then enable the sole daily timer.
+- [ ] Confirm notification routing and FIRING/RESOLVED delivery using [Slack operations](docs/operations/SLACK_ALERTING.md).
+- [ ] Place credentials, state and required controller configuration in the protected off-host recovery kit.
+
+**Done when:** All three applications pass HTTPS/login/CRUD, Argo ownership is correct, private interfaces work, backups/PITR complete, and only approved CI/deployment automation is active.
