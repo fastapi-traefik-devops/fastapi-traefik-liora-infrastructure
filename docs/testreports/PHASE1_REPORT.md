@@ -178,3 +178,12 @@ Next small action: review this completed local increment and confirm Phase 2
 namespace/Secret preparation. Phase 2 and all later cluster changes remain
 unexecuted. The storage provisioning and application acceptance checks belong
 to those later authorized phases, not to local Phase 1 completion.
+
+## Historical procedure archive
+
+The 2026-10-24 manual rewrite preserves the previous procedural text separately:
+
+- [Phase1 Router Procedures Archive](PHASE1_ROUTER_PROCEDURES_ARCHIVE.md)
+- [Phase1 Vm Clone Recovery Archive](PHASE1_VM_CLONE_RECOVERY_ARCHIVE.md)
+
+Current operator entrypoint: [procedure index](../../runbooks/README.md).

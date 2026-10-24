@@ -160,3 +160,11 @@ API/runtime interruptions remain outside this acceptance. Keep the initial Argo
 CD credentials private; admin rotation and a tested Argo CD recovery backup
 remain operational follow-up, not claims established here. Phase 7, after the
 operator's next confirmation, is public application routing and TLS.
+
+## Historical procedure archive
+
+The 2026-10-24 manual rewrite preserves the previous procedural text separately:
+
+- [Phase6 Gitops Procedures Archive](PHASE6_GITOPS_PROCEDURES_ARCHIVE.md)
+
+Current operator entrypoint: [procedure index](../../runbooks/README.md).

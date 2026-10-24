@@ -56,7 +56,7 @@ and deployment logs. Review them privately; do not attach raw configuration or
 logs to public reports. Existing Slack Secret data and UIDs were checked before
 and after each deployment and remained unchanged.
 
-Follow [the runbook](SLACK_ALERTING.md) for approved rollback. Helm rollback must
+Follow [the runbook](../operations/SLACK_ALERTING.md) for approved rollback. Helm rollback must
 be paired with separately restoring the saved rule manifest, because Helm does
 not own that PrometheusRule.
 

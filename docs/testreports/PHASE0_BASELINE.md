@@ -244,3 +244,11 @@ and PVC provisioning remains deferred to a later authorized cluster phase.
 Phase 1 has not begun: this turn requested readiness checking and credential
 generation. Ask whether to use the repository's STAGE pair or kind's live
 STAGE pair for PROD and obtain confirmation before starting Phase 1.
+
+## Historical procedure archive
+
+The 2026-10-24 manual rewrite preserves the previous procedural text separately:
+
+- [Phase0 Template Procedures Archive](PHASE0_TEMPLATE_PROCEDURES_ARCHIVE.md)
+
+Current operator entrypoint: [procedure index](../../runbooks/README.md).

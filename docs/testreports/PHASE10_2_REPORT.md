@@ -171,3 +171,11 @@ reviewed PROD → STAGE → DEV cycle. It is also not an additional PITR exercis
 or proof of accumulated 7/14-day recovery-window coverage. The previously
 recorded isolated restore results remain the recovery-verification evidence.
 No live backup, R2 or coordinator settings were changed during this update.
+
+## Historical procedure archive
+
+The 2026-10-24 manual rewrite preserves the previous procedural text separately:
+
+- [Phase10 2 Backup Procedures Archive](PHASE10_2_BACKUP_PROCEDURES_ARCHIVE.md)
+
+Current operator entrypoint: [procedure index](../../runbooks/README.md).

@@ -197,3 +197,13 @@ Failover, reboot, host/storage recovery, stress/load tests and external
 notification delivery were not performed and are not gates for this increment.
 VM100/legacy NAT cleanup stays outside this phase and remains operator work
 after working CI migration. No push was performed during phase finalization.
+
+## Historical procedure archive
+
+The 2026-10-24 manual rewrite preserves the previous procedural text separately:
+
+- [Phase8 Platform Procedures Archive](PHASE8_PLATFORM_PROCEDURES_ARCHIVE.md)
+- [Phase8 Grafana Execution Archive](PHASE8_GRAFANA_EXECUTION_ARCHIVE.md)
+- [Phase8 Alerting Execution Archive](PHASE8_ALERTING_EXECUTION_ARCHIVE.md)
+
+Current operator entrypoint: [procedure index](../../runbooks/README.md).

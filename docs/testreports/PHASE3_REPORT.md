@@ -187,3 +187,11 @@ Next small action after confirmation: deploy STAGE only with its own PVC and
 corrected credentials, repeat readiness and UI acceptance, verify both marker
 isolation directions, and confirm DEV remains healthy. Stop after the Phase 4
 report before proceeding to PROD.
+
+## Historical procedure archive
+
+The 2026-10-24 manual rewrite preserves the previous procedural text separately:
+
+- [Phase3 5 Application Procedures Archive](PHASE3_5_APPLICATION_PROCEDURES_ARCHIVE.md)
+
+Current operator entrypoint: [procedure index](../../runbooks/README.md).

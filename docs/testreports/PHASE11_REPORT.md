@@ -232,3 +232,11 @@ The accepted operating model retains the single HAProxy edge and Traefik
 ServiceLB node pools, provisions Secrets privately outside Git and keeps
 Adminer available privately in PROD. See
 [the architecture decision record](ARCHITECTURE_DECISIONS_2026-10-24.md).
+
+## Historical procedure archive
+
+The 2026-10-24 manual rewrite preserves the previous procedural text separately:
+
+- [Phase11 Certificate Procedures Archive](PHASE11_CERTIFICATE_PROCEDURES_ARCHIVE.md)
+
+Current operator entrypoint: [procedure index](../../runbooks/README.md).

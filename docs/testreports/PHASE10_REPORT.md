@@ -190,3 +190,11 @@ order: [implementation plan](IMPLEMENTATION_PLAN.md).
 Subsequent backup work: [Phase 10.2](PHASE10_2_REPORT.md) records implemented
 physical backups/WAL and isolated PITR. Earlier R2-pending statements in this
 report describe the completed fresh-installation checkpoint.
+
+## Historical procedure archive
+
+The 2026-10-24 manual rewrite preserves the previous procedural text separately:
+
+- [Phase10 Database Transition Archive](PHASE10_DATABASE_TRANSITION_ARCHIVE.md)
+
+Current operator entrypoint: [procedure index](../../runbooks/README.md).

@@ -32,7 +32,7 @@ unchanged. Jenkins Declarative Pipeline validation passed before activation.
 ## Execution controls
 
 [Operator helper](../../scripts/kubernetes/manual-jenkins-ci.py) and
-[runbook procedure](../../runbooks/17-migrate-jenkins-ci.md#manual-functional-only-migration-checkpoint)
+[runbook procedure](PHASE9_JENKINS_PROCEDURES_ARCHIVE.md#manual-functional-only-migration-checkpoint)
 install the job disabled, verify source/definition hashes and preserve baseline
 job configuration/user hashes. An exclusive request boundary is written before
 activation. Exactly one manual request is allowed, with no automatic POST retry.

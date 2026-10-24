@@ -326,3 +326,11 @@ files, application GHCR images, GitHub repository contents, current PostgreSQL
 data and administrator credential values were not changed. No Git push,
 source-data deletion by the migration helpers, VM100 retirement or NAT
 cleanup was performed. Phase 9 remains open.
+
+## Historical procedure archive
+
+The 2026-10-24 manual rewrite preserves the previous procedural text separately:
+
+- [Phase9 Jenkins Procedures Archive](PHASE9_JENKINS_PROCEDURES_ARCHIVE.md)
+
+Current operator entrypoint: [procedure index](../../runbooks/README.md).
