@@ -101,7 +101,7 @@ spec:
         - -name
         - stage-observer
         - -secret
-        - '@/run/secrets/agent-secret'
+        - '@/run/agent-connection/agent-secret'
         - -webSocket
         - -workDir
         - /home/jenkins/agent
@@ -126,7 +126,8 @@ spec:
           mountPath: /opt/phase1-ci
           readOnly: true
         - name: connection
-          mountPath: /run/secrets
+          # Not /run/secrets: the observer needs its API token mounted below it.
+          mountPath: /run/agent-connection
           readOnly: true
       volumes:
       - name: work

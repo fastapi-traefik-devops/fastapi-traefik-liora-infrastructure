@@ -1,0 +1,10 @@
+test_cleanup_rejects_sibling_and_wrong_identity (__main__.GuardTests.test_cleanup_rejects_sibling_and_wrong_identity) ... ok
+test_cleanup_rejects_symlink (__main__.GuardTests.test_cleanup_rejects_symlink) ... ok
+test_network_block_is_effective (__main__.GuardTests.test_network_block_is_effective) ... ok
+test_reject_live_and_unknown_endpoints (__main__.GuardTests.test_reject_live_and_unknown_endpoints) ... ok
+test_tampered_backup_rejected (__main__.GuardTests.test_tampered_backup_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.016s
+
+OK
