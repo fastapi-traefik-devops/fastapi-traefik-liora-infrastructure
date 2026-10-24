@@ -2,42 +2,13 @@
   hosts: all
   become: true
   tasks:
-    - name: Install HAProxy and certificate tooling
+    - name: Install HAProxy
       ansible.builtin.apt:
-        name: [haproxy, certbot, python3]
+        name: [haproxy]
         state: present
         update_cache: true
         cache_valid_time: 3600
         lock_timeout: 1200
-    - name: Create the public ACME webroot
-      ansible.builtin.file:
-        path: /var/lib/liora-acme/.well-known/acme-challenge
-        state: directory
-        owner: root
-        group: root
-        mode: '0755'
-    - name: Install loopback-only ACME webroot service
-      ansible.builtin.copy:
-        dest: /etc/systemd/system/liora-acme-webroot.service
-        owner: root
-        group: root
-        mode: '0644'
-        content: |
-          [Unit]
-          Description=Liora ACME HTTP-01 webroot on loopback
-          After=network.target
-          [Service]
-          User=nobody
-          Group=nogroup
-          ExecStart=/usr/bin/python3 -m http.server 8088 --bind 127.0.0.1 --directory /var/lib/liora-acme
-          Restart=on-failure
-          NoNewPrivileges=true
-          ProtectSystem=strict
-          ProtectHome=true
-          PrivateTmp=true
-          [Install]
-          WantedBy=multi-user.target
-      notify: Restart ACME webroot
     - name: Install validated application-only routing
       ansible.builtin.template:
         src: haproxy.cfg.j2
@@ -47,23 +18,12 @@
         mode: '0644'
         validate: /usr/sbin/haproxy -c -f %s
       notify: Reload HAProxy
-    - name: Enable the ACME service
-      ansible.builtin.systemd_service:
-        name: liora-acme-webroot
-        daemon_reload: true
-        enabled: true
-        state: started
     - name: Enable HAProxy
       ansible.builtin.systemd_service:
         name: haproxy
         enabled: true
         state: started
   handlers:
-    - name: Restart ACME webroot
-      ansible.builtin.systemd_service:
-        name: liora-acme-webroot
-        daemon_reload: true
-        state: restarted
     - name: Reload HAProxy
       ansible.builtin.systemd_service:
         name: haproxy

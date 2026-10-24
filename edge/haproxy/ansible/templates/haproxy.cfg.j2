@@ -13,20 +13,14 @@ defaults
     timeout server 60s
     timeout check 5s
 
-# HTTP is restricted to the three application hosts. Only the ACME webroot is
-# served directly; all other requests are redirected to their canonical HTTPS.
+# HTTP accepts only application hosts and redirects to HTTPS. DNS-01 does not
+# depend on an HTTP challenge route or an edge certificate/webroot service.
 frontend application_http
     bind 0.0.0.0:80
     mode http
     acl liora_host hdr(host),lower -i liora.aprt.info dev.liora.aprt.info stage.liora.aprt.info
     http-request deny deny_status 403 unless liora_host
-    acl acme_path path_beg /.well-known/acme-challenge/
-    http-request redirect scheme https code 308 unless acme_path
-    use_backend acme_webroot if acme_path
-
-backend acme_webroot
-    mode http
-    server webroot 127.0.0.1:8088 check
+    http-request redirect scheme https code 308
 
 # TLS passes through to the namespace-local Traefik certificate. Reject unknown
 # SNI rather than offering a route to administrative interfaces or other hosts.

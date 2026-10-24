@@ -16,8 +16,8 @@ them only after both nonprod certificates and HTTPS ingress are verified.
 
 TLS passes through HAProxy to namespace-local `app-tls` Secrets. Only the three
 application SNI names are routed. Public port 80 accepts only those Host names,
-serves ACME HTTP-01 challenges from a loopback webroot, and redirects other paths
-to HTTPS. Argo CD and Adminer have no route through this configuration.
+redirects requests to HTTPS. Public certificates are issued and renewed by
+cert-manager through Cloudflare DNS-01 inside each cluster. Argo CD and Adminer have no route through this configuration.
 
 ## Provision and configure
 
@@ -37,15 +37,17 @@ ansible-playbook -i edge/haproxy/ansible/inventory.yml edge/haproxy/ansible/site
 Inspect the plan first: only VM 240 should be created. Confirm the VM ID and
 address are unused. Use a private SSH identity/agent authorized on the new VM.
 The playbook validates HAProxy before replacing its configuration and only
-reloads on change. The ACME webroot serves public challenge files only; keep
-certificate private keys under root-only `/etc/letsencrypt`.
+reloads on change. HAProxy does not load certificate private keys; each
+environment's TLS Secret remains in its Kubernetes namespace.
 
 For this live phase, the module, ignored state and plan reside on VM 200 at
 `/home/root-admin/liora-phase7-edge/terraform`. The tracked module is the source
 of truth; keep that local state with the operator's recovery archive. The live
 state must be retained even if the Git checkout changes.
 
-Certificate issuance runs on the edge; namespace Secret distribution runs daily
-on management VM 200 through the supplied `liora-certificate-sync` systemd units
-and standalone helper. See [runbook 15](../../runbooks/15-publish-application.md)
-for private transfer, initial issuance, renewal/distribution checks and rollback.
+Certificate issuance and renewal are independent of VM 200 and VM 240.
+Use [runbook 15](../../runbooks/15-publish-application.md) to provision the private
+Cloudflare DNS token and independent per-cluster issuer, verify namespace-local
+certificates and test renewal. Do not install the legacy distribution units.
+Retained Certbot state and synchronization scripts are historical rollback
+artifacts; see [Phase 11](../../docs/testreports/PHASE11_REPORT.md).
