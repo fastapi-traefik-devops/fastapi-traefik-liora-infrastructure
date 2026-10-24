@@ -11,10 +11,10 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-# ci/dev-deploy-and-pr-profile head (manual DEV deployment from dev-build). Backward
-# compatible with the current main pipeline, so it may be installed before the merge.
+# ci/prod-promotion head (manual PROD release of STAGE-accepted images). Backward
+# compatible with the current pipelines, so it may be installed before the merge.
 # Re-pin to the merge commit afterwards.
-SOURCE_COMMIT = 'c6a70f44808d094162e00b95fb5210bc65c76f6e'
+SOURCE_COMMIT = '9c2084ceb24cf8b39ee6309f3f648416f47bc719'
 SOURCE_REPOSITORY = 'fastapi-traefik-devops/fastapi-traefik-liora-application'
 
 
