@@ -1,0 +1,113 @@
+2026-10-24T08:15:25.621972+00:00
+$ docker exec k3d-liora-dr-20261024-server-0 kubectl get namespace kube-system -o 'jsonpath={.metadata.uid}'
+aa85f393-9b41-42a5-af6a-7fadfc783683
+
+EXIT_CODE=0
+$ docker exec k3d-liora-dr-20261024-server-0 kubectl get pods,pvc -A
+NAMESPACE        NAME                                           READY   STATUS    RESTARTS   AGE
+cnpg-system      pod/cnpg-controller-manager-568869b889-7nkbf   1/1     Running   0          102s
+dr-application   pod/liora-lab-db-1                             1/1     Running   0          94s
+kube-system      pod/coredns-8db54c48d-h46g2                    1/1     Running   0          12m
+kube-system      pod/local-path-provisioner-5d9d9885bc-hmg85    1/1     Running   0          12m
+
+NAMESPACE        NAME                                   STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+dr-application   persistentvolumeclaim/liora-lab-db-1   Bound    pvc-07f8170d-a8fc-4438-92af-cfd299955a3d   2Gi        RWO            local-path     <unset>                 20m
+dr-storage       persistentvolumeclaim/checkpoint       Bound    pvc-952e5c4d-f08c-42e7-aa49-bd56f6b4afe1   64Mi       RWO            local-path     <unset>                 24m
+
+EXIT_CODE=0
+$ docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' k3d-liora-dr-20261024-server-0
+k3d-liora-dr-20261024-server-0 762.9MiB / 2GiB
+
+EXIT_CODE=0
+$ k3d cluster stop liora-dr-20261024
+[36mINFO[0m[0000] Stopping cluster 'liora-dr-20261024'         
+[36mINFO[0m[0005] Stopped cluster 'liora-dr-20261024'
+
+EXIT_CODE=0
+$ docker inspect --format '{{index .Config.Labels "liora-dr-run"}}' liora-dr-git-source
+20261024
+
+EXIT_CODE=0
+$ docker rm liora-dr-git-source
+liora-dr-git-source
+
+EXIT_CODE=0
+$ docker inspect --format '{{.Name}}' liora-dr-git-source
+
+error: no such object: liora-dr-git-source
+EXIT_CODE=1
+$ docker ps --format '{{.ID}} {{.Names}} {{.Status}}'
+
+
+EXIT_CODE=0
+$ docker inspect --format '{{.Name}} status={{.State.Status}} mounts={{range .Mounts}}{{.Type}}:{{.Name}}:{{.Destination}} {{end}}' infra-agent-1
+/infra-agent-1 status=exited mounts=volume:infra_agent_home:/home/jenkins/agent bind::/run/secrets/agent-secret volume:ce1893533efa9256e8c5f3f994194ebf2ddf09fff9a0f8e6e9c7a37aa095f2cd:/var/jenkins_home
+
+EXIT_CODE=0
+$ docker inspect --format '{{.Name}} status={{.State.Status}} mounts={{range .Mounts}}{{.Type}}:{{.Name}}:{{.Destination}} {{end}}' infra-jenkins-1
+/infra-jenkins-1 status=exited mounts=volume:infra_jenkins_home:/var/jenkins_home bind::/var/jenkins_home/init.groovy.d/40-exam-isolation.groovy
+
+EXIT_CODE=0
+$ docker inspect --format '{{.Name}} status={{.State.Status}} mounts={{range .Mounts}}{{.Type}}:{{.Name}}:{{.Destination}} {{end}}' infra-docker-1
+/infra-docker-1 status=exited mounts=volume:infra_agent_home:/home/jenkins/agent volume:infra_build_docker_rootless:/home/rootless/.local/share/docker volume:5f6889f203e0ac343e3a8a664a3e099693f9d479127e129f452acb19663d97ec:/var/lib/docker
+
+EXIT_CODE=0
+$ k3d cluster list
+NAME                SERVERS   AGENTS   LOADBALANCER
+flagship-platform   0/1       0/0      true
+gitlab-gitops       0/1       0/0      true
+liora-dr-20261024   0/1       0/0      false
+
+EXIT_CODE=0
+$ virsh list --all
+ Id   Name          State
+------------------------------
+ -    lemp-server   shut off
+ -    win10         shut off
+
+EXIT_CODE=0
+$ kubectl config current-context
+k3d-gitlab-gitops
+
+EXIT_CODE=0
+$ free -h
+               total        used        free      shared  buff/cache   available
+Mem:           7.6Gi       4.0Gi       908Mi       350Mi       3.2Gi       3.6Gi
+Swap:          8.0Gi       2.7Gi       5.3Gi
+
+EXIT_CODE=0
+$ df -h /
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme0n1p2  468G  245G  200G  56% /
+
+EXIT_CODE=0
+$ git -C /home/local-user/LioraFastApi/infrastructure status --short
+
+
+EXIT_CODE=0
+$ git -C /home/local-user/LioraFastApi/application status --short
+
+
+EXIT_CODE=0
+Stopped owned read-only lab Git listener PID 178233
+Stopped owned read-only lab Git listener PID 178234
+$ docker ps -q
+
+
+EXIT_CODE=0
+$ kubectl config current-context
+k3d-gitlab-gitops
+
+EXIT_CODE=0
+{
+  "all_running_docker_containers": "",
+  "original_context": "k3d-gitlab-gitops",
+  "owned_k3d_cluster_stopped": true,
+  "original_containers_retained_and_stopped": true,
+  "original_vms_unchanged_stopped": true,
+  "removed_only_owned_git_source_container": true,
+  "lab_node_and_pvcs_retained_for_repeat": true,
+  "production_api_connections_in_this_run": false,
+  "production_or_r2_mutations_in_this_run": false
+}
+FINAL_EXIT_CODE=0

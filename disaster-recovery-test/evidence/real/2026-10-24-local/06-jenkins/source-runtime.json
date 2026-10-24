@@ -1,0 +1,15 @@
+{
+  "_class": "hudson.model.Hudson",
+  "mode": "NORMAL",
+  "numExecutors": 0,
+  "jobs": [
+    {
+      "_class": "hudson.model.FreeStyleProject",
+      "name": "lab-disabled",
+      "buildable": false,
+      "builds": [],
+      "color": "disabled"
+    }
+  ],
+  "quietingDown": true
+}

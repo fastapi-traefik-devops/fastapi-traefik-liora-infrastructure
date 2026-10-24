@@ -1,0 +1,9 @@
+{
+  "protected_backup_copies": [],
+  "private_recovery_input_names": [
+    "infrastructure/recovery/backup-coordinator.json.example"
+  ],
+  "notes": [
+    "No production cluster was contacted. Existing documentation says the R2 identity has PUT/DELETE capability; it is unsuitable for this read-only lab."
+  ]
+}

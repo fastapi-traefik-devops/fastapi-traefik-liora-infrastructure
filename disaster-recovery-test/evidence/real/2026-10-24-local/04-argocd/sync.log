@@ -1,0 +1,39 @@
+2026-10-24T10:00:27+02:00
+Unknown Healthy
+application.argoproj.io/local-recovery-sync patched
+application.argoproj.io/local-recovery-sync condition met
+NAME                  SYNC STATUS   HEALTH STATUS
+local-recovery-sync   Synced        Healthy
+recovered-dev                       
+recovered-stage                     
+apiVersion: v1
+data:
+  BACKEND_CORS_ORIGINS: http://127.0.0.1:18080
+  DOMAIN: localhost
+  EMAILS_FROM_EMAIL: info@example.com
+  ENVIRONMENT: local
+  FIRST_SUPERUSER: dr-lab@example.com
+  FRONTEND_HOST: http://127.0.0.1:18080
+  POSTGRES_DB: app
+  POSTGRES_PORT: "5432"
+  POSTGRES_SERVER: liora-lab-db-rw.dr-application.svc.cluster.local
+  POSTGRES_USER: postgres
+  PROJECT_NAME: Full Stack FastAPI Project
+  SENTRY_DSN: ""
+  SMTP_HOST: ""
+  SMTP_PORT: "587"
+  SMTP_SSL: "False"
+  SMTP_TLS: "True"
+  SMTP_USER: ""
+kind: ConfigMap
+metadata:
+  annotations:
+    argocd.argoproj.io/tracking-id: local-recovery-sync:/ConfigMap:dr-gitops/recovered-backend-config
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"BACKEND_CORS_ORIGINS":"http://127.0.0.1:18080","DOMAIN":"localhost","EMAILS_FROM_EMAIL":"info@example.com","ENVIRONMENT":"local","FIRST_SUPERUSER":"dr-lab@example.com","FRONTEND_HOST":"http://127.0.0.1:18080","POSTGRES_DB":"app","POSTGRES_PORT":"5432","POSTGRES_SERVER":"liora-lab-db-rw.dr-application.svc.cluster.local","POSTGRES_USER":"postgres","PROJECT_NAME":"Full Stack FastAPI Project","SENTRY_DSN":"","SMTP_HOST":"","SMTP_PORT":"587","SMTP_SSL":"False","SMTP_TLS":"True","SMTP_USER":""},"kind":"ConfigMap","metadata":{"annotations":{"argocd.argoproj.io/tracking-id":"local-recovery-sync:/ConfigMap:dr-gitops/recovered-backend-config"},"name":"recovered-backend-config","namespace":"dr-gitops"}}
+  creationTimestamp: "2026-10-24T08:01:14Z"
+  name: recovered-backend-config
+  namespace: dr-gitops
+  resourceVersion: "1963"
+  uid: 34a3e239-fd85-4e38-97f6-dbf23f57fd74
+{"finishedAt":"2026-10-24T08:01:14Z","message":"successfully synced (all tasks run)","operation":{"initiatedBy":{"username":"local-dr-exercise"},"retry":{},"sync":{}},"phase":"Succeeded","startedAt":"2026-10-24T08:01:14Z","syncResult":{"resources":[{"group":"","hookPhase":"Running","kind":"ConfigMap","message":"configmap/recovered-backend-config created","name":"recovered-backend-config","namespace":"dr-gitops","status":"Synced","syncPhase":"Sync","version":"v1"}],"revision":"6f94205198d0b93745144059e363673df78a33a6","source":{"path":"manifests","repoURL":"git://172.28.0.1:19418/lab.git","targetRevision":"main"}}}2026-10-24T10:01:15+02:00

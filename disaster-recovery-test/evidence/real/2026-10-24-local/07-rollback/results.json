@@ -1,0 +1,14 @@
+{
+  "config_before": "v1",
+  "config_changed": "v2",
+  "config_restored": "v1",
+  "persistent_marker_preserved": true,
+  "config_rollback_seconds": 2.204440256999078,
+  "postgres_baseline": "1|checkpoint-v1",
+  "postgres_changed": "1|changed-v2\n2|after-checkpoint",
+  "postgres_restored": "1|checkpoint-v1",
+  "postgres_logical_rollback_seconds": 0.6023425410003256,
+  "total_exercise_seconds": 36.92626123300033,
+  "r2_restore": false,
+  "pitr": false
+}

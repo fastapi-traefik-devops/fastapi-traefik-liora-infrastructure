@@ -1,0 +1,23 @@
+EXCERPT SOURCE: cleanup.log
+
+2026-10-24T08:15:25.621972+00:00
+$ docker exec k3d-liora-dr-20261024-server-0 kubectl get namespace kube-system -o 'jsonpath={.metadata.uid}'
+aa85f393-9b41-42a5-af6a-7fadfc783683
+
+EXIT_CODE=0
+$ docker exec k3d-liora-dr-20261024-server-0 kubectl get pods,pvc -A
+NAMESPACE        NAME                                           READY   STATUS    RESTARTS   AGE
+cnpg-system      pod/cnpg-controller-manager-568869b889-7nkbf   1/1     Running   0          102s
+dr-application   pod/liora-lab-db-1                             1/1     Running   0          94s
+kube-system      pod/coredns-8db54c48d-h46g2                    1/1     Running   0          12m
+kube-system      pod/local-path-provisioner-5d9d9885bc-hmg85    1/1     Running   0          12m
+
+NAMESPACE        NAME                                   STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+dr-application   persistentvolumeclaim/liora-lab-db-1   Bound    pvc-07f8170d-a8fc-4438-92af-cfd299955a3d   2Gi        RWO            local-path     <unset>                 20m
+dr-storage       persistentvolumeclaim/checkpoint       Bound    pvc-952e5c4d-f08c-42e7-aa49-bd56f6b4afe1   64Mi       RWO            local-path     <unset>                 24m
+
+EXIT_CODE=0
+$ docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' k3d-liora-dr-20261024-server-0
+k3d-liora-dr-20261024-server-0 762.9MiB / 2GiB
+
+EXIT_CODE=0

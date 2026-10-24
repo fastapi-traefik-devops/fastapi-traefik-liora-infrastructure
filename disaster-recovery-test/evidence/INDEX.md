@@ -50,3 +50,10 @@ The Python sources under `disaster-recovery-test/` are retained. Existing reposi
 The mock runner uses only disposable fixtures and explicitly rejects live endpoints. The HTTPS fixture uses a disposable loopback listener.
 The capture script performs read-only live metadata queries and requires the existing trusted SSH access. It is not necessary to rerun it to read these results.
 SHA256SUMS paths are relative to the workspace root. The manifest excludes itself.
+
+
+## Subsequent real local runtime exercise
+
+See the [independent evidence index](../astra-review/INDEX.md) for the separate
+24 October local runtime run, its limitations and 24 unique genuine screenshots.
+The historical entries above are preserved.

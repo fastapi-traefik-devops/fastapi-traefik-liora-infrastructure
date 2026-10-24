@@ -1,0 +1,6 @@
+Checking /rules/monitoring.yaml
+  SUCCESS: 15 rules found
+
+Checking /rules/backup-monitoring.yaml
+  SUCCESS: 15 rules found
+

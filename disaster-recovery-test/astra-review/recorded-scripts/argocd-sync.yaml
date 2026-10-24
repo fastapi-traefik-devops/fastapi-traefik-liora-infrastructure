@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: local-sync
+  namespace: argocd
+spec:
+  sourceRepos: ['http://172.28.0.3/lab.git']
+  destinations:
+  - {server: 'https://kubernetes.default.svc', namespace: dr-gitops}
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+  - {group: '', kind: ConfigMap}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: local-recovery-sync
+  namespace: argocd
+spec:
+  project: local-sync
+  source:
+    repoURL: http://172.28.0.3/lab.git
+    targetRevision: main
+    path: manifests
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dr-gitops
+  syncPolicy:
+    automated: {enabled: false}

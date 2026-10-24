@@ -1,0 +1,43 @@
++ date --iso-8601=seconds
+2026-10-24T09:50:10+02:00
++ free -h
+               total        used        free      shared  buff/cache   available
+Mem:           7.6Gi       5.3Gi       160Mi       443Mi       2.7Gi       2.3Gi
+Swap:          8.0Gi       3.3Gi       4.7Gi
++ docker inspect --format '{{.Name}} memory_limit={{.HostConfig.Memory}}' k3d-liora-dr-20261024-server-0
+/k3d-liora-dr-20261024-server-0 memory_limit=1610612736
++ k cluster-info
++ docker exec k3d-liora-dr-20261024-server-0 kubectl cluster-info
+Kubernetes control plane is running at https://127.0.0.1:6443
+CoreDNS is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
++ k wait --for=condition=Ready nodes --all --timeout=90s
++ docker exec k3d-liora-dr-20261024-server-0 kubectl wait --for=condition=Ready nodes --all --timeout=90s
+node/k3d-liora-dr-20261024-server-0 condition met
++ k get nodes -o wide
++ docker exec k3d-liora-dr-20261024-server-0 kubectl get nodes -o wide
+NAME                             STATUS   ROLES           AGE   VERSION        INTERNAL-IP   EXTERNAL-IP   OS-IMAGE           KERNEL-VERSION      CONTAINER-RUNTIME
+k3d-liora-dr-20261024-server-0   Ready    control-plane   30s   v1.35.5+k3s1   172.28.0.2    <none>        K3s v1.35.5+k3s1   6.8.0-147-generic   containerd://2.2.3-k3s1
++ k get namespace kube-system -o custom-columns=NAME:.metadata.name,UID:.metadata.uid
++ docker exec k3d-liora-dr-20261024-server-0 kubectl get namespace kube-system -o custom-columns=NAME:.metadata.name,UID:.metadata.uid
+NAME          UID
+kube-system   aa85f393-9b41-42a5-af6a-7fadfc783683
++ k3d image import alpine:3.20 -c liora-dr-20261024
+[36mINFO[0m[0000] Importing image(s) into cluster 'liora-dr-20261024' 
+[36mINFO[0m[0001] Starting new tools node...                   
+[36mINFO[0m[0002] Starting node 'k3d-liora-dr-20261024-tools'  
+[36mINFO[0m[0002] Saving 1 image(s) from runtime...            
+[36mINFO[0m[0003] Importing images into nodes...               
+[36mINFO[0m[0003] Importing images from tarball '/k3d/images/k3d-liora-dr-20261024-images-20261024095015.tar' into node 'k3d-liora-dr-20261024-server-0'... 
+[31mERRO[0m[0004] failed to import images in node 'k3d-liora-dr-20261024-server-0': Exec process in node 'k3d-liora-dr-20261024-server-0' failed with exit code '1': Logs from failed access process:
+ctr: content digest sha256:37753b2965043543542cd9d48cba044151052ca14fa72e6cbec4edf2a1490599: not found 
+[36mINFO[0m[0004] Removing the tarball(s) from image volume... 
+[36mINFO[0m[0005] Removing k3d-tools node...                   
+[36mINFO[0m[0006] Successfully imported image(s)               
+[36mINFO[0m[0006] Successfully imported 1 image(s) into 1 cluster(s) 
++ k apply -f -
++ docker exec k3d-liora-dr-20261024-server-0 kubectl apply -f -
+error: no objects passed to apply
++ printf 'EXIT_CODE=%s\n' 1
+EXIT_CODE=1

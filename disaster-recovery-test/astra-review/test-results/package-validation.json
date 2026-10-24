@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "files_checked": 133,
+  "markdown_relative_links_checked": 212,
+  "unique_jpeg_screenshots_decoded": 24,
+  "source_provenance_hashes_verified": true,
+  "python_shell_json_yaml_syntax": "PASS",
+  "saved_runtime_assertions": "PASS",
+  "scope": "Offline validation of retained evidence; does not re-execute recovery",
+  "checked_utc": "2026-10-24T09:20:04.424374+00:00"
+}

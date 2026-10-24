@@ -1,0 +1,19 @@
+2026-10-24T08:11:39.222740+00:00
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl get namespace kube-system -o 'jsonpath={.metadata.uid}'
+aa85f393-9b41-42a5-af6a-7fadfc783683
+
+EXIT_CODE=0; elapsed_seconds=0.159
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage patch deployment persistence --type=strategic -p '{"spec": {"template": {"spec": {"containers": [{"name": "storage", "env": [{"name": "DR_REVISION", "value": "v1"}], "command": ["sh", "-c", "mkdir -p /www; echo \"$DR_REVISION\" > /www/index.html; httpd -f -p 8080 -h /www"]}]}}}}'
+deployment.apps/persistence patched
+
+EXIT_CODE=0; elapsed_seconds=0.197
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage scale deployment/persistence --replicas=1
+deployment.apps/persistence scaled
+
+EXIT_CODE=0; elapsed_seconds=0.280
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage rollout status deployment/persistence --timeout=90s
+Waiting for deployment "persistence" rollout to finish: 0 of 1 updated replicas are available...
+error: timed out waiting for the condition
+EXIT_CODE=1; elapsed_seconds=90.329
+FAILED: Command failed; see retained log
+FINAL_EXIT_CODE=1

@@ -11,10 +11,10 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-# PR #67 head (CNPG validation fix). Installed before merging #67 so the first
-# automatic main build after the merge already promotes; its ci/ tree equals the
-# merge commit's. Re-pin to the merge commit afterwards for provenance.
-SOURCE_COMMIT = '81e31b56da489a85465f8ea59c5f510c66328550'
+# ci/restore-gate-profiles head (main publishes only release-attested images). Install it
+# together with that branch's Jenkinsfile.promote right before merging the PR: older main
+# builds carry no gates.json. Re-pin to the merge commit afterwards.
+SOURCE_COMMIT = '4aefca9ae3348776df47149c4e83eeb99e44aefc'
 SOURCE_REPOSITORY = 'fastapi-traefik-devops/fastapi-traefik-liora-application'
 
 

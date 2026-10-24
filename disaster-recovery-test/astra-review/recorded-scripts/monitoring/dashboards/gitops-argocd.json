@@ -1,0 +1,480 @@
+{
+  "uid": "gitops-argocd",
+  "title": "NONPROD / Argo CD",
+  "schemaVersion": 39,
+  "version": 3,
+  "refresh": "1m",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "tags": [
+    "DEV",
+    "STAGE",
+    "GitOps"
+  ],
+  "editable": false,
+  "panels": [
+    {
+      "id": 7,
+      "title": "DEV / STAGE application status",
+      "description": "Current observed health and sync status for app-dev and app-stage, independently. Missing applications have no row; use the overview expected-count Stats to detect missing applications. Inspect Argo resource health for Degraded and Git diff for OutOfSync.",
+      "type": "table",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 5
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by(name,health_status,sync_status) (argocd_app_info{name=~\"app-dev|app-stage\"})",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true
+            },
+            "indexByName": {
+              "name": 0,
+              "health_status": 1,
+              "sync_status": 2
+            },
+            "renameByName": {
+              "name": "Application",
+              "health_status": "Health",
+              "sync_status": "Sync"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "cellOptions": {
+              "type": "color-text"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Health"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Healthy": {
+                        "text": "Healthy",
+                        "color": "green"
+                      },
+                      "Degraded": {
+                        "text": "Degraded",
+                        "color": "red"
+                      },
+                      "Progressing": {
+                        "text": "Progressing",
+                        "color": "yellow"
+                      },
+                      "Missing": {
+                        "text": "Missing",
+                        "color": "red"
+                      },
+                      "Unknown": {
+                        "text": "Unknown",
+                        "color": "yellow"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Sync"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Synced": {
+                        "text": "Synced",
+                        "color": "green"
+                      },
+                      "OutOfSync": {
+                        "text": "OutOfSync",
+                        "color": "red"
+                      },
+                      "Unknown": {
+                        "text": "Unknown",
+                        "color": "yellow"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      }
+    },
+    {
+      "id": 1,
+      "title": "Application state",
+      "description": "Argo application labels expose health and sync independently; value is always 1. Healthy: Labels Healthy and Synced for both apps. Investigate: Degraded/Progressing/Missing/Unknown or OutOfSync/Unknown sustained. Action: Inspect Argo application conditions, resource tree, operation and Git diff.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "argocd_app_info{name=~\"app-dev|app-stage\"}",
+          "legendFormat": "{{name}} {{health_status}} {{sync_status}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Application healthy",
+      "description": "Boolean health indicator preserving zero for observed unhealthy apps. Healthy: 1 for each expected app. Investigate: 0 means unhealthy; no series means missing telemetry or deleted app. Action: Inspect resource health and application conditions; check exporter if absent.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 5,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "argocd_app_info{name=~\"app-dev|app-stage\",health_status=\"Healthy\"} or on(name) (0 * argocd_app_info{name=~\"app-dev|app-stage\"})",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Application synced",
+      "description": "Boolean sync indicator; detects divergence from desired state. Healthy: 1 for each expected app. Investigate: 0 means not Synced; no series is not healthy. Action: Review Argo diff and manifest-generation errors; reconcile only intended DEV/STAGE changes.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 13,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "argocd_app_info{name=~\"app-dev|app-stage\",sync_status=\"Synced\"} or on(name) (0 * argocd_app_info{name=~\"app-dev|app-stage\"})",
+          "legendFormat": "{{name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No observations",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Sync operation rate",
+      "description": "Sync operations per second by result; spots repeated failures/reconciliation loops. Healthy: Zero when idle; occasional successful sync. Investigate: Repeated failed sync or unexpected loops. Action: Inspect last operation, hooks, Git source and permissions.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 13,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(name,phase) (rate(argocd_app_sync_total{name=~\"app-dev|app-stage\"}[5m]))",
+          "legendFormat": "{{name}} {{phase}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "noValue": "No observations",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Reconciliation p95",
+      "description": "Estimated 95th percentile Argo comparison/reconciliation time across the shared controller; this exporter has no application-name label on this histogram. Healthy: Stable near baseline; idle windows can be NaN. Investigate: Persistent increase relative to baseline. Action: Inspect controller/repo-server logs, Git connectivity and API latency.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95,sum by(le,dest_server) (rate(argocd_app_reconcile_bucket[5m])))",
+          "legendFormat": "{{dest_server}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "No observations",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Git request rate",
+      "description": "Shared repo-server Git requests; helps diagnose GitOps activity. Healthy: Low steady polling and spikes during expected operations. Investigate: Repeated retries or unexplained sustained spikes. Action: Inspect repo-server errors and repository availability; correlate with sync failures.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 21,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(request_type) (rate(argocd_git_request_total[5m]))",
+          "legendFormat": "{{request_type}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "noValue": "No observations",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "spanNulls": false
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    }
+  ]
+}

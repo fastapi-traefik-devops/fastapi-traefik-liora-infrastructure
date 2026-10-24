@@ -11,11 +11,11 @@ components:
 images:
 - name: backend
   newName: ghcr.io/fastapi-traefik-devops/fastapi-backend
-  newTag: sha-3459d5a4f1d39473fd845674dfc7f591bee81059
+  newTag: sha-62bf4475a1ccc2235892a7db1df604fb5d5d63ce
   digest: sha256:cc32c4e72a58a5b1b579e1909d9c31c455ebee3cba0a431bd957ecf51e9c2d0c
 - name: frontend
   newName: ghcr.io/fastapi-traefik-devops/fastapi-frontend
-  newTag: sha-3459d5a4f1d39473fd845674dfc7f591bee81059
+  newTag: sha-62bf4475a1ccc2235892a7db1df604fb5d5d63ce
   digest: sha256:87acf879741853a6e3d43c766ad0d93d488adf12b4e89891b9295739d6f6b0b5
 replicas:
 - name: backend

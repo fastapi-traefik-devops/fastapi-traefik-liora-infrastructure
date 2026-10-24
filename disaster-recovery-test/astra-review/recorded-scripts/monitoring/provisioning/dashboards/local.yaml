@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+- folder: Recovered repository dashboards
+  name: Recovered Liora definitions
+  options:
+    path: /var/lib/grafana/dashboards
+  type: file

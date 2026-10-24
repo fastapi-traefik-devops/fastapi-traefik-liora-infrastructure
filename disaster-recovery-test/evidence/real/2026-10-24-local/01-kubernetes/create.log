@@ -1,0 +1,9 @@
+[36mINFO[0m[0000] Prep: Network                                
+[36mINFO[0m[0000] Created network 'k3d-liora-dr-20261024'      
+[36mINFO[0m[0001] Creating node 'k3d-liora-dr-20261024-server-0' 
+[31mERRO[0m[0001] failed to ensure tools node: failed to retrieve cluster: No nodes found for given cluster 
+[31mERRO[0m[0001] Failed to create cluster >>> Rolling Back    
+[36mINFO[0m[0001] Deleting cluster 'liora-dr-20261024'         
+[36mINFO[0m[0001] Deleting cluster network 'k3d-liora-dr-20261024' 
+[36mINFO[0m[0001] Deleting 0 attached volumes...               
+[31mFATA[0m[0001] Cluster creation FAILED, all changes have been rolled back! 

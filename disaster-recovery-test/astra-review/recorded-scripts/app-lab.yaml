@@ -1,0 +1,199 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dr-application
+  labels:
+    liora-dr-run: '20261024'
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: liora-lab-db
+  namespace: dr-application
+spec:
+  instances: 1
+  enablePDB: false
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.15-system-trixie@sha256:8ca5699981c25db72e549e9fa69561bac233df15b9b1e3a6282847b0629bb5ea
+  enableSuperuserAccess: false
+  bootstrap:
+    initdb:
+      database: app
+      owner: app_owner
+      secret:
+        name: lab-credentials
+      postInitApplicationSQL:
+      - CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+  storage:
+    storageClass: local-path
+    size: 2Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  affinity:
+    enablePodAntiAffinity: true
+    podAntiAffinityType: required
+    topologyKey: kubernetes.io/hostname
+  postgresql:
+    parameters:
+      shared_buffers: 64MB
+      max_connections: '100'
+      max_wal_size: 512MB
+      min_wal_size: 80MB
+      wal_keep_size: 128MB
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: dr-application
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: ghcr.io/fastapi-traefik-devops/fastapi-backend@sha256:ea2d0aaf163f15f1bf749ee69822ebe33e619d2a00a5813d348732936b56f00b
+        ports:
+        - containerPort: 8000
+        envFrom: &id001
+        - secretRef:
+            name: backend-secrets
+        startupProbe:
+          httpGet:
+            path: /api/v1/utils/health-check/
+            port: 8000
+          periodSeconds: 5
+          failureThreshold: 30
+        readinessProbe:
+          httpGet:
+            path: /api/v1/utils/health-check/
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/v1/utils/health-check/
+            port: 8000
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        resources: &id002
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 384Mi
+        command:
+        - fastapi
+        - run
+        - --workers
+        - '1'
+        - app/main.py
+      automountServiceAccountToken: false
+      initContainers:
+      - name: initialize-disposable-db
+        image: ghcr.io/fastapi-traefik-devops/fastapi-backend@sha256:ea2d0aaf163f15f1bf749ee69822ebe33e619d2a00a5813d348732936b56f00b
+        command:
+        - bash
+        - scripts/prestart.sh
+        envFrom: *id001
+        resources: *id002
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: dr-application
+spec:
+  selector:
+    app: backend
+  ports:
+  - port: 80
+    targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: dr-application
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: ghcr.io/fastapi-traefik-devops/fastapi-frontend@sha256:a8d07b6be8ae8c76cc8133c885ba8ec3c095ded005db251aaf6a190e88426f82
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 64Mi
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          periodSeconds: 10
+          failureThreshold: 3
+      automountServiceAccountToken: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: dr-application
+spec:
+  selector:
+    app: frontend
+  ports:
+  - port: 80
+    targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: local-only-egress
+  namespace: dr-application
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: dr-application
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53

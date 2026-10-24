@@ -1,0 +1,708 @@
+{
+  "run_date": "2026-10-24",
+  "timezone": "Europe/Tirane",
+  "runtime_infrastructure_commit": "ff154ae7a81858f5dcdf49d0582cb1d1074a6943",
+  "runtime_application_commit": "7aaf28740b227fee925e23383d6d589a3ea35336",
+  "publication_base_commit": "06c62f86cc691ff171f7ab8555fa79caf2526194",
+  "captured_screenshots": 25,
+  "unique_published_screenshots": 24,
+  "duplicate_note": "01-kubernetes/02-storage-rollout.jpg is byte-identical to 01-api-node.jpg and is indexed to the same published image. Both originals remain on the local PC.",
+  "artifacts": [
+    {
+      "source": "disaster-recovery-local/evidence/real/01-kubernetes/01-api-node.jpg",
+      "published": "astra-review/screenshots/kubernetes/01-api-node.jpg",
+      "source_mtime_utc": "2026-10-24T07:51:56.640481+00:00",
+      "source_sha256": "c15fbbbcb8005aeeaa48fc5e64da18da24da6cc879d056313c02d3936f30c7dc",
+      "published_sha256": "c15fbbbcb8005aeeaa48fc5e64da18da24da6cc879d056313c02d3936f30c7dc",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/01-kubernetes/02-storage-rollout.jpg",
+      "published": "astra-review/screenshots/kubernetes/01-api-node.jpg",
+      "source_mtime_utc": "2026-10-24T07:52:04.696513+00:00",
+      "source_sha256": "c15fbbbcb8005aeeaa48fc5e64da18da24da6cc879d056313c02d3936f30c7dc",
+      "published_sha256": "c15fbbbcb8005aeeaa48fc5e64da18da24da6cc879d056313c02d3936f30c7dc",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/01-kubernetes/03-pvc-marker-proof.jpg",
+      "published": "astra-review/screenshots/kubernetes/03-pvc-marker-proof.jpg",
+      "source_mtime_utc": "2026-10-24T08:12:48.306897+00:00",
+      "source_sha256": "79871f399fa5164f9e0d7bbd922a7554e3fec716a091b4a6173b95ca6c6362d0",
+      "published_sha256": "79871f399fa5164f9e0d7bbd922a7554e3fec716a091b4a6173b95ca6c6362d0",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/01-kubernetes/RESULT.md",
+      "published": "evidence/real/2026-10-24-local/01-kubernetes/RESULT.md",
+      "source_mtime_utc": "2026-10-24T07:51:30.994376+00:00",
+      "source_sha256": "1dac3a7630d2d1cecada184c0973d58b0a8aff8ee444e477b49b6250859ded3d",
+      "published_sha256": "1dac3a7630d2d1cecada184c0973d58b0a8aff8ee444e477b49b6250859ded3d",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/01-kubernetes/create-retry.log",
+      "published": "evidence/real/2026-10-24-local/01-kubernetes/create-retry.log",
+      "source_mtime_utc": "2026-10-24T07:49:45.499862+00:00",
+      "source_sha256": "0c1978a2d38a781501d0f6480f854f0c0e0f535b9f85062b774c9c3551b73cd9",
+      "published_sha256": "0c1978a2d38a781501d0f6480f854f0c0e0f535b9f85062b774c9c3551b73cd9",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/01-kubernetes/create.log",
+      "published": "evidence/real/2026-10-24-local/01-kubernetes/create.log",
+      "source_mtime_utc": "2026-10-24T07:49:13.020671+00:00",
+      "source_sha256": "f98473cf89c249144bf265af19c7b99f10b12371509213981771832b94e6a894",
+      "published_sha256": "f98473cf89c249144bf265af19c7b99f10b12371509213981771832b94e6a894",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/01-kubernetes/preflight-observations.json",
+      "published": "evidence/real/2026-10-24-local/01-kubernetes/preflight-observations.json",
+      "source_mtime_utc": "2026-10-24T08:14:23.855239+00:00",
+      "source_sha256": "8a9ab784e4c7e125bb589a2a361ec180995627da11c5dfc09d9e6c85ec8b5ffa",
+      "published_sha256": "8a9ab784e4c7e125bb589a2a361ec180995627da11c5dfc09d9e6c85ec8b5ffa",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/01-kubernetes/storage-proof.log",
+      "published": "evidence/real/2026-10-24-local/01-kubernetes/storage-proof.log",
+      "source_mtime_utc": "2026-10-24T08:12:39.308025+00:00",
+      "source_sha256": "557d8988fd1505219fd86e4e8052829dec98822b0b8840d9fb40ebce4c3b30ce",
+      "published_sha256": "557d8988fd1505219fd86e4e8052829dec98822b0b8840d9fb40ebce4c3b30ce",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/01-kubernetes/verification-retry.log",
+      "published": "evidence/real/2026-10-24-local/01-kubernetes/verification-retry.log",
+      "source_mtime_utc": "2026-10-24T07:51:07.517274+00:00",
+      "source_sha256": "bc4cd2374a238d4a12fe309d93aaa263fa8359dd5f9459d08debe9aa3532e9ea",
+      "published_sha256": "bc4cd2374a238d4a12fe309d93aaa263fa8359dd5f9459d08debe9aa3532e9ea",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/01-kubernetes/verification.log",
+      "published": "evidence/real/2026-10-24-local/01-kubernetes/verification.log",
+      "source_mtime_utc": "2026-10-24T07:50:19.901046+00:00",
+      "source_sha256": "0456be9c14a2c3e0429e02556cd81b5790fa9836f048d8fb1221745fd507919f",
+      "published_sha256": "0456be9c14a2c3e0429e02556cd81b5790fa9836f048d8fb1221745fd507919f",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/02-cloudnativepg-r2/01-operator-install.jpg",
+      "published": "astra-review/screenshots/cloudnativepg-r2/01-operator-install.jpg",
+      "source_mtime_utc": "2026-10-24T07:54:12.411947+00:00",
+      "source_sha256": "1827ce1496a00c0935d21329aa4465ecafce34947e527c68640e19f678fb2dfe",
+      "published_sha256": "1827ce1496a00c0935d21329aa4465ecafce34947e527c68640e19f678fb2dfe",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/02-cloudnativepg-r2/02-plugin-certificates.jpg",
+      "published": "astra-review/screenshots/cloudnativepg-r2/02-plugin-certificates.jpg",
+      "source_mtime_utc": "2026-10-24T07:54:14.041952+00:00",
+      "source_sha256": "91333527297826efdb367a7c2c8308167a5e11144558dda3504255469a77ff9e",
+      "published_sha256": "91333527297826efdb367a7c2c8308167a5e11144558dda3504255469a77ff9e",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/02-cloudnativepg-r2/03-ready-certificates-proof.jpg",
+      "published": "astra-review/screenshots/cloudnativepg-r2/03-ready-certificates-proof.jpg",
+      "source_mtime_utc": "2026-10-24T08:12:48.543884+00:00",
+      "source_sha256": "b523a4ba11906f9b24d9c9aef00edc3446d9566560ebeb2a3abc2a461869d6ec",
+      "published_sha256": "b523a4ba11906f9b24d9c9aef00edc3446d9566560ebeb2a3abc2a461869d6ec",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/02-cloudnativepg-r2/RESULT.md",
+      "published": "evidence/real/2026-10-24-local/02-cloudnativepg-r2/RESULT.md",
+      "source_mtime_utc": "2026-10-24T07:54:05.452926+00:00",
+      "source_sha256": "c1621d74d346a1de58fe16c285315172e6c977dfcab863469926662bd4ae34a9",
+      "published_sha256": "c1621d74d346a1de58fe16c285315172e6c977dfcab863469926662bd4ae34a9",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/02-cloudnativepg-r2/dependencies.log",
+      "published": "evidence/real/2026-10-24-local/02-cloudnativepg-r2/dependencies.log",
+      "source_mtime_utc": "2026-10-24T07:53:30.400817+00:00",
+      "source_sha256": "eb2a5c34f33698fc6116507e93f621afa1c2e3e154051144b0bd285fc5192744",
+      "published_sha256": "eb2a5c34f33698fc6116507e93f621afa1c2e3e154051144b0bd285fc5192744",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/02-cloudnativepg-r2/input-preflight.json",
+      "published": "evidence/real/2026-10-24-local/02-cloudnativepg-r2/input-preflight.json",
+      "source_mtime_utc": "2026-10-24T07:50:50.724196+00:00",
+      "source_sha256": "36b68fcd484301c8e0a9153ce98914fcb49d3f9861e57ccbbcdbfadf602bee09",
+      "published_sha256": "36b68fcd484301c8e0a9153ce98914fcb49d3f9861e57ccbbcdbfadf602bee09",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/02-cloudnativepg-r2/operator-install.log",
+      "published": "evidence/real/2026-10-24-local/02-cloudnativepg-r2/operator-install.log",
+      "source_mtime_utc": "2026-10-24T07:51:25.247351+00:00",
+      "source_sha256": "deb9040233cf21efd0c421b5a34782e8bcb15de40485d22bd30fbcc7c36c5b58",
+      "published_sha256": "deb9040233cf21efd0c421b5a34782e8bcb15de40485d22bd30fbcc7c36c5b58",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/02-cloudnativepg-r2/ready-proof.log",
+      "published": "evidence/real/2026-10-24-local/02-cloudnativepg-r2/ready-proof.log",
+      "source_mtime_utc": "2026-10-24T08:12:39.308025+00:00",
+      "source_sha256": "d8be10def1c1c56dd3671f80f99c308b07b546885ea1ee1673bba37163ddcf0f",
+      "published_sha256": "d8be10def1c1c56dd3671f80f99c308b07b546885ea1ee1673bba37163ddcf0f",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/03-application/01-image-pull-failure.jpg",
+      "published": "astra-review/screenshots/application/01-image-pull-failure.jpg",
+      "source_mtime_utc": "2026-10-24T07:57:06.299397+00:00",
+      "source_sha256": "18f5001833f43852f78fb3bba65071a60f8193b77c39efc53a9acca718c1fdb0",
+      "published_sha256": "18f5001833f43852f78fb3bba65071a60f8193b77c39efc53a9acca718c1fdb0",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/03-application/RESULT.md",
+      "published": "evidence/real/2026-10-24-local/03-application/RESULT.md",
+      "source_mtime_utc": "2026-10-24T07:58:37.384593+00:00",
+      "source_sha256": "592b6f141c79a75bd5043335b18a2982b8080b8589d9afe1aeedcff315694bfe",
+      "published_sha256": "592b6f141c79a75bd5043335b18a2982b8080b8589d9afe1aeedcff315694bfe",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/03-application/database-bootstrap.log",
+      "published": "evidence/real/2026-10-24-local/03-application/database-bootstrap.log",
+      "source_mtime_utc": "2026-10-24T07:56:56.039373+00:00",
+      "source_sha256": "564790d1969bc55f847669d2a38bc9d54ec85b581a0363709b72ebe98614cbc2",
+      "published_sha256": "564790d1969bc55f847669d2a38bc9d54ec85b581a0363709b72ebe98614cbc2",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/03-application/database-ready.log",
+      "published": "evidence/real/2026-10-24-local/03-application/database-ready.log",
+      "source_mtime_utc": "2026-10-24T07:57:33.182457+00:00",
+      "source_sha256": "29148ec833be6cb6732d687ecb8229d72090fd7941b8ce472132199c90bad023",
+      "published_sha256": "29148ec833be6cb6732d687ecb8229d72090fd7941b8ce472132199c90bad023",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/03-application/events.log",
+      "published": "evidence/real/2026-10-24-local/03-application/events.log",
+      "source_mtime_utc": "2026-10-24T07:55:44.658201+00:00",
+      "source_sha256": "48c2ee3f0b120ca915ce814817171e788e1170fbefb38d139dab0582f6fde0ca",
+      "published_sha256": "48c2ee3f0b120ca915ce814817171e788e1170fbefb38d139dab0582f6fde0ca",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/03-application/startup.log",
+      "published": "evidence/real/2026-10-24-local/03-application/startup.log",
+      "source_mtime_utc": "2026-10-24T07:57:35.246462+00:00",
+      "source_sha256": "952a4d896f93a29c34d29f5c345669a98bc32fcf9c65ded4c1312c025fa914a3",
+      "published_sha256": "952a4d896f93a29c34d29f5c345669a98bc32fcf9c65ded4c1312c025fa914a3",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/04-argocd/01-applications-ui.jpg",
+      "published": "astra-review/screenshots/argocd/01-applications-ui.jpg",
+      "source_mtime_utc": "2026-10-24T08:00:34.251822+00:00",
+      "source_sha256": "bfdbef049458be0fc134f91bd226d857c9b5df10ca4a9d1a28b84dfa86537e9b",
+      "published_sha256": "bfdbef049458be0fc134f91bd226d857c9b5df10ca4a9d1a28b84dfa86537e9b",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/04-argocd/02-synced-applications-ui.jpg",
+      "published": "astra-review/screenshots/argocd/02-synced-applications-ui.jpg",
+      "source_mtime_utc": "2026-10-24T08:01:45.682953+00:00",
+      "source_sha256": "b89a0774d0ff60f82291aee827dd768fa4e3a00777665e27f024b06793cbd5f3",
+      "published_sha256": "b89a0774d0ff60f82291aee827dd768fa4e3a00777665e27f024b06793cbd5f3",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/04-argocd/03-sync-tree-ui.jpg",
+      "published": "astra-review/screenshots/argocd/03-sync-tree-ui.jpg",
+      "source_mtime_utc": "2026-10-24T08:01:49.362960+00:00",
+      "source_sha256": "e2b6749e652dfdfa0aa0398eb63e903fea411bf9d6368e9b7075163f1d84aa94",
+      "published_sha256": "e2b6749e652dfdfa0aa0398eb63e903fea411bf9d6368e9b7075163f1d84aa94",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/04-argocd/RESULT.md",
+      "published": "evidence/real/2026-10-24-local/04-argocd/RESULT.md",
+      "source_mtime_utc": "2026-10-24T08:02:28.138029+00:00",
+      "source_sha256": "b8f4cb0e1e5185a87f36a64b9dbea61b82f193e8f076d65a4c2615a053910fde",
+      "published_sha256": "b8f4cb0e1e5185a87f36a64b9dbea61b82f193e8f076d65a4c2615a053910fde",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/04-argocd/free-resources.log",
+      "published": "evidence/real/2026-10-24-local/04-argocd/free-resources.log",
+      "source_mtime_utc": "2026-10-24T08:02:42.586054+00:00",
+      "source_sha256": "1d9d88bd2865ac214adee6031965546ea05cefa65d7acfcb693041f53c58064e",
+      "published_sha256": "1d9d88bd2865ac214adee6031965546ea05cefa65d7acfcb693041f53c58064e",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/04-argocd/install.log",
+      "published": "evidence/real/2026-10-24-local/04-argocd/install.log",
+      "source_mtime_utc": "2026-10-24T08:00:06.190769+00:00",
+      "source_sha256": "70011e4d3e399fa49ae0ea3756e6fe1eb1ee741b4967e8ba43c88e297359877e",
+      "published_sha256": "70011e4d3e399fa49ae0ea3756e6fe1eb1ee741b4967e8ba43c88e297359877e",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/04-argocd/sync-retry.log",
+      "published": "evidence/real/2026-10-24-local/04-argocd/sync-retry.log",
+      "source_mtime_utc": "2026-10-24T08:01:15.544899+00:00",
+      "source_sha256": "f57fe3e6376d17689f14dfc138a9d17ea559b3e5e9c90e34ff2cd162a66935ee",
+      "published_sha256": "f57fe3e6376d17689f14dfc138a9d17ea559b3e5e9c90e34ff2cd162a66935ee",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/04-argocd/sync.log",
+      "published": "evidence/real/2026-10-24-local/04-argocd/sync.log",
+      "source_mtime_utc": "2026-10-24T08:01:15.533899+00:00",
+      "source_sha256": "adc56e3ed89cfc594401129dbb79635513a4a3850bb62ea8d6aa0d26c511ed0d",
+      "published_sha256": "adc56e3ed89cfc594401129dbb79635513a4a3850bb62ea8d6aa0d26c511ed0d",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/01-prometheus-target-up.jpg",
+      "published": "astra-review/screenshots/monitoring/01-prometheus-target-up.jpg",
+      "source_mtime_utc": "2026-10-24T08:03:46.514164+00:00",
+      "source_sha256": "cbfe47ba60f5dfa014ea60637b69ef395782e879f297455da525fd7884c11e46",
+      "published_sha256": "cbfe47ba60f5dfa014ea60637b69ef395782e879f297455da525fd7884c11e46",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/02-prometheus-rules.jpg",
+      "published": "astra-review/screenshots/monitoring/02-prometheus-rules.jpg",
+      "source_mtime_utc": "2026-10-24T08:04:34.442245+00:00",
+      "source_sha256": "9b7db9a61508fe82962b7d2f91bd1eebc42664d49b5854da67cbce517201bb0a",
+      "published_sha256": "9b7db9a61508fe82962b7d2f91bd1eebc42664d49b5854da67cbce517201bb0a",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/03-grafana-real-local-metrics.jpg",
+      "published": "astra-review/screenshots/monitoring/03-grafana-real-local-metrics.jpg",
+      "source_mtime_utc": "2026-10-24T08:06:19.983420+00:00",
+      "source_sha256": "9c3243319dac4970ab3cf142503d177b4a44947b74bd21e6b204e7f464070152",
+      "published_sha256": "9c3243319dac4970ab3cf142503d177b4a44947b74bd21e6b204e7f464070152",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/04-recovered-repository-dashboard.jpg",
+      "published": "astra-review/screenshots/monitoring/04-recovered-repository-dashboard.jpg",
+      "source_mtime_utc": "2026-10-24T08:06:36.758447+00:00",
+      "source_sha256": "629046c65c70901f2881b91417eeb92f111f1677c018c6a132ef51809af85918",
+      "published_sha256": "629046c65c70901f2881b91417eeb92f111f1677c018c6a132ef51809af85918",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/05-alertmanager-synthetic-firing.jpg",
+      "published": "astra-review/screenshots/monitoring/05-alertmanager-synthetic-firing.jpg",
+      "source_mtime_utc": "2026-10-24T08:07:45.149558+00:00",
+      "source_sha256": "381323d41127c42f643679dc510241b29956c37fec8242680be5a655cd03d90b",
+      "published_sha256": "381323d41127c42f643679dc510241b29956c37fec8242680be5a655cd03d90b",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/06-alertmanager-resolved.jpg",
+      "published": "astra-review/screenshots/monitoring/06-alertmanager-resolved.jpg",
+      "source_mtime_utc": "2026-10-24T08:07:58.786580+00:00",
+      "source_sha256": "41a23b14447ec723c19bb0a8016a1a02044212c7f1dc76e8ed95245fd1268803",
+      "published_sha256": "41a23b14447ec723c19bb0a8016a1a02044212c7f1dc76e8ed95245fd1268803",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/RESULT.md",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/RESULT.md",
+      "source_mtime_utc": "2026-10-24T08:08:22.654618+00:00",
+      "source_sha256": "42eb94967e336789ad868a890aa1044ab0d2adda202a7e11200f1035f7a67a21",
+      "published_sha256": "42eb94967e336789ad868a890aa1044ab0d2adda202a7e11200f1035f7a67a21",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/alertmanager-address.txt",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/alertmanager-address.txt",
+      "source_mtime_utc": "2026-10-24T08:07:34.407541+00:00",
+      "source_sha256": "609f9cd998fbdffa1f98d4f1a239e58784246aa39ddb8c10e88f36d45e54a10c",
+      "published_sha256": "609f9cd998fbdffa1f98d4f1a239e58784246aa39ddb8c10e88f36d45e54a10c",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/alertmanager-firing.json",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/alertmanager-firing.json",
+      "source_mtime_utc": "2026-10-24T08:07:34.407541+00:00",
+      "source_sha256": "9dc41d323084c9bf8edea83abfe8c705f40062a4059a52e556b073e4904e9aa4",
+      "published_sha256": "9dc41d323084c9bf8edea83abfe8c705f40062a4059a52e556b073e4904e9aa4",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/alertmanager-resolved.json",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/alertmanager-resolved.json",
+      "source_mtime_utc": "2026-10-24T08:07:52.880570+00:00",
+      "source_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "published_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/alertmanager-status.json",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/alertmanager-status.json",
+      "source_mtime_utc": "2026-10-24T08:07:34.405541+00:00",
+      "source_sha256": "c09eb98970a5ea0e14ce6c38420d21cde1eb74d6e257ca42a626c5727004b032",
+      "published_sha256": "c09eb98970a5ea0e14ce6c38420d21cde1eb74d6e257ca42a626c5727004b032",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/alertmanager.log",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/alertmanager.log",
+      "source_mtime_utc": "2026-10-24T08:07:52.908571+00:00",
+      "source_sha256": "9462584c68723883ba5610e381b3c2b7956503ae8bc973bf084a1ae85b1f69e7",
+      "published_sha256": "9462584c68723883ba5610e381b3c2b7956503ae8bc973bf084a1ae85b1f69e7",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/grafana-dashboards.json",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/grafana-dashboards.json",
+      "source_mtime_utc": "2026-10-24T08:05:50.220371+00:00",
+      "source_sha256": "72058574cb77269dd61051f2631e20cec10b8bd39ade2267f2250c6d02c8ba80",
+      "published_sha256": "72058574cb77269dd61051f2631e20cec10b8bd39ade2267f2250c6d02c8ba80",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/grafana-health.json",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/grafana-health.json",
+      "source_mtime_utc": "2026-10-24T08:05:50.175371+00:00",
+      "source_sha256": "d198be1b7b342bc53feb02720504e59f49de0e73b49aaadbc9d1fc91112da6ba",
+      "published_sha256": "d198be1b7b342bc53feb02720504e59f49de0e73b49aaadbc9d1fc91112da6ba",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/grafana.log",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/grafana.log",
+      "source_mtime_utc": "2026-10-24T08:06:07.296399+00:00",
+      "source_sha256": "c1ceb5cb6278baf20715f82a2e9866fca68f54f05f443417109cdb5992e751dd",
+      "published_sha256": "c1ceb5cb6278baf20715f82a2e9866fca68f54f05f443417109cdb5992e751dd",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/prometheus.log",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/prometheus.log",
+      "source_mtime_utc": "2026-10-24T08:06:07.274399+00:00",
+      "source_sha256": "d2c8fc020b47276cb585a280fbcbc54bbe45d5410c515e50b7cafbf44d841b53",
+      "published_sha256": "d2c8fc020b47276cb585a280fbcbc54bbe45d5410c515e50b7cafbf44d841b53",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/query.json",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/query.json",
+      "source_mtime_utc": "2026-10-24T08:04:04.141194+00:00",
+      "source_sha256": "30d249e14ef1b9c838f47d088784dcf724ce818e8aa591524ea32929b9e2e802",
+      "published_sha256": "30d249e14ef1b9c838f47d088784dcf724ce818e8aa591524ea32929b9e2e802",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/ready.log",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/ready.log",
+      "source_mtime_utc": "2026-10-24T08:04:04.139194+00:00",
+      "source_sha256": "6ae2244847eb26de55cd1ebd355f656a5824b2b8a8a66d8d19cf6b1517c4831b",
+      "published_sha256": "6ae2244847eb26de55cd1ebd355f656a5824b2b8a8a66d8d19cf6b1517c4831b",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/resource-usage.log",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/resource-usage.log",
+      "source_mtime_utc": "2026-10-24T08:07:53.944572+00:00",
+      "source_sha256": "53181cfc60568470e83903c1142064cd871271fccde1327b62ddc6d7288b5ac3",
+      "published_sha256": "53181cfc60568470e83903c1142064cd871271fccde1327b62ddc6d7288b5ac3",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/rule-validation.log",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/rule-validation.log",
+      "source_mtime_utc": "2026-10-24T08:02:43.035055+00:00",
+      "source_sha256": "3d8dfda3e76728e29291bf693096df37eb3cb00cccca069090dfd25e8b606539",
+      "published_sha256": "3d8dfda3e76728e29291bf693096df37eb3cb00cccca069090dfd25e8b606539",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/rules.json",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/rules.json",
+      "source_mtime_utc": "2026-10-24T08:04:04.141194+00:00",
+      "source_sha256": "87debaa177b0c15b5729e8f668d3720a05bba327b955196a301fd3e292d12823",
+      "published_sha256": "87debaa177b0c15b5729e8f668d3720a05bba327b955196a301fd3e292d12823",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/05-monitoring/targets.json",
+      "published": "evidence/real/2026-10-24-local/05-monitoring/targets.json",
+      "source_mtime_utc": "2026-10-24T08:04:04.140194+00:00",
+      "source_sha256": "93a0129c9f4234ada10a7020377971480359d7591a3989cc2fc1b2a8666bf286",
+      "published_sha256": "93a0129c9f4234ada10a7020377971480359d7591a3989cc2fc1b2a8666bf286",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/06-jenkins/01-source-controller-held.jpg",
+      "published": "astra-review/screenshots/jenkins/01-source-controller-held.jpg",
+      "source_mtime_utc": "2026-10-24T08:09:12.021697+00:00",
+      "source_sha256": "42f6ac2398aa7bf4d170fa71ca05c2f9476a05b0fe5b2193e95b61922b566c5c",
+      "published_sha256": "42f6ac2398aa7bf4d170fa71ca05c2f9476a05b0fe5b2193e95b61922b566c5c",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/06-jenkins/02-restored-controller-held.jpg",
+      "published": "astra-review/screenshots/jenkins/02-restored-controller-held.jpg",
+      "source_mtime_utc": "2026-10-24T08:10:50.049853+00:00",
+      "source_sha256": "fab65947930acafd0396e209f81ced7a0a8f84ea279863af4af1151a0e95f21b",
+      "published_sha256": "fab65947930acafd0396e209f81ced7a0a8f84ea279863af4af1151a0e95f21b",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/06-jenkins/03-restored-disabled-job.jpg",
+      "published": "astra-review/screenshots/jenkins/03-restored-disabled-job.jpg",
+      "source_mtime_utc": "2026-10-24T08:11:00.514869+00:00",
+      "source_sha256": "9b7784cc28e70201dc5da65868972fe061f33ed697e809fc545c121d957d35ee",
+      "published_sha256": "9b7784cc28e70201dc5da65868972fe061f33ed697e809fc545c121d957d35ee",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/06-jenkins/RESULT.md",
+      "published": "evidence/real/2026-10-24-local/06-jenkins/RESULT.md",
+      "source_mtime_utc": "2026-10-24T08:11:26.677911+00:00",
+      "source_sha256": "54c1e3db545cb3ec65351ddff52239b70e388f7ebf69ee7ee9a7d41658b408b0",
+      "published_sha256": "54c1e3db545cb3ec65351ddff52239b70e388f7ebf69ee7ee9a7d41658b408b0",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/06-jenkins/archive-receipt.json",
+      "published": "evidence/real/2026-10-24-local/06-jenkins/archive-receipt.json",
+      "source_mtime_utc": "2026-10-24T08:09:36.457736+00:00",
+      "source_sha256": "b9bc7458b3a9e80325e082da68aa029e6dd9bc0a88b87276a4f841f81afb0d48",
+      "published_sha256": "b9bc7458b3a9e80325e082da68aa029e6dd9bc0a88b87276a4f841f81afb0d48",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/06-jenkins/image-pull.log",
+      "published": "evidence/real/2026-10-24-local/06-jenkins/image-pull.log",
+      "source_mtime_utc": "2026-10-24T08:07:16.788512+00:00",
+      "source_sha256": "72807d817fac6c7bbb8daa16eae33fd44d0f3da5cb803ac52b2f6ed76dff4b5b",
+      "published_sha256": "72807d817fac6c7bbb8daa16eae33fd44d0f3da5cb803ac52b2f6ed76dff4b5b",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/06-jenkins/resource-usage.log",
+      "published": "evidence/real/2026-10-24-local/06-jenkins/resource-usage.log",
+      "source_mtime_utc": "2026-10-24T08:10:41.384839+00:00",
+      "source_sha256": "871c1f0ecbe20b1959ab04513310a09c5b1d4deab6be19a85a377b2408007ee3",
+      "published_sha256": "871c1f0ecbe20b1959ab04513310a09c5b1d4deab6be19a85a377b2408007ee3",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/06-jenkins/restored-runtime.json",
+      "published": "evidence/real/2026-10-24-local/06-jenkins/restored-runtime.json",
+      "source_mtime_utc": "2026-10-24T08:10:40.350837+00:00",
+      "source_sha256": "d144edab199842c091c574f025c5e0246d0a016a4f3a0d938619767d0c00520e",
+      "published_sha256": "d144edab199842c091c574f025c5e0246d0a016a4f3a0d938619767d0c00520e",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/06-jenkins/restored-startup.log",
+      "published": "evidence/real/2026-10-24-local/06-jenkins/restored-startup.log",
+      "source_mtime_utc": "2026-10-24T08:10:39.488836+00:00",
+      "source_sha256": "f2e7e8b1830b3950baadb1e21cf3c41183c42920f14f942dca86aee35f498d27",
+      "published_sha256": "f2e7e8b1830b3950baadb1e21cf3c41183c42920f14f942dca86aee35f498d27",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/06-jenkins/source-runtime.json",
+      "published": "evidence/real/2026-10-24-local/06-jenkins/source-runtime.json",
+      "source_mtime_utc": "2026-10-24T08:09:26.712721+00:00",
+      "source_sha256": "d144edab199842c091c574f025c5e0246d0a016a4f3a0d938619767d0c00520e",
+      "published_sha256": "d144edab199842c091c574f025c5e0246d0a016a4f3a0d938619767d0c00520e",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/06-jenkins/source-startup.log",
+      "published": "evidence/real/2026-10-24-local/06-jenkins/source-startup.log",
+      "source_mtime_utc": "2026-10-24T08:09:26.762721+00:00",
+      "source_sha256": "5f3becdf548ec0a61dab6f4cc2f5430fd1e06634326d3e7406ffa86dce6a688b",
+      "published_sha256": "5f3becdf548ec0a61dab6f4cc2f5430fd1e06634326d3e7406ffa86dce6a688b",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/06-jenkins/staging.log",
+      "published": "evidence/real/2026-10-24-local/06-jenkins/staging.log",
+      "source_mtime_utc": "2026-10-24T08:09:36.457736+00:00",
+      "source_sha256": "8a5f04be3d71bccbdbb6b3d6971e6beac3699bcf857902c613d730b6d9b65271",
+      "published_sha256": "8a5f04be3d71bccbdbb6b3d6971e6beac3699bcf857902c613d730b6d9b65271",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/07-rollback/01-workload-v1-v2-v1.jpg",
+      "published": "astra-review/screenshots/rollback/01-workload-v1-v2-v1.jpg",
+      "source_mtime_utc": "2026-10-24T08:14:50.495193+00:00",
+      "source_sha256": "d5aa19afa8512651377844cd45eefcbb0e20cb7430294bf8485261e5a94ce804",
+      "published_sha256": "d5aa19afa8512651377844cd45eefcbb0e20cb7430294bf8485261e5a94ce804",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/07-rollback/02-postgres-checkpoint-restore.jpg",
+      "published": "astra-review/screenshots/rollback/02-postgres-checkpoint-restore.jpg",
+      "source_mtime_utc": "2026-10-24T08:14:50.935176+00:00",
+      "source_sha256": "1fb4b74db0b8d48e83770d382969ce3a0ab87930925833e11175193e74b62e96",
+      "published_sha256": "1fb4b74db0b8d48e83770d382969ce3a0ab87930925833e11175193e74b62e96",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/07-rollback/03-http-comparison.jpg",
+      "published": "astra-review/screenshots/rollback/03-http-comparison.jpg",
+      "source_mtime_utc": "2026-10-24T08:16:30.463001+00:00",
+      "source_sha256": "72594d183cf3e2b36ad9de3fea85c019560f90c59ed93d8397cdf0f8320e632c",
+      "published_sha256": "72594d183cf3e2b36ad9de3fea85c019560f90c59ed93d8397cdf0f8320e632c",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/07-rollback/04-sql-comparison.jpg",
+      "published": "astra-review/screenshots/rollback/04-sql-comparison.jpg",
+      "source_mtime_utc": "2026-10-24T08:16:30.866991+00:00",
+      "source_sha256": "49c89127ca2231df91f0b7bf28cb076ed6d55e8d98554f45ab1b57b06f824763",
+      "published_sha256": "49c89127ca2231df91f0b7bf28cb076ed6d55e8d98554f45ab1b57b06f824763",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/07-rollback/RESULT.md",
+      "published": "evidence/real/2026-10-24-local/07-rollback/RESULT.md",
+      "source_mtime_utc": "2026-10-24T08:14:44.366425+00:00",
+      "source_sha256": "3c7fbda3bcd3129fb6ed323b019185a5cb3640afa82eb9eb0625b499e9b7e9cf",
+      "published_sha256": "3c7fbda3bcd3129fb6ed323b019185a5cb3640afa82eb9eb0625b499e9b7e9cf",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/07-rollback/cluster-resume.log",
+      "published": "evidence/real/2026-10-24-local/07-rollback/cluster-resume.log",
+      "source_mtime_utc": "2026-10-24T08:11:39.172930+00:00",
+      "source_sha256": "f86d8e3253b085164125a25b07893396219c42174233220eaddbd356cd9af217",
+      "published_sha256": "f86d8e3253b085164125a25b07893396219c42174233220eaddbd356cd9af217",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/07-rollback/first-failure.log",
+      "published": "evidence/real/2026-10-24-local/07-rollback/first-failure.log",
+      "source_mtime_utc": "2026-10-24T08:13:12.853547+00:00",
+      "source_sha256": "00aa2a602160152c14a022bfbbdb696028e08be09f61af6c558e4cf7bcfc28ec",
+      "published_sha256": "00aa2a602160152c14a022bfbbdb696028e08be09f61af6c558e4cf7bcfc28ec",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/07-rollback/first-run.log",
+      "published": "evidence/real/2026-10-24-local/07-rollback/first-run.log",
+      "source_mtime_utc": "2026-10-24T08:13:10.186688+00:00",
+      "source_sha256": "0a12e9e6e7ed64f71eee6d883b92c4e69cffe2723640b0b491ac7aaba04fbfa3",
+      "published_sha256": "0a12e9e6e7ed64f71eee6d883b92c4e69cffe2723640b0b491ac7aaba04fbfa3",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/07-rollback/http-comparison.log",
+      "published": "evidence/real/2026-10-24-local/07-rollback/http-comparison.log",
+      "source_mtime_utc": "2026-10-24T08:15:51.259130+00:00",
+      "source_sha256": "af6c587d8fb44e195a572060d1a493e796dcf69c71935deb17721e9258787615",
+      "published_sha256": "af6c587d8fb44e195a572060d1a493e796dcf69c71935deb17721e9258787615",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/07-rollback/postgres-proof.log",
+      "published": "evidence/real/2026-10-24-local/07-rollback/postgres-proof.log",
+      "source_mtime_utc": "2026-10-24T08:14:44.365425+00:00",
+      "source_sha256": "914c0e33f29b957c48f5781e0c5a590c5daf931b3327be397028e6ea3fe0d6d5",
+      "published_sha256": "914c0e33f29b957c48f5781e0c5a590c5daf931b3327be397028e6ea3fe0d6d5",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/07-rollback/results.json",
+      "published": "evidence/real/2026-10-24-local/07-rollback/results.json",
+      "source_mtime_utc": "2026-10-24T08:14:08.044906+00:00",
+      "source_sha256": "db8056c7d32e312604073af14187dd7ea0be2cebcb595694785588647554d38f",
+      "published_sha256": "db8056c7d32e312604073af14187dd7ea0be2cebcb595694785588647554d38f",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/07-rollback/rollback.log",
+      "published": "evidence/real/2026-10-24-local/07-rollback/rollback.log",
+      "source_mtime_utc": "2026-10-24T08:14:08.044906+00:00",
+      "source_sha256": "1d1aab7024408838ff45c82d3754789ea683dab3d325abf6357eae5be9f9b15e",
+      "published_sha256": "1d1aab7024408838ff45c82d3754789ea683dab3d325abf6357eae5be9f9b15e",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/07-rollback/sql-comparison.log",
+      "published": "evidence/real/2026-10-24-local/07-rollback/sql-comparison.log",
+      "source_mtime_utc": "2026-10-24T08:15:51.259130+00:00",
+      "source_sha256": "1618fc9248b887fc703518eb713cc70477e1784e0e19c3da0517ac7c88c1d5dc",
+      "published_sha256": "1618fc9248b887fc703518eb713cc70477e1784e0e19c3da0517ac7c88c1d5dc",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/07-rollback/workload-proof.log",
+      "published": "evidence/real/2026-10-24-local/07-rollback/workload-proof.log",
+      "source_mtime_utc": "2026-10-24T08:14:44.365425+00:00",
+      "source_sha256": "458493056664d7bfc85cee4ae5e4e156dbcb017b33d913555abb7aabc498b527",
+      "published_sha256": "458493056664d7bfc85cee4ae5e4e156dbcb017b33d913555abb7aabc498b527",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/08-cleanup/01-pvc-before-shutdown.jpg",
+      "published": "astra-review/screenshots/cleanup/01-pvc-before-shutdown.jpg",
+      "source_mtime_utc": "2026-10-24T08:16:31.134983+00:00",
+      "source_sha256": "46e48cf8feb524047f5a6a10b96dda69e733b16fa088bf06e6366918e5edfdcb",
+      "published_sha256": "46e48cf8feb524047f5a6a10b96dda69e733b16fa088bf06e6366918e5edfdcb",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/08-cleanup/02-stopped-and-preserved.jpg",
+      "published": "astra-review/screenshots/cleanup/02-stopped-and-preserved.jpg",
+      "source_mtime_utc": "2026-10-24T08:16:32.581944+00:00",
+      "source_sha256": "42bbb93c2d7906960c2ad4924afb9376e017e3f10e55393a806fbbda1091aaf1",
+      "published_sha256": "42bbb93c2d7906960c2ad4924afb9376e017e3f10e55393a806fbbda1091aaf1",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/08-cleanup/RESULT.md",
+      "published": "evidence/real/2026-10-24-local/08-cleanup/RESULT.md",
+      "source_mtime_utc": "2026-10-24T08:16:21.086259+00:00",
+      "source_sha256": "b36dc14d19b996bfce314b55adf596d9e8ad94333031f078d97396d7213f899e",
+      "published_sha256": "b36dc14d19b996bfce314b55adf596d9e8ad94333031f078d97396d7213f899e",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/08-cleanup/after-shutdown.log",
+      "published": "evidence/real/2026-10-24-local/08-cleanup/after-shutdown.log",
+      "source_mtime_utc": "2026-10-24T08:16:21.117258+00:00",
+      "source_sha256": "5f3910409af3706e7309a5598bc443d0c319f43828ba222ccb1be4c61a8c42f2",
+      "published_sha256": "5fa44653e1f294da4af78957bc5ad3c3a0f719871cdcbb8fc85577e7c1584be0",
+      "home_path_sanitized": true
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/08-cleanup/before-shutdown.log",
+      "published": "evidence/real/2026-10-24-local/08-cleanup/before-shutdown.log",
+      "source_mtime_utc": "2026-10-24T08:16:21.117258+00:00",
+      "source_sha256": "55bb0bbba471a5cf8667c3bca59819f508bd631d850f07a0d50a878e9a599b19",
+      "published_sha256": "55bb0bbba471a5cf8667c3bca59819f508bd631d850f07a0d50a878e9a599b19",
+      "home_path_sanitized": false
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/08-cleanup/cleanup.log",
+      "published": "evidence/real/2026-10-24-local/08-cleanup/cleanup.log",
+      "source_mtime_utc": "2026-10-24T08:15:37.625557+00:00",
+      "source_sha256": "0c82b25f6530f8ad2ebc6b916eda8ac0768ccaef2390fc1c6c9ea7726dace656",
+      "published_sha256": "396e4470c3e5f7ece7c7e9ce7cc0ee58614d4f7ed6225275f6d7f0c6767cdca0",
+      "home_path_sanitized": true
+    },
+    {
+      "source": "disaster-recovery-local/evidence/real/08-cleanup/receipt.json",
+      "published": "evidence/real/2026-10-24-local/08-cleanup/receipt.json",
+      "source_mtime_utc": "2026-10-24T08:15:37.625557+00:00",
+      "source_sha256": "da5a011585e525782b9b2a9690211336e192301a5192a5029b7c02d98ad13642",
+      "published_sha256": "da5a011585e525782b9b2a9690211336e192301a5192a5029b7c02d98ad13642",
+      "home_path_sanitized": false
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+LAST SEEN   TYPE      REASON                   OBJECT                                 MESSAGE
+36s         Normal    Scheduled                pod/frontend-7b8bc97bdb-9q8ff          Successfully assigned dr-application/frontend-7b8bc97bdb-9q8ff to k3d-liora-dr-20261024-server-0
+29s         Normal    Scheduled                pod/liora-lab-db-1-initdb-mzn8s        Successfully assigned dr-application/liora-lab-db-1-initdb-mzn8s to k3d-liora-dr-20261024-server-0
+36s         Normal    Scheduled                pod/backend-dc9c5c788-98s5h            Successfully assigned dr-application/backend-dc9c5c788-98s5h to k3d-liora-dr-20261024-server-0
+36s         Normal    SuccessfulCreate         replicaset/frontend-7b8bc97bdb         Created pod: frontend-7b8bc97bdb-9q8ff
+36s         Normal    CreatingServiceAccount   cluster/liora-lab-db                   Creating ServiceAccount
+36s         Normal    ScalingReplicaSet        deployment/frontend                    Scaled up replica set frontend-7b8bc97bdb from 0 to 1
+36s         Normal    SuccessfulCreate         replicaset/backend-dc9c5c788           Created pod: backend-dc9c5c788-98s5h
+36s         Normal    ScalingReplicaSet        deployment/backend                     Scaled up replica set backend-dc9c5c788 from 0 to 1
+36s         Normal    CreatingRole             cluster/liora-lab-db                   Creating Cluster Role
+34s         Normal    WaitForFirstConsumer     persistentvolumeclaim/liora-lab-db-1   waiting for first consumer to be created before binding
+34s         Normal    Provisioning             persistentvolumeclaim/liora-lab-db-1   External provisioner is provisioning volume for claim "dr-application/liora-lab-db-1"
+34s         Normal    ExternalProvisioning     persistentvolumeclaim/liora-lab-db-1   Waiting for a volume to be created either by the external provisioner 'rancher.io/local-path' or manually by the system administrator. If volume creation is delayed, please verify that the provisioner is running and correctly registered.
+34s         Normal    SuccessfulCreate         job/liora-lab-db-1-initdb              Created pod: liora-lab-db-1-initdb-mzn8s
+34s         Normal    CreatingInstance         cluster/liora-lab-db                   Primary instance (initdb)
+30s         Normal    ProvisioningSucceeded    persistentvolumeclaim/liora-lab-db-1   Successfully provisioned volume pvc-07f8170d-a8fc-4438-92af-cfd299955a3d
+28s         Normal    Started                  pod/liora-lab-db-1-initdb-mzn8s        Container started
+28s         Normal    Pulled                   pod/liora-lab-db-1-initdb-mzn8s        Container image "ghcr.io/cloudnative-pg/cloudnative-pg:1.30.1@sha256:923c267ec29636db3bee20f993d0ec4973fa22998e1adad37da79e4d32b5bc07" already present on machine and can be accessed by the pod
+28s         Normal    Created                  pod/liora-lab-db-1-initdb-mzn8s        Container created
+27s         Normal    Pulling                  pod/liora-lab-db-1-initdb-mzn8s        Pulling image "ghcr.io/cloudnative-pg/postgresql:16.15-system-trixie@sha256:8ca5699981c25db72e549e9fa69561bac233df15b9b1e3a6282847b0629bb5ea"
+23s         Normal    Pulling                  pod/backend-dc9c5c788-98s5h            Pulling image "ghcr.io/fastapi-traefik-devops/fastapi-backend@sha256:ea2d0aaf163f15f1bf749ee69822ebe33e619d2a00a5813d348732936b56f00b"
+22s         Warning   Failed                   pod/backend-dc9c5c788-98s5h            Failed to pull image "ghcr.io/fastapi-traefik-devops/fastapi-backend@sha256:ea2d0aaf163f15f1bf749ee69822ebe33e619d2a00a5813d348732936b56f00b": failed to pull and unpack image "ghcr.io/fastapi-traefik-devops/fastapi-backend@sha256:ea2d0aaf163f15f1bf749ee69822ebe33e619d2a00a5813d348732936b56f00b": failed to resolve reference "ghcr.io/fastapi-traefik-devops/fastapi-backend@sha256:ea2d0aaf163f15f1bf749ee69822ebe33e619d2a00a5813d348732936b56f00b": failed to authorize: failed to fetch anonymous token: unexpected status from GET request to https://ghcr.io/token?scope=repository%3Afastapi-traefik-devops%2Ffastapi-backend%3Apull&service=ghcr.io: 401 Unauthorized
+22s         Normal    Pulling                  pod/frontend-7b8bc97bdb-9q8ff          Pulling image "ghcr.io/fastapi-traefik-devops/fastapi-frontend@sha256:a8d07b6be8ae8c76cc8133c885ba8ec3c095ded005db251aaf6a190e88426f82"
+22s         Warning   Failed                   pod/backend-dc9c5c788-98s5h            Error: ErrImagePull
+21s         Warning   Failed                   pod/frontend-7b8bc97bdb-9q8ff          Error: ErrImagePull
+21s         Warning   Failed                   pod/frontend-7b8bc97bdb-9q8ff          Failed to pull image "ghcr.io/fastapi-traefik-devops/fastapi-frontend@sha256:a8d07b6be8ae8c76cc8133c885ba8ec3c095ded005db251aaf6a190e88426f82": failed to pull and unpack image "ghcr.io/fastapi-traefik-devops/fastapi-frontend@sha256:a8d07b6be8ae8c76cc8133c885ba8ec3c095ded005db251aaf6a190e88426f82": failed to resolve reference "ghcr.io/fastapi-traefik-devops/fastapi-frontend@sha256:a8d07b6be8ae8c76cc8133c885ba8ec3c095ded005db251aaf6a190e88426f82": failed to authorize: failed to fetch anonymous token: unexpected status from GET request to https://ghcr.io/token?scope=repository%3Afastapi-traefik-devops%2Ffastapi-frontend%3Apull&service=ghcr.io: 401 Unauthorized
+11s         Normal    BackOff                  pod/backend-dc9c5c788-98s5h            Back-off pulling image "ghcr.io/fastapi-traefik-devops/fastapi-backend@sha256:ea2d0aaf163f15f1bf749ee69822ebe33e619d2a00a5813d348732936b56f00b"
+11s         Warning   Failed                   pod/backend-dc9c5c788-98s5h            Error: ImagePullBackOff
+7s          Warning   Failed                   pod/frontend-7b8bc97bdb-9q8ff          Error: ImagePullBackOff
+7s          Normal    BackOff                  pod/frontend-7b8bc97bdb-9q8ff          Back-off pulling image "ghcr.io/fastapi-traefik-devops/fastapi-frontend@sha256:a8d07b6be8ae8c76cc8133c885ba8ec3c095ded005db251aaf6a190e88426f82"
