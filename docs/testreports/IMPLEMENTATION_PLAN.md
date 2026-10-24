@@ -1141,3 +1141,19 @@ for onboarding new machines. The old `.201`–`.241` overlap is resolved.
 **Pass:** public application certificate issuance and renewal use per-cluster
 cert-manager with Cloudflare DNS-01, superseded certificate automation is
 retired, and the documented DHCP allocation no longer overlaps static addresses.
+
+### Early PVC filesystem and PROD replication alerts — 2026-10-24
+
+- [x] Add node-grouped local-path byte/inode headroom and mounted-PVC telemetry
+      alerts using canonical kubelet metrics, without treating requests as quotas.
+- [x] Add PROD standby/streaming, replay-lag and replication-query telemetry
+      alerts; retain asynchronous replication and existing database placement.
+- [x] Validate local regression/routing fixtures; deploy NONPROD then PROD and
+      verify 95 healthy rules, 60 healthy targets, no active/pending conditions,
+      matching source/live rules/inhibition and preserved protected identities.
+- [x] Document thresholds, response procedures, limitations and actual results in
+      [the follow-up report](STORAGE_REPLICATION_ALERTS_2026-10-24.md) and
+      [operator guidance](../operations/STORAGE_REPLICATION_ALERTS.md).
+
+This completes item 2 of the alerting hardening report's proposed improvements.
+It does not replace PITR verification or complete pending Phase 9 work.
