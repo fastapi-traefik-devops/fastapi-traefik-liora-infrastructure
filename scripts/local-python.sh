@@ -5,7 +5,7 @@ repo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 work_dir="$repo_dir/.local-work"
 python="$work_dir/venv/bin/python"
 if [[ ! -x "$python" ]]; then
-  printf 'Prepare .local-work/venv as described in docs/LOCAL_WORKSPACE.md.\n' >&2
+  printf 'Prepare .local-work/venv as described in runbooks/11-install-management-tools.md.\n' >&2
   exit 2
 fi
 export PLAYWRIGHT_BROWSERS_PATH="$work_dir/browsers"

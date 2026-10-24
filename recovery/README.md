@@ -6,13 +6,12 @@ The public SSH key may be `0644`. Back up these files outside Git; the checker
 only reads them. Tracked `.example` files intentionally contain unusable fake
 credentials. Copy them, then replace every placeholder before use.
 
-Install Python 3 and the validator dependencies in an operator-owned environment:
+Prepare Python and the checkout-local environment using
+[runbook 11](../runbooks/11-install-management-tools.md#operator-python-and-browser-tools).
+Then validate from the repository root:
 
 ```sh
-python3 -m venv "$HOME/liora-recovery-tools"
-"$HOME/liora-recovery-tools/bin/pip" install -r recovery/requirements.txt
-export RECOVERY_PYTHON="$HOME/liora-recovery-tools/bin/python"
-bash recovery/check_credentials.sh --all --offline
+RECOVERY_PYTHON="$PWD/.local-work/venv/bin/python" bash recovery/check_credentials.sh --all --offline
 ```
 
 The Bash entry point delegates to `check_credentials.py`; copy both files and
@@ -28,7 +27,7 @@ key/variable line numbers. Do not invoke the checker with shell tracing enabled.
 | `--all` (default) | Require all ten `.env` variables, SSH pair and complete YAML with all three application environments. |
 | `--tailscale` | Require the seven Proxmox/storage/Tailscale variables and SSH pair. GHCR fields are optional but checked if supplied. YAML is optional; if present, require schema version and validate every supplied section completely. |
 | `--offline` | Skip the live API read; this is informational, not a warning. No provider permissions, expiry or resource existence are verified. |
-| Default online | After successful local validation, read Proxmox template 9013 on the selected node. Accept only HTTP 200; no mutation. Lab self-signed TLS is accepted, as in the previous checker. Redirects are rejected so credentials are not forwarded. Tailscale/GHCR credentials are not authenticated by this check. |
+| Default online | After successful local validation, read Proxmox template 9013 on the selected node. Accept only HTTP 200; no mutation. The Proxmox self-signed TLS endpoint is accepted by this probe. Redirects are rejected so credentials are not forwarded. Tailscale/GHCR credentials are not authenticated by this check. |
 | Exit `0` | No validation errors. Warnings are allowed by default. |
 | Exit `1` | Validation/API failure, or any warning with `--strict-warnings`. |
 | Exit `2` | Invalid options, missing runtime dependencies/interpreter, or an unexpected internal failure. |
@@ -190,23 +189,24 @@ or infrastructure changes are needed.
 
 ## Jenkins GitHub App installation recovery
 
-Jenkins Phase 9 state is restored under a hold. Retain both private source and
-foundation backups, the staged home, current-admin XML and transfer/acceptance
-receipts under `.local-work/private/phase9/` in protected operator recovery storage;
-they include credential-bearing data and must never enter Git. The current K3s
-admin login is authoritative; the legacy admin profile remains in source backup
-only. Follow the [state transfer and retained-PVC rollback procedure](../runbooks/17-migrate-jenkins-ci.md#restore-to-a-new-pvc-while-retaining-the-current-admin-login).
-Fresh bootstrap uses the default Jenkins overlay; an existing restored controller
-uses `kubernetes/platform/nonprod/jenkins/held`. Do not apply the foundation over
-that controller or activate old jobs/promotion as part of credential recovery.
+Preserve a complete stopped-controller home archive, mounted configuration,
+image/plugin pins, administrator profile and credential encryption material in
+the protected off-host recovery kit. Keep source archives immutable. Restore
+under an execution hold and verify administrator access and credential decryption
+before allowing jobs. Follow the [Jenkins state checklist](../runbooks/17-migrate-jenkins-ci.md#6-controller-backup-and-recovery-checklist).
+
+The fresh foundation overlay creates a new home. An accepted controller must
+retain its selected PVC and matching configuration; applying a foundation overlay
+is not a controller-state restore. One-time transfer artifacts remain described
+in [the Phase 9 restore report](../docs/testreports/PHASE9_STATE_RESTORE.md).
 
 Restoring a GitHub App key does not restore its repository selection or granted
 permissions. Recover the existing `fastapi-gitops` installation with access to
 both the application and infrastructure repositories, **Contents: Read and write**,
 **Pull requests: Read and write**, and **Metadata: Read-only**. Keep the CI App
 application-only with contents/PR read and commit-status write. Follow the
-[GitHub App setup and verification procedure](../runbooks/17-migrate-jenkins-ci.md#configure-or-recover-the-fastapi-gitops-github-app)
-and its standalone read-only checker. Verify actual installation grants before
+[GitHub App setup and verification procedure](../runbooks/17-migrate-jenkins-ci.md#2-configure-delivery-identities)
+and verify actual installation grants before
 resuming promotion; never place App private keys or installation tokens in Git.
 
 ## CloudNativePG database bootstrap
@@ -226,9 +226,10 @@ than requiring the retired `db-config`. Existing application administrator
 credentials are reapplied only when initializing an empty database, not when
 restoring an existing account. See [runbook 18](../runbooks/18-cloudnative-pg.md).
 
-Fresh CNPG installation does not restore discarded data. R2 physical base
-backups and WAL archiving plus an isolated restoration exercise remain a
-separate task; private recovery inputs alone are not a database backup.
+Fresh CNPG installation initializes empty data. Existing application rows and
+schema recover from R2 physical backups plus WAL using the selected recovery
+point; private recovery inputs alone are not a database backup. See the
+[recovery navigator](../01-Disaster_recovery.md) and [backup operations](../runbooks/19-cnpg-r2-backup-pitr.md).
 
 ## Database physical-backup R2 inputs
 
@@ -260,9 +261,9 @@ The token Secrets are persistent purpose-scoped service-account credentials;
 rotate/reprovision them if compromised. Never substitute administrator kubeconfigs.
 Generate with `scripts/backups/provision.py`; do not hand-copy example tokens.
 
-## Phase 11 DNS API input
+## Public certificate DNS API input
 
-The public certificate migration uses a separate private file,
+Public certificate management uses a separate private file,
 `recovery/cloudflare-dns-token` (mode `0600`), containing only the Cloudflare DNS
 API token. It is Git-ignored. The adjacent `.example` contains a visibly fake
 placeholder. Do not use the R2 bucket credentials for DNS.
@@ -276,3 +277,38 @@ See [certificate preparation and activation](../kubernetes/platform/public-certi
 Use [runbook 15](../runbooks/15-publish-application.md) to reissue certificates
 after rebuilding clusters. Historical migration and renewal evidence is in
 [the Phase 11 report](../docs/testreports/PHASE11_REPORT.md).
+
+## Recovery kit checklist
+
+- [ ] Preserve `.env`, `recovery.yaml`, SSH identity, current K3s tokens and the DNS API token outside Git.
+- [ ] Preserve Grafana/Jenkins private platform records, GitHub App IDs/keys and Slack channel-bound webhooks separately from Git configuration.
+- [ ] Preserve infrastructure module state and provider settings; match them to the intended repository revision.
+- [ ] Preserve Jenkins home/encryption material as a complete controller archive; database backups do not include it.
+- [ ] Preserve generated coordinator access and its source configuration; after cluster replacement review CA/token changes before regenerating its access profile.
+- [ ] Match every database recovery point to the environment archive and credentials applicable at that point.
+- [ ] Keep original archived key/state copies while preparing working recovery copies.
+
+Historical schema compatibility requirements are validation rules, not instructions
+to install retired components. Scope and implementation status are recorded in
+[the recovery capability register](../docs/testreports/OPERATIONAL_DOCUMENTATION_REVIEW_2026-10-24.md).
+
+## Private operator data
+
+`.local-work/` is Git-ignored but is not uniformly disposable. Classify contents
+before cleanup or moving the checkout:
+
+| Data | Handling |
+| --- | --- |
+| `venv/`, `browsers/`, downloaded validation tools and build/render caches | Recreate from the pinned setup in runbook 11. |
+| `private/platform/` Grafana/Jenkins credential records | Preserve off-host with mode-0600 files and mode-0700 parent directories. |
+| Registry client authentication and generated Secret manifests | Protect as credentials; preserve required inputs in the encrypted recovery kit. |
+| Jenkins home archives, keys, private configuration and transfer receipts | Preserve together with matching image/plugin/configuration metadata. |
+| Coordinator access profiles and retained cycle journals | Preserve private access/state; reconcile cluster CA/token identities after rebuild. |
+| Module Terraform state and private deployment inputs | Preserve per module; never overwrite originals during state reconciliation. |
+| Incident/change output with private diagnostics or authentication metadata | Review and protect before sharing or cleanup; retain required recovery evidence off-host. |
+
+- [ ] Inventory ignored files before removing a checkout or cleaning generated directories.
+- [ ] Copy required private data into the protected off-host recovery kit and verify its integrity before deleting a local copy.
+- [ ] Keep SSH identities and kubeconfigs in protected locations; do not put them into VM templates or ordinary source artifacts.
+- [ ] Keep browser sessions, traces, raw Secret responses and password-helper output out of public evidence.
+- [ ] Publish only sanitized results under `docs/testreports/`. Migration-specific directory locations belong in the corresponding historical reports, not deployment prerequisites.

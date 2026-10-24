@@ -1,4 +1,4 @@
-# Install Ansible and Terraform on VM 200
+# Install management and operator tools
 
 **Where:** Management VM 200, Debian 13.
 
@@ -54,4 +54,50 @@ tofu version
 
 The installer method follows the [official OpenTofu Debian instructions](https://opentofu.org/docs/intro/install/deb/).
 
-**Done when:** `ansible --version` and either `terraform version` or `tofu version` succeed on VM 200.
+## Operator Python and browser tools
+
+- [ ] Work from the infrastructure repository root on the operator machine.
+- [ ] Install Python 3 with venv support; verify that the interpreter meets the pinned requirements before creating the environment.
+- [ ] Check [private operator data](../recovery/README.md#private-operator-data) before reusing or cleaning `.local-work/`.
+- [ ] Create the checkout-local environment and install pinned dependencies:
+
+```sh
+umask 077
+mkdir -p .local-work
+chmod 700 .local-work
+python3 -m venv .local-work/venv
+.local-work/venv/bin/python -m pip install -r scripts/requirements-local-tools.txt
+.local-work/venv/bin/python -m pip install --require-hashes -r scripts/backups/requirements.txt
+.local-work/venv/bin/python -m pip check
+bash scripts/local-python.sh -m playwright install --with-deps chromium
+```
+
+Pinned requirements: [operator/browser tools](../scripts/requirements-local-tools.txt),
+[backup tools](../scripts/backups/requirements.txt).
+
+Chromium system-library installation requires package-management privileges.
+The wrapper sets the browser download path to `.local-work/browsers/` and can
+load extracted libraries from `.local-work/browser-deps/root/`. Install native
+dependencies for the current machine; do not copy virtual environments between
+machines or relocate them as a provisioning step.
+
+- [ ] Use the wrapper for operator scripts and dependency checks:
+
+```sh
+bash scripts/local-python.sh -c 'import yaml, boto3; from playwright.sync_api import sync_playwright'
+RECOVERY_PYTHON="$PWD/.local-work/venv/bin/python" bash recovery/check_credentials.sh --all --offline
+```
+
+Standalone launcher: [local-python.sh](../scripts/local-python.sh).
+The wrapper accepts a script path followed by its normal arguments. Follow the
+selected runbook for environment variables and authorization before invoking a
+script that creates resources or performs application writes.
+
+### Additional validation binaries
+
+- [ ] Install Helm, kubectl and the validation binaries required by the selected procedure, using its pinned source/version/checksum records.
+- [ ] Keep local binaries under `.local-work/tools/` or another operator-owned path and pass their explicit paths to validators.
+- [ ] Install Gitleaks separately when a credential scan is required; it is not a Python dependency. Target source paths, enable redaction and exclude private operator data.
+- [ ] Recreate disposable tools/cache from their pins; preserve required private data through the recovery kit procedure.
+
+**Done when:** Ansible and Terraform/OpenTofu are available, the Python dependency check succeeds, Chromium dependencies are installed, and the wrapper imports the required operator packages.

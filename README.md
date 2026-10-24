@@ -22,34 +22,16 @@ Cloud-Init template is VM `9013`.
 - [New installation](00-Installation_from-0.md)
 - [Infrastructure disaster recovery](01-Disaster_recovery.md)
 
-Both navigators link to the step-specific instructions in `runbooks/`.
-The [application deployment runbook](runbooks/13-deploy-application-manifests.md)
-describes the manual deployment gates. [DEV](docs/testreports/PHASE3_REPORT.md),
-[STAGE](docs/testreports/PHASE4_REPORT.md), and [PROD](docs/testreports/PHASE5_REPORT.md)
-are deployed and privately verified, including mutual database and token
-isolation. PROD runs two backend and two frontend replicas with the approved
-STAGE image digests. [Separate Argo CD instances](docs/testreports/PHASE6_REPORT.md)
-now reconcile each cluster, with verified self-healing and PROD pruning disabled.
-[Public HTTPS routing](docs/testreports/PHASE7_REPORT.md) now serves
-[PROD](https://liora.aprt.info), [DEV](https://dev.liora.aprt.info), and
-[STAGE](https://stage.liora.aprt.info) through the dedicated HAProxy edge, with
-trusted certificates; DEV/STAGE use Cloudflare protection/Access and PROD
-uses DNS-only access. Public certificates now use
-[per-cluster cert-manager and Cloudflare DNS-01](runbooks/15-publish-application.md);
-edge Certbot and management-host distribution are retired. See
-[the Phase 11 certificate report](docs/testreports/PHASE11_REPORT.md).
-The owner confirms DEV/STAGE protection/Access enabled and legacy VM100
-administrative DNAT removed. See the current architecture for the accepted
-HAProxy single-point-of-failure and private Secret provisioning decisions.
+Use the [operator procedure index](runbooks/README.md) to select fresh deployment,
+disaster recovery or routine backup/recovery operations. The manuals separate
+empty database initialization from data restoration and isolated PITR exercises.
 
-Phase 8 is complete: both clusters have
-Admin VIP access and monitoring, and NONPROD has an isolated Jenkins foundation.
-The operator confirmed all interfaces and passwords through Tailscale. See
-[the progress report](docs/testreports/PHASE8_REPORT.md) and
-[private platform runbook](runbooks/16-private-platform-access.md).
-
-For the implemented topology and component boundaries, see
-[Current architecture](docs/ARCHITECTURE.md).
+- [Architecture](docs/ARCHITECTURE.md): desired topology, ownership and delivery policy.
+- [Backup operations](runbooks/19-cnpg-r2-backup-pitr.md): scheduled/manual cycles and failure recovery.
+- [Backup verification](docs/operations/POSTGRESQL_BACKUP_VERIFICATION.md): monthly isolated PITR and WAL-delivery measurements.
+- [Monitoring operations](docs/operations/SLACK_ALERTING.md): alert response and notification delivery.
+- [Recovery input schema](recovery/README.md): credentials, keys and generated access profiles.
+- [Implementation reports](docs/testreports/README.md): phase status, migration history, evidence and remaining capabilities.
 
 ## Repository layout
 
@@ -65,11 +47,12 @@ docs/testreports/              Implementation plans and phase reports
 runbooks/                      Operator instructions
 recovery/                      Credential examples and local, ignored secrets
 scripts/proxmox/               Proxmox host scripts
-.local-work/                   Ignored local tools, renders and acceptance output
+.local-work/                   Ignored tools/cache and protected private operator data
 ```
 
-Use the [local workspace guide](docs/LOCAL_WORKSPACE.md) to prepare operator
-tools inside this checkout. No additional migration checkout is required.
+Prepare operator tools using [runbook 11](runbooks/11-install-management-tools.md#operator-python-and-browser-tools).
+`.local-work/` contains disposable tools/cache **and private recovery inputs**;
+classify and preserve private data using [the recovery checklist](recovery/README.md#private-operator-data) before cleanup.
 
 ## Keep credentials and state outside Git
 

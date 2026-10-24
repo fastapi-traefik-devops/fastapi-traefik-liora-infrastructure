@@ -1,9 +1,9 @@
 # Infrastructure architecture
 
 This document defines the desired architecture of the Liora platform.
-Implementation order, migration procedures and execution results belong in the
-[implementation plan](testreports/IMPLEMENTATION_PLAN.md), [runbooks](../runbooks/)
-and [phase reports](testreports/).
+Operating procedures belong in the [operator manuals](../runbooks/README.md).
+Implementation order, migration history and execution results belong in the
+[implementation plan](testreports/IMPLEMENTATION_PLAN.md) and [phase reports](testreports/README.md).
 
 ## Platform topology
 
@@ -33,6 +33,23 @@ state and recovery procedure. Credentials, private keys and state stay outside G
 Each K3s cluster uses embedded etcd across its three server nodes. CPU, memory,
 replicas and storage requests are explicit configuration within the resource
 budget of the single Proxmox host.
+
+## Cluster networking
+
+Both clusters use the K3s default Flannel CNI with its VXLAN backend and the
+embedded Kubernetes NetworkPolicy controller based on kube-router's netpol
+library. Cilium and a separate kube-router deployment are not installed.
+Namespace-scoped NetworkPolicy resources constrain Jenkins controller, CI,
+publisher and observer traffic. There is no cluster-wide enforced default-deny
+policy. Public Services, API VIPs and Admin VIP ownership remain separate from
+the Pod network.
+
+Configuration sources: [first-server bootstrap](../infrastructure/k3s-cluster/ansible/10_first_server.yml)
+and [joining-server bootstrap](../infrastructure/k3s-cluster/ansible/30_join_servers.yml)
+retain the defaults without Flannel or policy-controller disable flags.
+[K3s network options](https://docs.k3s.io/networking/basic-network-options) and
+[policy implementation](https://docs.k3s.io/networking/networking-services#network-policy-controller)
+define those defaults.
 
 ## Address roles and traffic ownership
 
@@ -172,9 +189,9 @@ compatibility with the deployed application.
 
 Database administration uses Adminer through the private Admin VIP endpoints
 and native database authentication. Adminer is intentionally retained in DEV,
-STAGE and PROD. During the project's startup period, unplanned direct database
-intervention remains a necessary operational option; the owner accepts that risk.
-Removing PROD Adminer is not a deployment milestone or current requirement.
+STAGE and PROD. Direct database intervention uses authenticated administrative
+access and an explicit operational change record. Application database ownership remains
+separate from the administrative role.
 
 Persistent storage has explicit ownership, retention and recovery rules.
 Node-local `local-path` storage does not replicate volume contents. Database
@@ -289,7 +306,8 @@ flowchart LR
 - **DEV:** an operator requests deployment of a selected application branch.
   DEV is independent of STAGE and is not a mandatory promotion step.
 - **STAGE:** a merge into application main runs CI for the resulting main
-  commit. Successful CI exports its tested images to the trusted publisher,
+  commit. Successful CI exports images that passed its configured gates to the
+  trusted publisher,
   which publishes immutable frontend/backend images and directly commits the
   pair to infrastructure main. Argo CD deploys that state without a STAGE PR
   or human approval.
@@ -382,10 +400,10 @@ redundancy is outside this topology.
 
 These are optional reviews, not prerequisites for the current platform:
 
-- For a substantially larger production deployment, reassess the single edge
+- For increased scale or availability requirements, reassess the single edge
   failure domain, available public IP addresses and a redundant public ingress
   design. An additional public IP may form part of that design; this is not a
-  committed implementation task for the current lab.
+  required change to the current topology.
 - Reassess PROD Adminer in approximately one to two years, once the system has
   demonstrated stable operation and direct interventions have become exceptional.
   Remove it only if a practical alternative operational path is available.

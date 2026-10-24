@@ -514,7 +514,7 @@ bash scripts/local-python.sh scripts/kubernetes/verify-application-ui.py
 ```
 
 If the checkout's tools are already prepared, run only the last command.
-See the [local workspace guide](../LOCAL_WORKSPACE.md) for paths and the
+See the [local workspace guide](../../runbooks/11-install-management-tools.md#operator-python-and-browser-tools) for paths and the
 existing lab's browser libraries.
 
 The [browser verification script](../../scripts/kubernetes/verify-application-ui.py)

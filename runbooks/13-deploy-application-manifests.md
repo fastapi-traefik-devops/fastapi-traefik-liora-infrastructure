@@ -6,7 +6,7 @@
 
 ## Preconditions
 
-- [ ] Complete [K3s installation](09-install-k3s-clusters.md) and prepare the [operator tools](../docs/LOCAL_WORKSPACE.md).
+- [ ] Complete [K3s installation](09-install-k3s-clusters.md) and prepare the [operator tools](11-install-management-tools.md#operator-python-and-browser-tools).
 - [ ] Select existing approved frontend/backend image digests; do not use placeholder tags.
 - [ ] Confirm this is a fresh deployment. For existing data use [disaster recovery](../01-Disaster_recovery.md) or a reviewed GitOps update.
 - [ ] Prepare private inputs using [recovery documentation](../recovery/README.md).
