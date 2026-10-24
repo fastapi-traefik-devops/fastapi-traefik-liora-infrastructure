@@ -70,6 +70,7 @@ spec:
   endpoints:
   - port: metrics
     path: /metrics/prod
+    honorLabels: true
     interval: 30s
     scrapeTimeout: 20s
   serviceDiscoveryRole: EndpointSlice

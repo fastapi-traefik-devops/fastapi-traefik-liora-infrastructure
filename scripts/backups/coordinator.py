@@ -76,7 +76,8 @@ class Coordinator:
         # Same stable labels as the Prometheus rules; no daily success messages.
         profile = self.config['clusters'][cluster_name(environment)]
         labels = {'alertname': name, 'cluster': cluster_name(environment),
-                  'environment': environment.upper(), 'namespace': 'app-' + environment, 'severity': 'critical'}
+                  'environment': environment.upper(), 'namespace': 'app-' + environment, 'severity': 'critical',
+                  'prometheus': 'monitoring/monitoring-prometheus'}
         now = dt.datetime.now(dt.timezone.utc)
         value = [{'labels': labels, 'annotations': {
             'summary': 'CNPG backup requires operator attention',

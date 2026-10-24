@@ -3,7 +3,7 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 spec=importlib.util.spec_from_file_location('coordinator',Path(__file__).resolve().parents[1]/'coordinator.py')
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
@@ -33,6 +33,18 @@ class CoordinatorTest(unittest.TestCase):
         self.events=[];self.prod=FakeAPI(self.events);self.nonprod=FakeAPI(self.events)
         self.c=m.Coordinator({'clusters':{}},apis={'prod':self.prod,'nonprod':self.nonprod},sleep=lambda _:None,clock=Mock(side_effect=range(10000)))
         self.c.alert=Mock()
+    def test_direct_alert_identity_matches_prometheus_and_resolution(self):
+        self.c.config={'clusters':{'prod':{'alertmanager':'http://127.0.0.1:9093'}}}
+        with patch.object(m.urllib.request,'build_opener') as opener:
+            opener.return_value.open.return_value.__enter__.return_value.status=200
+            labels=[]
+            for resolved in [False,True]:
+                m.Coordinator.alert(self.c,'CNPGBackupCycleBlocked',resolved=resolved)
+                request=opener.return_value.open.call_args.args[0]
+                labels.append(json.loads(request.data)[0]['labels'])
+        expected={'alertname':'CNPGBackupCycleBlocked','cluster':'prod','environment':'PROD',
+                  'namespace':'app-prod','severity':'critical','prometheus':'monitoring/monitoring-prometheus'}
+        self.assertEqual(labels,[expected,expected])
     def test_order_and_no_daily_success_message(self):
         result=self.c.run();self.assertEqual(self.events,['app-prod','app-stage','app-dev']);self.assertFalse(self.prod.lease['spec']['holderIdentity']);self.assertTrue(all(s['phase']=='completed' for s in result['steps']));self.c.alert.assert_not_called()
     def test_definitive_failure_not_retried_and_advances(self):

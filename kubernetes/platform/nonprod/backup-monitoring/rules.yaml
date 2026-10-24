@@ -19,6 +19,7 @@ spec:
         namespace: app-dev
         severity: critical
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: CNPGFullBackupFailed
         description: Latest physical full backup failed; no immediate automatic retry.
         action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
@@ -33,6 +34,7 @@ spec:
         namespace: app-dev
         severity: critical
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: CNPGFullBackupOverdue
         description: No completed physical backup within the daily cycle plus two-hour
           margin.
@@ -48,6 +50,7 @@ spec:
         namespace: app-dev
         severity: critical
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: CNPGBackupTelemetryMissing
         description: Coordinator cannot observe the source Backup resources.
         action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
@@ -62,6 +65,7 @@ spec:
         namespace: app-dev
         severity: critical
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: CNPGWALArchivingFailure
         description: WAL archiving failed more recently than its last success; check
           R2 delivery.
@@ -78,6 +82,7 @@ spec:
         namespace: app-dev
         severity: critical
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: CNPGWALArchiveDelayed
         description: Completed WAL segments remain pending beyond the warning margin;
           RPO headroom is being consumed.
@@ -92,6 +97,7 @@ spec:
         namespace: app-dev
         severity: critical
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: CNPGWALTelemetryMissing
         description: Primary WAL archive metrics are absent; absence is not proof
           of successful archiving.
@@ -107,6 +113,7 @@ spec:
         namespace: app-stage
         severity: critical
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: CNPGFullBackupFailed
         description: Latest physical full backup failed; no immediate automatic retry.
         action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
@@ -121,6 +128,7 @@ spec:
         namespace: app-stage
         severity: critical
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: CNPGFullBackupOverdue
         description: No completed physical backup within the daily cycle plus two-hour
           margin.
@@ -136,6 +144,7 @@ spec:
         namespace: app-stage
         severity: critical
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: CNPGBackupTelemetryMissing
         description: Coordinator cannot observe the source Backup resources.
         action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
@@ -150,6 +159,7 @@ spec:
         namespace: app-stage
         severity: critical
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: CNPGWALArchivingFailure
         description: WAL archiving failed more recently than its last success; check
           R2 delivery.
@@ -166,6 +176,7 @@ spec:
         namespace: app-stage
         severity: critical
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: CNPGWALArchiveDelayed
         description: Completed WAL segments remain pending beyond the warning margin;
           RPO headroom is being consumed.
@@ -180,6 +191,7 @@ spec:
         namespace: app-stage
         severity: critical
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: CNPGWALTelemetryMissing
         description: Primary WAL archive metrics are absent; absence is not proof
           of successful archiving.
@@ -194,6 +206,7 @@ spec:
         namespace: monitoring
         severity: warning
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: R2BackupUsageHigh
         description: Aggregate R2 usage exceeds informational 10 GiB threshold; review
           capacity, never force-delete or stop backups.
@@ -209,6 +222,7 @@ spec:
         namespace: monitoring
         severity: warning
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: R2BackupUsageTelemetryMissing
         description: Complete bucket usage collection is unavailable or stale.
         action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
@@ -222,6 +236,7 @@ spec:
         namespace: monitoring
         severity: critical
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: CNPGBackupCollectorStale
         description: VM 250 backup telemetry stopped; WAL archiving remains cluster-local.
         action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;

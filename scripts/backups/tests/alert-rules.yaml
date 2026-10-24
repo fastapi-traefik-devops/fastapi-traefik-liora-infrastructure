@@ -15,6 +15,7 @@ tests:
     exp_alerts:
     - exp_labels: {cluster: nonprod, environment: DEV, namespace: app-dev, severity: critical}
       exp_annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: CNPGFullBackupFailed
         description: Latest physical full backup failed; no immediate automatic retry.
         action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator; follow runbook 19.
@@ -31,6 +32,7 @@ tests:
     exp_alerts:
     - exp_labels: {cluster: nonprod, environment: PLATFORM, namespace: monitoring, severity: warning}
       exp_annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/19-cnpg-r2-backup-pitr.md
         summary: R2BackupUsageHigh
         description: Aggregate R2 usage exceeds informational 10 GiB threshold; review capacity, never force-delete or stop backups.
         action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator; follow runbook 19.

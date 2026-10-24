@@ -36,6 +36,20 @@ connections as described in [runbook 18](18-cloudnative-pg.md), wait for real
 rollouts, and verify login/CRUD with unchanged images. Readiness alone is not
 application acceptance. Stop advancing on a failed checkpoint.
 
+## Backup alert label contract
+
+The coordinator ServiceMonitor endpoints use `honorLabels: true` so exported
+`namespace="app-dev"`, `app-stage` and `app-prod` remain selectable by backup
+rules rather than becoming `exported_namespace`. Verify actual Prometheus
+samples after changing scrape configuration; a green target alone is insufficient.
+The trusted exporter supplies only the environment labels defined by this project.
+
+Direct coordinator alerts include the same `prometheus` identity as the native
+Prometheus rules (`monitoring/monitoring-prometheus`), as well as cluster,
+environment, namespace and severity. Keep these identities aligned if renaming
+the monitoring release, or recovery/failure events may form duplicate alerts.
+Failure, overdue and missing-data selectors have per-environment regression tests.
+
 ## Full backup coordinator
 
 VM 250 owns a systemd timer at 02:00 UTC. It creates/observes CNPG Backup objects;

@@ -95,6 +95,7 @@ spec:
   endpoints:
   - port: metrics
     path: /metrics/nonprod
+    honorLabels: true
     interval: 30s
     scrapeTimeout: 20s
   serviceDiscoveryRole: EndpointSlice
