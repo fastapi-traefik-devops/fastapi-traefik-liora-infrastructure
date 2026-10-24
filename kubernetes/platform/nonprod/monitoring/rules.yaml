@@ -292,17 +292,22 @@ spec:
           image pulls.
         runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
     - alert: ApplicationPodFailed
-      expr: max by(namespace,pod) (kube_pod_status_phase{namespace=~"app-dev|app-stage",phase="Failed"}) == 1
+      expr: (max by(namespace,pod) (kube_pod_status_phase{namespace=~"app-dev|app-stage",phase="Failed"}) == 1) unless
+        on(namespace,pod) ((max by(namespace,pod,replicaset) (label_replace(kube_pod_owner{owner_kind="ReplicaSet",owner_is_controller="true"},
+        "replicaset", "$1", "owner_name", "(.+)")) * on(namespace,replicaset) group_left(deployment) max by(namespace,replicaset,deployment)
+        (label_replace(kube_replicaset_owner{owner_kind="Deployment",owner_is_controller="true"}, "deployment", "$1",
+        "owner_name", "(.+)"))) * on(namespace,deployment) group_left() (max by(namespace,deployment) (kube_deployment_status_replicas_available)
+        >= on(namespace,deployment) max by(namespace,deployment) (kube_deployment_spec_replicas)))
       for: 5m
       labels:
         severity: warning
         cluster: nonprod
         environment: '{{ if eq $labels.namespace "app-dev" }}DEV{{ else }}STAGE{{ end }}'
       annotations:
-        summary: Application Pod remains Failed
-        description: Application Pod remains Failed
-        action: Describe the Pod and inspect scheduling/admission events, node allocatable memory, storage and
-          image pulls.
+        summary: Application Pod remains Failed without a fully healthy Deployment replacement
+        description: Application Pod remains Failed without a fully healthy Deployment replacement
+        action: Inspect Pod admission/termination evidence and node capacity; failed ReplicaSet Pods are ignored only
+          when their owning Deployment is fully available.
         runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
     - alert: PrometheusNotificationDeliveryFailed
       expr: sum(rate(prometheus_notifications_errors_total[5m])) > 0

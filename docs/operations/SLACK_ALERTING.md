@@ -140,6 +140,9 @@ Both clusters now define guards for:
   pressure, CPU and guest-memory rules. Update the expected capacity/count
   thresholds deliberately if the VM topology changes.
 - Application Pods remaining Pending for 10 minutes or Failed for five minutes.
+  A failed ReplicaSet Pod is excluded only when its owning Deployment is fully
+  available; historical failed objects with healthy replacements do not page
+  repeatedly. Database/orphan failures and incomplete replacements remain visible.
 - Sustained Prometheus-to-Alertmanager and Alertmanager-to-Slack delivery errors.
 - Public `app-tls` readiness, absent telemetry, expiry below seven days and a
   critical expiry below 24 hours. The cert-manager ServiceMonitor preserves

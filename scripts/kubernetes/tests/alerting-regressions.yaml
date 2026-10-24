@@ -166,3 +166,39 @@ tests:
     exp_samples:
     - labels: '{}'
       value: 2
+- name: Failed replica Pod with 2 of two healthy replacements
+  interval: 1m
+  input_series:
+  - series: kube_pod_status_phase{namespace="TEST_NAMESPACE",pod="old",phase="Failed"}
+    values: 1x20
+  - series: kube_pod_owner{namespace="TEST_NAMESPACE",pod="old",owner_kind="ReplicaSet",owner_is_controller="true",owner_name="backend-old"}
+    values: 1x20
+  - series: kube_replicaset_owner{namespace="TEST_NAMESPACE",replicaset="backend-old",owner_kind="Deployment",owner_is_controller="true",owner_name="backend"}
+    values: 1x20
+  - series: kube_deployment_spec_replicas{namespace="TEST_NAMESPACE",deployment="backend"}
+    values: 2x20
+  - series: kube_deployment_status_replicas_available{namespace="TEST_NAMESPACE",deployment="backend"}
+    values: 2x20
+  promql_expr_test:
+  - expr: ApplicationPodFailed
+    eval_time: 15m
+    exp_samples: []
+- name: Failed replica Pod with 1 of two healthy replacements
+  interval: 1m
+  input_series:
+  - series: kube_pod_status_phase{namespace="TEST_NAMESPACE",pod="old",phase="Failed"}
+    values: 1x20
+  - series: kube_pod_owner{namespace="TEST_NAMESPACE",pod="old",owner_kind="ReplicaSet",owner_is_controller="true",owner_name="backend-old"}
+    values: 1x20
+  - series: kube_replicaset_owner{namespace="TEST_NAMESPACE",replicaset="backend-old",owner_kind="Deployment",owner_is_controller="true",owner_name="backend"}
+    values: 1x20
+  - series: kube_deployment_spec_replicas{namespace="TEST_NAMESPACE",deployment="backend"}
+    values: 2x20
+  - series: kube_deployment_status_replicas_available{namespace="TEST_NAMESPACE",deployment="backend"}
+    values: 1x20
+  promql_expr_test:
+  - expr: ApplicationPodFailed
+    eval_time: 15m
+    exp_samples:
+    - labels: '{namespace="TEST_NAMESPACE",pod="old"}'
+      value: 1
