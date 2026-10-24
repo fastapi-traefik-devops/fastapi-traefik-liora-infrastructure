@@ -254,3 +254,19 @@ application/Secret/Pod/PVC writes; preserve it in the private recovery kit.
 The token Secrets are persistent purpose-scoped service-account credentials;
 rotate/reprovision them if compromised. Never substitute administrator kubeconfigs.
 Generate with `scripts/backups/provision.py`; do not hand-copy example tokens.
+
+## Phase 11 DNS API input
+
+The public certificate migration uses a separate private file,
+`recovery/cloudflare-dns-token` (mode `0600`), containing only the Cloudflare DNS
+API token. It is Git-ignored. The adjacent `.example` contains a visibly fake
+placeholder. Do not use the R2 bucket credentials for DNS.
+
+Required scope: `Zone:DNS:Edit` and `Zone:Zone:Read` for `aprt.info`. Preserve
+this file in the encrypted recovery kit. Validate it with
+`python3 scripts/kubernetes/bootstrap-cloudflare-dns.py`; this is separate from
+the YAML/environment schema checked by `check_credentials.sh`.
+
+See [certificate preparation and activation](../kubernetes/platform/public-certificates/README.md).
+Live DNS-01 issuance and renewal remain pending until recorded in
+[the Phase 11 report](../docs/testreports/PHASE11_REPORT.md).
