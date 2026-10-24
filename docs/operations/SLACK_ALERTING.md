@@ -11,6 +11,16 @@ user for both clusters.** Existing credential Secrets were preserved. See the
 The commands below remain the procedure for future installations and changes;
 another deployment still requires review and approval.
 
+**Backup/WAL notifications to the normal channels were confirmed on
+2026-10-24** by the owner's actual Slack message history, including FIRING and
+WAL RESOLVED messages in both NONPROD and PROD. This is verified delivery beyond
+the earlier testing-channel checks. A separate live review found a coordinator
+namespace-label collision causing false telemetry alarms and preventing the
+intended full-backup failure/overdue selectors from matching. Delivery therefore
+does not establish correct coverage of every rule. See
+[the backup alerting review](../testreports/BACKUP_ALERTING_REVIEW_2026-10-24.md)
+for evidence, current state and the unapplied corrective proposal.
+
 Initial read-only inspection reached both live clusters through the management server
 (`ssh root-admin@liora.aprt.info -p22100`). Each effective Alertmanager config
 still used `pending-destination`, matching Git; neither monitoring namespace had
@@ -108,13 +118,12 @@ timestamp. The rule uses `job="apiserver"` to avoid counting the same K3s
 certificate through several embedded component endpoints. Its scope is internal
 K3s certificates, not the public website/edge TLS certificate.
 
-**BackupFailedOrStale is deferred.** No CNPG/Barman backup success, failure or
-last-success timestamp metrics were exposed. K3s snapshot duration histograms
-exist, but duration/count alone does not prove backup success, off-host storage,
-freshness or restoreability. First define the database/etcd backup schedules,
-enable supported backup telemetry, verify actual metric semantics in each cluster,
-then add critical failure/staleness and missing-telemetry checks with tested
-schedule margins. No unsupported backup metric or assumed schedule is used here.
+CNPG/Barman backup, WAL and coordinator telemetry/rules were added in Phase 10.2;
+operate them through [runbook 19](../../runbooks/19-cnpg-r2-backup-pitr.md).
+The namespace-selector defect identified in the linked 2026-10-24 review remains
+unfixed by that review. Etcd snapshot recovery/monitoring is separate work:
+snapshot duration/count alone does not prove backup success, off-host storage,
+freshness or restoreability. Notification receipt does not replace PITR evidence.
 
 ## Slack application and secure credentials
 
