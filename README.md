@@ -33,7 +33,11 @@ now reconcile each cluster, with verified self-healing and PROD pruning disabled
 [Public HTTPS routing](docs/testreports/PHASE7_REPORT.md) now serves
 [PROD](https://liora.aprt.info), [DEV](https://dev.liora.aprt.info), and
 [STAGE](https://stage.liora.aprt.info) through the dedicated HAProxy edge, with
-trusted certificates and DNS-only records. Cloudflare proxy mode remains unverified.
+trusted certificates and DNS-only records. Public certificates now use
+[per-cluster cert-manager and Cloudflare DNS-01](runbooks/15-publish-application.md);
+edge Certbot and management-host distribution are retired. See
+[the Phase 11 certificate report](docs/testreports/PHASE11_REPORT.md).
+Cloudflare proxy mode remains unverified.
 
 Phase 8 is complete: both clusters have
 Admin VIP access and monitoring, and NONPROD has an isolated Jenkins foundation.
@@ -48,7 +52,7 @@ For the implemented topology and component boundaries, see
 
 ```text
 edge/tailscale/                 Tailscale VM and router configuration
-edge/haproxy/                   Application edge VM, routing and TLS distribution
+edge/haproxy/                   Application edge VM and TLS passthrough routing
 edge/nftables/                 Proxmox host DNAT examples
 infrastructure/k3s-cluster/    Terraform VMs and Ansible K3s installation
 kubernetes/apps/liora/         Application base, overlays, and source history

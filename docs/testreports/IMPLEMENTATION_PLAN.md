@@ -126,8 +126,8 @@ daemons and metrics endpoints do not receive administrative browser endpoints.
 | --- | --- | --- |
 | Public application | `dev.liora.aprt.info`, `stage.liora.aprt.info`, `liora.aprt.info` over HTTPS | Existing application-only HAProxy/Traefik path |
 | Proxmox | `192.168.77.1`; native management UI on 8006 | Existing host administration; outside Admin VIPs |
-| Management VM 200 | `192.168.77.200` | Terraform, Ansible, explicit cluster kubeconfigs and certificate distribution |
-| HAProxy / Certbot VM 240 | `192.168.77.240` | Existing public routing and ACME renewal |
+| Management VM 200 | `192.168.77.200` | Terraform, Ansible and explicit cluster kubeconfigs |
+| HAProxy VM 240 | `192.168.77.240` | Application-only HTTP redirect and TLS passthrough |
 | Tailscale router VM 250 | `192.168.77.250` | Existing subnet access |
 | Application internals | Separate namespaces and PVCs | Frontend, backend, PostgreSQL, Adminer and prestart Job remain |
 | Cluster internals | Each independent K3s cluster | API/etcd, CoreDNS, Metrics Server, local-path provisioner, Traefik and ServiceLB remain |
@@ -1017,7 +1017,8 @@ changes. These database checks do not complete the separate PROD image gate.
       logging, external uptime checks, alert delivery, HPA/PDB, Secret encryption
       and the recovery kit before implementing them.
 - [ ] Add per-cluster Secret encryption/recovery keys and dedicated ingress
-      addresses separately. Retain working Certbot automation until Phase 11.
+      addresses separately. Public Certbot automation was retired in the Phase 11
+      certificate checkpoint; dedicated ingress addresses remain pending.
 - [ ] Remove Adminer only after a replacement operational path works; preserve
       its current private access during 10.1.
 
@@ -1028,43 +1029,47 @@ backup/recovery readiness.
 
 ## Phase 11 — Доведення до ідеалу або полірування
 
-Status: **planned final phase, after the working platform and preceding
-migrations**. Refine the detailed procedure before implementation; this work
-does not block the current deployment phases.
+Status: **in progress: public certificate migration completed on 2026-10-24;
+DHCP/static alignment remains pending**. This certificate checkpoint does not
+close the remaining polishing or delegated Phase 9 work.
 
 ### Kubernetes-native certificate management
 
-The agreed later improvement is to replace edge Certbot issuance and the
-management VM's SSH/systemd certificate-distribution pipeline with a separate
-cert-manager installation in each K3s cluster. This makes certificate lifecycle
-management declarative and cluster-local, reduces custom integration and
-removes renewal/distribution dependence on the management VM. The existing
-Certbot solution remains the working implementation until migration.
+The existing pinned cert-manager 1.21.2 installation in each cluster now manages
+public application certificates as well as CNPG/Barman internal TLS. Independent
+`letsencrypt-cloudflare` ClusterIssuers use Let's Encrypt production ACME and
+Cloudflare DNS-01. Each environment overlay owns a Certificate targeting its
+existing `app-tls` Secret; no application image or database change was required.
 
-Cloudflare API credentials will be supplied in an agreed local, Git-ignored
-secret file and provisioned into the required Kubernetes Secret references.
-The exact file and supported fields must be documented before implementation;
-no credential values belong in tracked manifests or logs. Use credentials
-scoped to the required DNS zone and permissions.
+The private token is stored in Git-ignored `recovery/cloudflare-dns-token`, mode
+`0600`, with a visibly fake tracked example and a secret-safe provisioning
+helper. Its required permissions are `Zone:DNS:Edit` and `Zone:Zone:Read` for
+`aprt.info`. Solver selection is limited to `dev.liora.aprt.info`,
+`stage.liora.aprt.info` and `liora.aprt.info`. All 60 existing DNS records were
+unchanged after challenge cleanup; proxy/Access and unrelated subdomains were
+not modified.
 
-cert-manager will obtain certificates from Let's Encrypt through ACME and
-complete **DNS-01** validation by publishing TXT records through the Cloudflare
-DNS API. Planned Cloudflare protection/Access for DEV and STAGE will restrict
-unauthenticated HTTP access. Once that protection blocks the public HTTP-01
-challenge path, the current webroot validation cannot work without an exception.
-DNS-01 removes that HTTP-path dependency; Cloudflare proxying alone is not a
-claim that HTTP-01 is impossible.
+- [x] Prepare independent issuer configuration for both clusters, reusing the
+      pinned controller and documenting private credential provisioning/recovery.
+- [x] Migrate DEV, then STAGE, then PROD with one active TLS Secret writer.
+      Disable the VM 200 distribution timer and mask its service before handover.
+- [x] Verify production issuance, explicitly requested renewal to revision 2,
+      trusted serving on every ingress node and HAProxy, browser login/CRUD and
+      Argo ownership. CNPG/internal TLS and continuous archiving remain healthy.
+- [x] Retire edge Certbot renewal and HTTP-01 webroot operation, preserve private
+      rollback state/scripts, and update deployment/recovery documentation.
 
-- [ ] Prepare independent cert-manager/issuer configuration for both clusters
-      and the Cloudflare API credential provisioning/recovery procedure.
-- [ ] Migrate DEV, then STAGE, then PROD, with one active writer for each TLS
-      Secret. Coordinate ownership with the legacy distribution helper rather
-      than letting both mechanisms overwrite the same Secret.
-- [ ] Verify issuance, renewal and the certificates served by Traefik before
-      retiring the corresponding legacy automation. Establish DNS-01 before
-      enabling DEV/STAGE protection that blocks HTTP-01 validation.
-- [ ] Retire the superseded Certbot/distribution components once migration is
-      complete, and update architecture, runbooks and recovery documentation.
+Evidence and limitations are in [Phase 11](PHASE11_REPORT.md). All five Argo
+Applications are Synced/Healthy with successful operations and their existing
+automated policies. Public-DNS connectivity from this host was refused; private
+edge checks validate the real names and trust chains but are not an external
+network/browser verification. Future scheduled unattended renewal has not
+yet occurred; automatic renewal scheduling is configured and manual renewal
+through the same controller/ACME/Secret path passed.
+
+DNS-01 removes the public HTTP challenge-path dependency before future
+DEV/STAGE Access protection. Enabling proxy mode or Access remains separately
+scoped; neither was changed by certificate migration.
 
 ### DHCP and static address alignment
 

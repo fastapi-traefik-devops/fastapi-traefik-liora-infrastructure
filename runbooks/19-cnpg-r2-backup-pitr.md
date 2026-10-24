@@ -17,9 +17,10 @@ lz4 for both. DEV/STAGE use 7d Barman recovery windows; PROD 14d. Preserve the
 older anchor backup and required WAL. No independent R2 age-deletion rule.
 An empty new archive does not establish a full historical recovery window.
 
-cert-manager is installed independently per cluster only for internal plugin
-TLS. No application issuer/Certificate is created; Certbot and public traffic
-remain unchanged. Plugin resources live with the CNPG operator in cnpg-system.
+The pinned per-cluster cert-manager also provides internal plugin TLS. Backup
+installation does not create or alter public issuers/Certificates; those are
+managed separately through [runbook 15](15-publish-application.md). Plugin
+resources live with the CNPG operator in cnpg-system.
 Environment ObjectStores/Clusters have their existing Argo ownership.
 
 ## Maintenance and installation
