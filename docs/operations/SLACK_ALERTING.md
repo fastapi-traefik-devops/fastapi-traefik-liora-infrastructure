@@ -16,10 +16,11 @@ another deployment still requires review and approval.
 WAL RESOLVED messages in both NONPROD and PROD. This is verified delivery beyond
 the earlier testing-channel checks. A separate live review found a coordinator
 namespace-label collision causing false telemetry alarms and preventing the
-intended full-backup failure/overdue selectors from matching. Delivery therefore
-does not establish correct coverage of every rule. See
-[the backup alerting review](../testreports/BACKUP_ALERTING_REVIEW_2026-10-24.md)
-for evidence, current state and the unapplied corrective proposal.
+intended full-backup failure/overdue selectors from matching. The correction and
+expanded audit are documented in
+[the alerting hardening report](../testreports/ALERTING_OPTIMIZATION_2026-10-24.md).
+The earlier [read-only review](../testreports/BACKUP_ALERTING_REVIEW_2026-10-24.md)
+is retained as historical evidence. Delivery alone does not prove rule coverage.
 
 Initial read-only inspection reached both live clusters through the management server
 (`ssh root-admin@liora.aprt.info -p22100`). Each effective Alertmanager config
@@ -71,7 +72,8 @@ status, environment, severity, alert name, available namespace/resource labels,
 description, suggested diagnostic action, UTC start time and UTC recovery time.
 DEV/STAGE are explicit rule labels or derived from exact namespace/application
 names. Shared NONPROD node and exporter alerts use `PLATFORM`; PROD rules use
-`PROD`. Optional runbook links are displayed when provided. Both Slack receivers
+`PROD`. Titles include firing/resolved counts and a body separator. Source and
+runbook links are displayed when provided. Both Slack receivers
 set `send_resolved: true`.
 
 PROD's critical deployment alert inhibits the original deployment warning for
@@ -120,10 +122,55 @@ K3s certificates, not the public website/edge TLS certificate.
 
 CNPG/Barman backup, WAL and coordinator telemetry/rules were added in Phase 10.2;
 operate them through [runbook 19](../../runbooks/19-cnpg-r2-backup-pitr.md).
-The namespace-selector defect identified in the linked 2026-10-24 review remains
-unfixed by that review. Etcd snapshot recovery/monitoring is separate work:
+Coordinator scrapes preserve exporter labels with `honorLabels: true`; native
+backup rules select the actual application namespace. Direct coordinator events
+use the same external Prometheus identity to avoid duplicate alert fingerprints.
+Etcd snapshot recovery/monitoring is separate work:
 snapshot duration/count alone does not prove backup success, off-host storage,
 freshness or restoreability. Notification receipt does not replace PITR evidence.
+
+## Additional operational guards
+
+Both clusters now define guards for:
+
+- Unexpected Kubernetes memory capacity below 7 GiB for the configured 8 GiB
+  nodes; greater than 10% disagreement with guest MemTotal; missing capacity
+  metrics; regular-container memory requests above 90% of allocatable.
+- Fewer than three observable Node objects, alongside the original node-Ready,
+  pressure, CPU and guest-memory rules. Update the expected capacity/count
+  thresholds deliberately if the VM topology changes.
+- Application Pods remaining Pending for 10 minutes or Failed for five minutes.
+- Sustained Prometheus-to-Alertmanager and Alertmanager-to-Slack delivery errors.
+- Public `app-tls` readiness, absent telemetry, expiry below seven days and a
+  critical expiry below 24 hours. The cert-manager ServiceMonitor preserves
+  certificate namespaces; CNPG's internal certificates are not selected by
+  these public-certificate rules. These internal diagnostics complement the
+  owner's existing UptimeRobot availability/certificate monitors.
+
+Dependency inhibition is deliberately narrow: a stale coordinator collector
+inhibits redundant coordinator-observation alarms and its target-down warning;
+a failed kube-state-metrics target inhibits matching global `kube_*` missing-
+metric warnings; critical public expiry inhibits its corresponding warning.
+All inhibition excludes `purpose="test"`. Independent full-backup failure,
+overdue, WAL failure/delay, cycle-blocked and PROD critical availability alerts
+remain uninhibited. All other original alert definitions retain their behavior.
+
+PROD's availability rule remains intentionally fail-closed when required
+backend/frontend metrics disappear. It does not by itself distinguish a live
+application outage from failed observation; inspect exporter health and the
+actual application before declaring an outage.
+
+The 90% request guard is a lower-bound scheduling signal for regular containers;
+inspect init/native-sidecar requests and overhead too. These rules do not change
+VM ballooning, kubelet configuration, Pod requests or limits.
+
+Run local config/routing/template, threshold and recovery fixtures before
+rollout using `scripts/kubernetes/validate-slack-alerting.py` and
+`scripts/backups/tests/check-rules.py` with the pinned local tools. Deploy through
+the existing Helm release plus the native monitoring manifests, NONPROD first.
+Do not edit generated Alertmanager Secrets. Inspect live labels, loaded rules,
+errors, target health and notifications after rollout; never intentionally fail
+live databases just to exercise alerts. Preserve existing receiver Secrets/PVCs.
 
 ## Slack application and secure credentials
 

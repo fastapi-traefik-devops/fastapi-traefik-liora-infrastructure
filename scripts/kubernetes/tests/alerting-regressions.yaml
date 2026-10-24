@@ -1,0 +1,168 @@
+evaluation_interval: 1m
+tests:
+- name: Small recorded capacity alerts despite abundant guest RAM
+  interval: 1m
+  input_series:
+  - series: kube_node_status_capacity{resource="memory",node="small"}
+    values: 2147483648x20
+  - series: kube_node_status_capacity{resource="memory",node="healthy"}
+    values: 8334512128x20
+  promql_expr_test:
+  - expr: NodeMemoryCapacityLow
+    eval_time: 15m
+    exp_samples:
+    - labels: '{node="small"}'
+      value: 2147483648
+- name: Map exporter Pod to node and detect stale Kubernetes memory
+  interval: 1m
+  input_series:
+  - series: kube_node_status_capacity{resource="memory",node="small"}
+    values: 2147483648x20
+  - series: node_memory_MemTotal_bytes{namespace="monitoring",pod="monitoring-prometheus-node-exporter-test"}
+    values: 8589934592x20
+  - series: kube_pod_info{namespace="monitoring",pod="monitoring-prometheus-node-exporter-test",node="small"}
+    values: 1x20
+  promql_expr_test:
+  - expr: NodeMemoryAccountingMismatch
+    eval_time: 15m
+    exp_samples:
+    - labels: '{node="small"}'
+      value: 0.75
+- name: Missing per-node capacity must remain visible
+  interval: 1m
+  input_series:
+  - series: kube_node_info{node="missing"}
+    values: 1x20
+  promql_expr_test:
+  - expr: NodeCapacityMetricMissing
+    eval_time: 15m
+    exp_samples:
+    - labels: '{node="missing"}'
+      value: 1
+- name: Requests and actual memory usage are different signals
+  interval: 1m
+  input_series:
+  - series: kube_node_status_allocatable{resource="memory",node="full"}
+    values: 2000x20
+  - series: kube_pod_container_resource_requests{resource="memory",node="full",pod="p"}
+    values: 1900x20
+  promql_expr_test:
+  - expr: NodeMemoryRequestsHigh
+    eval_time: 15m
+    exp_samples:
+    - labels: '{node="full"}'
+      value: 0.95
+- name: Pending and Failed Pods are distinguished
+  interval: 1m
+  input_series:
+  - series: kube_pod_status_phase{namespace="TEST_NAMESPACE",pod="pending",phase="Pending"}
+    values: 1x20
+  - series: kube_pod_status_phase{namespace="TEST_NAMESPACE",pod="failed",phase="Failed"}
+    values: 1x20
+  promql_expr_test:
+  - expr: ApplicationPodPending
+    eval_time: 15m
+    exp_samples:
+    - labels: '{namespace="TEST_NAMESPACE",pod="pending"}'
+      value: 1
+  - expr: ApplicationPodFailed
+    eval_time: 15m
+    exp_samples:
+    - labels: '{namespace="TEST_NAMESPACE",pod="failed"}'
+      value: 1
+- name: Delivery failures use rates and only Slack integration
+  interval: 1m
+  input_series:
+  - series: prometheus_notifications_errors_total
+    values: 0+60x20
+  - series: alertmanager_notifications_failed_total{integration="slack"}
+    values: 0+60x20
+  - series: alertmanager_notifications_failed_total{integration="discord"}
+    values: 0+120x20
+  promql_expr_test:
+  - expr: PrometheusNotificationDeliveryFailed
+    eval_time: 15m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+  - expr: SlackNotificationDeliveryFailed
+    eval_time: 15m
+    exp_samples:
+    - labels: '{}'
+      value: 1
+- name: Other integrations do not cause Slack alarms
+  interval: 1m
+  input_series:
+  - series: alertmanager_notifications_failed_total{integration="slack"}
+    values: '0x20'
+  - series: alertmanager_notifications_failed_total{integration="discord"}
+    values: 0+120x20
+  promql_expr_test:
+  - expr: SlackNotificationDeliveryFailed
+    eval_time: 15m
+    exp_samples: []
+- name: Public certificate Ready status is scoped to app-tls
+  interval: 1m
+  input_series:
+  - series: certmanager_certificate_ready_status{namespace="TEST_NAMESPACE",name="app-tls",condition="True"}
+    values: '0x20'
+  - series: certmanager_certificate_ready_status{namespace="cnpg-system",name="barman-cloud-server",condition="True"}
+    values: '0x20'
+  promql_expr_test:
+  - expr: PublicCertificateNotReady
+    eval_time: 15m
+    exp_samples:
+    - labels: '{namespace="TEST_NAMESPACE",name="app-tls"}'
+      value: 0
+- name: Impending expiry and actual expiry are both visible
+  interval: 1m
+  input_series:
+  - series: certmanager_certificate_expiration_timestamp_seconds{namespace="TEST_NAMESPACE",name="app-tls"}
+    values: 1000x20
+  promql_expr_test:
+  - expr: PublicCertificateExpiringSoon
+    eval_time: 20m
+    exp_samples:
+    - labels: '{namespace="TEST_NAMESPACE",name="app-tls"}'
+      value: -200
+  - expr: PublicCertificateExpiryCritical
+    eval_time: 20m
+    exp_samples:
+    - labels: '{namespace="TEST_NAMESPACE",name="app-tls"}'
+      value: -200
+- name: Healthy certificate does not alarm
+  interval: 1m
+  input_series:
+  - series: certmanager_certificate_expiration_timestamp_seconds{namespace="TEST_NAMESPACE",name="app-tls"}
+    values: 1000000x20
+  promql_expr_test:
+  - expr: PublicCertificateExpiringSoon
+    eval_time: 20m
+    exp_samples: []
+  - expr: PublicCertificateExpiryCritical
+    eval_time: 20m
+    exp_samples: []
+- name: Expected public certificate missing is not treated as healthy
+  interval: 1m
+  input_series:
+  - series: certmanager_certificate_expiration_timestamp_seconds{namespace="app-stage",name="app-tls"}
+    values: 1000000x20
+  promql_expr_test:
+  - expr: PublicCertificateMetricMissing
+    eval_time: 20m
+    exp_samples:
+    - labels: '{namespace="TEST_NAMESPACE",name="app-tls"}'
+      value: 1
+- name: Deleted nodes remain visible through expected inventory count
+  interval: 1m
+  input_series:
+  - series: kube_node_info{node="a"}
+    values: 1x20
+  - series: kube_node_info{node="b"}
+    values: 1x20
+  promql_expr_test:
+  - expr: KubernetesNodeInventoryIncomplete
+    eval_time: 15m
+    exp_samples:
+    - labels: '{}'
+      value: 2

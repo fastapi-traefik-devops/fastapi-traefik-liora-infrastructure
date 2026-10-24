@@ -6,6 +6,7 @@ import hashlib
 import itertools
 import io
 import json
+import re
 from pathlib import Path
 import subprocess
 import runpy
@@ -39,6 +40,16 @@ def main():
             directory = ROOT / f'kubernetes/platform/{cluster}/monitoring'
             values = yaml.safe_load((directory / 'values.yaml').read_text())
             config = values['alertmanager']['config']
+            protected = ['CNPGFullBackupFailed', 'CNPGFullBackupOverdue', 'CNPGWALArchivingFailure',
+                         'CNPGWALArchiveDelayed', 'CNPGBackupCycleBlocked', 'ProductionDeploymentUnavailable']
+            for inhibition in config.get('inhibit_rules', []):
+                assert 'purpose!="test"' in inhibition['source_matchers']
+                assert 'purpose!="test"' in inhibition['target_matchers']
+                matcher = next(x for x in inhibition['target_matchers'] if x.startswith('alertname='))
+                pattern = matcher.split('"')[1]
+                for name in protected:
+                    matches = re.fullmatch(pattern, name) if '=~' in matcher else pattern == name
+                    assert not matches, 'Independent critical condition must not be inhibited: ' + name
             config_file = work / f'{cluster}-alertmanager.yaml'
             config_file.write_text(yaml.safe_dump(config))
             run([args.amtool, 'check-config', config_file])
@@ -98,6 +109,8 @@ def main():
                                  '*Started:* 2026-10-23 10:00:00 UTC', '*Resolved:* 2026-10-23 10:05:00 UTC']:
                     assert fragment in output, (cluster, fragment, output)
                 assert '0001' not in output and '<no value>' not in output
+                assert '(2 firing, 2 resolved)' in output
+                assert 'resolved) \n*Cluster:*' in output, 'Keep title and body visually separated'
                 data.write_text(json.dumps({'status': 'resolved', 'alerts': [alerts[1]],
                                             'commonLabels': {'alertname': 'Example'}}))
                 output = run([args.amtool, 'template', 'render', '--template.glob=' + str(template),
@@ -108,6 +121,9 @@ def main():
             rule_file.write_text(yaml.safe_dump({'groups': rule_doc['spec']['groups']}))
             run([args.promtool, 'check', 'rules', rule_file])
             fixtures = yaml.safe_load((ROOT / 'scripts/kubernetes/tests/slack-rules.yaml').read_text())
+            additional = (ROOT / 'scripts/kubernetes/tests/alerting-regressions.yaml').read_text()
+            additional = additional.replace('TEST_NAMESPACE', 'app-prod' if cluster == 'prod' else 'app-dev')
+            fixtures['tests'].extend(yaml.safe_load(additional)['tests'])
             fixtures['rule_files'] = [str(rule_file)]
             if cluster == 'nonprod':
                 fixtures['tests'] = [t for t in fixtures['tests'] if not t.get('name', '').startswith('prod:')]

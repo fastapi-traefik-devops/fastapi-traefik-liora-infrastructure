@@ -152,8 +152,11 @@ alone can remain true for the old certificate during renewal. Do not use
 If issuance/renewal fails, inspect DNS-01 events, token validity/scope,
 Cloudflare and ACME API access and DNS propagation. Preserve the currently
 served Secret while fixing the cause. Changing a token uses the provisioning
-helper; do not print Secret data or API responses. Alerting integration specific
-to public certificate expiry is not implemented by this procedure.
+helper; do not print Secret data or API responses. The platform monitoring
+configuration scrapes cert-manager for public Certificate readiness, missing
+metrics and expiry alerts; see [Slack operations](../docs/operations/SLACK_ALERTING.md).
+These internal checks complement the existing external UptimeRobot checks and
+do not replace verification of the certificate actually served.
 
 ## 5. Align HTTPS configuration and publish 443
 

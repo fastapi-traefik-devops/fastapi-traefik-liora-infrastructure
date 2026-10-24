@@ -17,6 +17,7 @@ spec:
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: Node has sustained Kubernetes memory pressure
         description: Node has sustained Kubernetes memory pressure. Inspect the affected resource in this cluster.
         action: Check node conditions, capacity, events and system workloads.
@@ -28,6 +29,7 @@ spec:
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: Node has sustained Kubernetes disk pressure
         description: Node has sustained Kubernetes disk pressure. Inspect the affected resource in this cluster.
         action: Check node conditions, capacity, events and system workloads.
@@ -39,6 +41,7 @@ spec:
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: Node CPU usage sustained above 85 percent
         description: Node CPU usage sustained above 85 percent. Inspect the affected resource in this cluster.
         action: Check node conditions, capacity, events and system workloads.
@@ -50,6 +53,7 @@ spec:
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: Node memory usage sustained above 90 percent
         description: Node memory usage sustained above 90 percent. Inspect the affected resource in this cluster.
         action: Check node conditions, capacity, events and system workloads.
@@ -62,6 +66,7 @@ spec:
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: PROD container restarted at least three times in 15 minutes
         description: PROD container restarted at least three times in 15 minutes. Inspect the affected resource
           in this cluster.
@@ -74,6 +79,7 @@ spec:
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: PROD deployment has fewer available replicas than desired
         description: PROD deployment has fewer available replicas than desired. Inspect the affected resource in
           this cluster.
@@ -86,6 +92,7 @@ spec:
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: PROD Argo Application is unhealthy
         description: PROD Argo Application is unhealthy. Inspect the affected resource in this cluster.
         action: Check Argo CD application health, sync status and events.
@@ -97,6 +104,7 @@ spec:
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: PROD Argo Application is out of sync
         description: PROD Argo Application is out of sync. Inspect the affected resource in this cluster.
         action: Check Argo CD application health, sync status and events.
@@ -108,6 +116,7 @@ spec:
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: Kubernetes node has not been Ready for five minutes.
         description: Kubernetes node has not been Ready for five minutes.
         action: Run kubectl get nodes and kubectl describe node for the named node; inspect K3s and network health.
@@ -119,6 +128,7 @@ spec:
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: A discovered Prometheus target has failed scraping for five minutes.
         description: A discovered Prometheus target has failed scraping for five minutes.
         action: Open Prometheus /targets; inspect the failing endpoint, ServiceMonitor and network connectivity.
@@ -126,13 +136,14 @@ spec:
       expr: absent(up{job="apiserver"}) or absent(up{job="kubelet"}) or absent(up{job="node-exporter"}) or absent(up{job="kube-state-metrics"})
         or absent(up{job="argocd-metrics"}) or absent(up{job="argocd-repo-server"}) or absent(up{job="argocd-server-metrics"})
         or absent(up{job="monitoring-alertmanager"}) or absent(up{job="monitoring-prometheus"}) or absent(up{job="monitoring/traefik"})
-        or absent(up{job="monitoring-operator"}) or absent(up{job="monitoring-grafana"})
+        or absent(up{job="monitoring-operator"}) or absent(up{job="monitoring-grafana"}) or absent(up{job="backup-coordinator"}) or absent(up{job="cert-manager"})
       for: 10m
       labels:
         severity: warning
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: An expected monitoring job has disappeared from service discovery.
         description: An expected monitoring job has disappeared from service discovery.
         action: Inspect Prometheus /targets and service discovery; verify the corresponding Service, monitor and
@@ -146,26 +157,35 @@ spec:
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: A K3s certificate has less than 30 days remaining (or has expired).
         description: A K3s certificate has less than 30 days remaining (or has expired).
         action: On the affected K3s server run k3s certificate check --output table; plan renewal using the K3s
           certificate runbook.
     - alert: MonitoringMetricsMissing
       expr: label_replace(absent(kube_node_info), "metric", "kube_node_info", "", "") or label_replace(absent(kube_node_status_condition{condition="Ready",status="true"}),
-        "metric", "kube_node_status_condition", "", "") or label_replace(absent(kube_deployment_spec_replicas),
-        "metric", "kube_deployment_spec_replicas", "", "") or label_replace(absent(kube_deployment_status_replicas_available),
+        "metric", "kube_node_status_condition", "", "") or label_replace(absent(kube_deployment_spec_replicas), "metric",
+        "kube_deployment_spec_replicas", "", "") or label_replace(absent(kube_deployment_status_replicas_available),
         "metric", "kube_deployment_status_replicas_available", "", "") or label_replace(absent(node_cpu_seconds_total),
         "metric", "node_cpu_seconds_total", "", "") or label_replace(absent(node_memory_MemAvailable_bytes), "metric",
         "node_memory_MemAvailable_bytes", "", "") or label_replace(absent(node_memory_MemTotal_bytes), "metric",
         "node_memory_MemTotal_bytes", "", "") or label_replace(absent(kube_pod_container_status_restarts_total),
         "metric", "kube_pod_container_status_restarts_total", "", "") or label_replace(absent(argocd_app_info{name="app-prod"}),
-        "metric", "argocd_app_info", "", "")
+        "metric", "argocd_app_info", "", "") or label_replace(absent(kube_node_status_capacity{resource="memory"}),
+        "metric", "kube_node_status_capacity", "", "") or label_replace(absent(kube_node_status_allocatable{resource="memory"}),
+        "metric", "kube_node_status_allocatable", "", "") or label_replace(absent(kube_pod_container_resource_requests{resource="memory"}),
+        "metric", "kube_pod_container_resource_requests", "", "") or label_replace(absent(kube_pod_info), "metric",
+        "kube_pod_info", "", "") or label_replace(absent(kube_pod_status_phase), "metric", "kube_pod_status_phase",
+        "", "") or label_replace(absent(prometheus_notifications_errors_total), "metric", "prometheus_notifications_errors_total",
+        "", "") or label_replace(absent(alertmanager_notifications_failed_total{integration="slack"}), "metric",
+        "alertmanager_notifications_failed_total", "", "")
       for: 10m
       labels:
         severity: warning
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: A metric required by platform alerts is missing.
         description: A metric required by platform alerts is missing.
         action: Inspect the named metric and exporter in Prometheus. Missing telemetry does not establish that the
@@ -178,6 +198,7 @@ spec:
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: A known node no longer exposes its Ready condition.
         description: A known node no longer exposes its Ready condition.
         action: Compare kubectl get nodes with kube-state-metrics and inspect exporter logs.
@@ -189,6 +210,7 @@ spec:
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: A reachable K3s API endpoint no longer exposes certificate lifetime metrics.
         description: A reachable K3s API endpoint no longer exposes certificate lifetime metrics.
         action: Inspect K3s /metrics for this instance; verify supervisor metrics and certificate monitor health.
@@ -204,7 +226,180 @@ spec:
         cluster: prod
         environment: PROD
       annotations:
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
         summary: A required PROD backend or frontend deployment has no available replicas or its metrics disappeared.
         description: A required PROD backend or frontend deployment has no available replicas or its metrics disappeared.
         action: Check app-prod deployments, pods, events and rollout status; distinguish application outage from
           kube-state-metrics failure.
+    - alert: NodeMemoryCapacityLow
+      expr: max by(node) (kube_node_status_capacity{resource="memory"}) < 7 * 1024 * 1024 * 1024
+      for: 5m
+      labels:
+        severity: critical
+        cluster: prod
+        environment: PROD
+      annotations:
+        summary: Kubernetes sees less than 7 GiB on an expected 8 GiB K3s VM
+        description: Kubernetes sees less than 7 GiB on an expected 8 GiB K3s VM
+        action: Compare VM memory, guest MemTotal and Kubernetes capacity/allocatable; inspect admission failures
+          before restarting anything.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
+    - alert: NodeMemoryAccountingMismatch
+      expr: abs(max by(node) (kube_node_status_capacity{resource="memory"}) - max by(node) (node_memory_MemTotal_bytes
+        * on(namespace,pod) group_left(node) max by(namespace,pod,node) (kube_pod_info{namespace="monitoring",pod=~"monitoring-prometheus-node-exporter-.+"})))
+        / max by(node) (node_memory_MemTotal_bytes * on(namespace,pod) group_left(node) max by(namespace,pod,node)
+        (kube_pod_info{namespace="monitoring",pod=~"monitoring-prometheus-node-exporter-.+"})) > 0.10
+      for: 10m
+      labels:
+        severity: critical
+        cluster: prod
+        environment: PROD
+      annotations:
+        summary: Kubernetes and guest OS memory capacity differ by more than 10 percent
+        description: Kubernetes and guest OS memory capacity differ by more than 10 percent
+        action: Compare stale kubelet capacity with VM ballooning/hotplug and guest memory; plan correction without
+          disrupting databases.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
+    - alert: NodeMemoryRequestsHigh
+      expr: sum by(node) (kube_pod_container_resource_requests{resource="memory",node!=""}) / max by(node) (kube_node_status_allocatable{resource="memory"})
+        > 0.90
+      for: 15m
+      labels:
+        severity: warning
+        cluster: prod
+        environment: PROD
+      annotations:
+        summary: Regular-container memory requests exceed 90 percent of node allocatable
+        description: Regular-container memory requests exceed 90 percent of node allocatable
+        action: Inspect allocated requests, init/sidecar requests and Pending/admission failures; requests are
+          not actual memory usage.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
+    - alert: NodeCapacityMetricMissing
+      expr: (max by(node) (kube_node_info) unless on(node) max by(node) (kube_node_status_capacity{resource="memory"}))
+        or (max by(node) (kube_node_info) unless on(node) max by(node) (kube_node_status_allocatable{resource="memory"}))
+      for: 10m
+      labels:
+        severity: warning
+        cluster: prod
+        environment: PROD
+      annotations:
+        summary: A known node is missing memory capacity or allocatable metrics
+        description: A known node is missing memory capacity or allocatable metrics
+        action: Inspect kube-state-metrics and the Node object; do not infer healthy capacity from absent samples.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
+    - alert: ApplicationPodPending
+      expr: max by(namespace,pod) (kube_pod_status_phase{namespace=~"app-prod",phase="Pending"}) == 1
+      for: 10m
+      labels:
+        severity: warning
+        cluster: prod
+        environment: PROD
+      annotations:
+        summary: Application Pod remains Pending
+        description: Application Pod remains Pending
+        action: Describe the Pod and inspect scheduling/admission events, node allocatable memory, storage and
+          image pulls.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
+    - alert: ApplicationPodFailed
+      expr: max by(namespace,pod) (kube_pod_status_phase{namespace=~"app-prod",phase="Failed"}) == 1
+      for: 5m
+      labels:
+        severity: warning
+        cluster: prod
+        environment: PROD
+      annotations:
+        summary: Application Pod remains Failed
+        description: Application Pod remains Failed
+        action: Describe the Pod and inspect scheduling/admission events, node allocatable memory, storage and
+          image pulls.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
+    - alert: PrometheusNotificationDeliveryFailed
+      expr: sum(rate(prometheus_notifications_errors_total[5m])) > 0
+      for: 5m
+      labels:
+        severity: critical
+        cluster: prod
+        environment: PROD
+      annotations:
+        summary: Prometheus has sustained errors sending alerts to Alertmanager
+        description: Prometheus has sustained errors sending alerts to Alertmanager
+        action: Inspect Prometheus alertmanager discovery, notification queue and Alertmanager availability.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
+    - alert: SlackNotificationDeliveryFailed
+      expr: sum(rate(alertmanager_notifications_failed_total{integration="slack"}[5m])) > 0
+      for: 5m
+      labels:
+        severity: critical
+        cluster: prod
+        environment: PROD
+      annotations:
+        summary: Alertmanager has sustained Slack delivery failures
+        description: Alertmanager has sustained Slack delivery failures
+        action: Inspect Slack notification counters and private credential mounts; never print webhook URLs.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
+    - alert: PublicCertificateNotReady
+      expr: max by(namespace,name) (certmanager_certificate_ready_status{namespace=~"app-prod",name="app-tls",condition="True"})
+        == 0
+      for: 10m
+      labels:
+        severity: critical
+        cluster: prod
+        environment: PROD
+      annotations:
+        summary: Application TLS Certificate is not Ready
+        description: Application TLS Certificate is not Ready
+        action: Inspect the Certificate, issuer, Order and DNS-01 challenge events; preserve the currently served
+          TLS Secret.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/15-publish-application.md
+    - alert: PublicCertificateExpiringSoon
+      expr: min by(namespace,name) (certmanager_certificate_expiration_timestamp_seconds{namespace=~"app-prod",name="app-tls"})
+        - time() < 604800
+      for: 15m
+      labels:
+        severity: warning
+        cluster: prod
+        environment: PROD
+      annotations:
+        summary: Application TLS certificate has less than 7 days remaining (or expired)
+        description: Application TLS certificate has less than 7 days remaining (or expired)
+        action: Inspect DNS token/ACME renewal and verify the certificate actually served by Traefik and HAProxy.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/15-publish-application.md
+    - alert: PublicCertificateExpiryCritical
+      expr: min by(namespace,name) (certmanager_certificate_expiration_timestamp_seconds{namespace=~"app-prod",name="app-tls"})
+        - time() < 86400
+      for: 5m
+      labels:
+        severity: critical
+        cluster: prod
+        environment: PROD
+      annotations:
+        summary: Application TLS certificate has less than 24 hours remaining (or expired)
+        description: Application TLS certificate has less than 24 hours remaining (or expired)
+        action: Inspect DNS token/ACME renewal and verify the certificate actually served by Traefik and HAProxy.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/15-publish-application.md
+    - alert: PublicCertificateMetricMissing
+      expr: absent(certmanager_certificate_expiration_timestamp_seconds{namespace="app-prod",name="app-tls"})
+      for: 10m
+      labels:
+        severity: warning
+        cluster: prod
+        environment: PROD
+      annotations:
+        summary: Expected application TLS Certificate telemetry is absent
+        description: Expected application TLS Certificate telemetry is absent
+        action: Check cert-manager scrape discovery, controller health and the expected namespace Certificate.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/runbooks/15-publish-application.md
+    - alert: KubernetesNodeInventoryIncomplete
+      expr: (count(max by(node) (kube_node_info)) < 3) or absent(kube_node_info)
+      for: 5m
+      labels:
+        severity: critical
+        cluster: prod
+        environment: PROD
+      annotations:
+        summary: Fewer than three expected K3s nodes are observable
+        description: The fixed three-server cluster has lost Node objects or its node
+          inventory telemetry.
+        action: Compare kube-state-metrics with kubectl get nodes; distinguish deleted
+          nodes from exporter failure.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/SLACK_ALERTING.md
