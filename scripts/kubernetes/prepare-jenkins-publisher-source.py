@@ -11,10 +11,10 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-# ci/restore-gate-profiles head (main publishes only release-attested images). Install it
-# together with that branch's Jenkinsfile.promote right before merging the PR: older main
-# builds carry no gates.json. Re-pin to the merge commit afterwards.
-SOURCE_COMMIT = '4aefca9ae3348776df47149c4e83eeb99e44aefc'
+# ci/dev-deploy-and-pr-profile head (manual DEV deployment from dev-build). Backward
+# compatible with the current main pipeline, so it may be installed before the merge.
+# Re-pin to the merge commit afterwards.
+SOURCE_COMMIT = 'c6a70f44808d094162e00b95fb5210bc65c76f6e'
 SOURCE_REPOSITORY = 'fastapi-traefik-devops/fastapi-traefik-liora-application'
 
 
