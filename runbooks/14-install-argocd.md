@@ -1,14 +1,15 @@
-# Install separate Argo CD instances and adopt the application
+# Install Argo CD and adopt application resources
 
 **Where:** Reviewed infrastructure checkout on the management host.
 
-> [!IMPORTANT]
-> Run only during authorized Phase 6. Finish the publication and diff gates
-> before syncing. Existing databases, Secrets and PVCs must survive adoption.
-> The committed policies enable automation after verified adoption: nonprod
-> children enable pruning; PROD and both roots keep pruning disabled. For a
-> fresh installation, render a local bootstrap copy with
-> `automated.enabled: false` until the gates below pass.
+**Order:** NONPROD, then PROD. Preserve application data and private Secrets.
+
+## Preconditions
+
+- [ ] Complete application/database checks in [runbook 13](13-deploy-application-manifests.md).
+- [ ] Confirm desired manifests are available on remote infrastructure `main`.
+- [ ] Use disabled automation for initial comparison; enable it after manual reconciliation.
+- [ ] Keep PROD and both root Applications' automatic pruning disabled.
 
 ## 1. Select one cluster and install
 
@@ -20,11 +21,11 @@ Nonprod contains DEV/STAGE only; PROD contains PROD only.
 ```sh
 argocd_cluster=nonprod
 case "$argocd_cluster" in
-  nonprod) kubeconfig="$HOME/.kube/config-dev-stage"; argocd_port=18443 ;;
-  prod) kubeconfig="$HOME/.kube/config-prod"; argocd_port=19443 ;;
+  nonprod) kubeconfig="$HOME/.kube/config-dev-stage" ;;
+  prod) kubeconfig="$HOME/.kube/config-prod" ;;
   *) echo 'Choose nonprod or prod' >&2; exit 1 ;;
 esac
-export argocd_cluster kubeconfig argocd_port
+export argocd_cluster kubeconfig
 argocd_path="kubernetes/gitops/argocd/$argocd_cluster"
 kubectl --kubeconfig="$kubeconfig" config view --minify -o jsonpath='{.clusters[0].cluster.server}'
 kubectl --kubeconfig="$kubeconfig" get nodes
@@ -60,8 +61,7 @@ kubectl --kubeconfig="$kubeconfig" -n argocd rollout status deployment/argocd-re
 kubectl --kubeconfig="$kubeconfig" -n argocd get deployments,statefulsets,pods,services
 ```
 
-- [ ] Confirm all seven component Pods are Ready and the three application
-      environments remain healthy. Services must remain ClusterIP.
+- [ ] Confirm Argo component Pods are Ready and application environments remain healthy. Public ingress must not expose Argo CD; its private Service uses the Admin VIP.
 
 ### If Argo CD startup is slow or fails
 
@@ -71,69 +71,24 @@ kubectl --kubeconfig="$kubeconfig" -n argocd get deployments,statefulsets,pods,s
 > Investigate persistent errors, OOMs, restarts, or API interruptions; do
 > not restart nodes merely because an initial rollout is slow.
 
-## 2. Verify private UI access
+## 2. Open private administration
 
-- [ ] In a separate terminal, use the **same cluster selection** to open a
-      loopback-only port forward:
-
-```sh
-kubectl --kubeconfig="$kubeconfig" -n argocd port-forward --address=127.0.0.1 service/argocd-server "$argocd_port:443"
-```
-
-- [ ] Reach the management port through a private SSH tunnel from the
-      workstation. Use username `admin` and that cluster's initial password.
-
-> [!NOTE]
-> The bootstrap server certificate is self-signed; this private test does
-> not verify public TLS. Each installation has independent Argo CD Secrets.
-
-- [ ] In a private operator session, retrieve the selected cluster's initial
-      password. Do not record it, put it in command arguments, or commit it:
-
-```bash
-# NONPROD
-kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode
-printf '\n'
-
-# PROD
-kubectl --kubeconfig="$HOME/.kube/config-prod" -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode
-printf '\n'
-```
-
-### If the initial admin password was rotated
-
-> [!NOTE]
-> These commands read only the bootstrap password. Use replacement
-> credentials from the protected recovery archive; the initial Secret may
-> have been removed.
-
-### Automated UI check (optional)
-
-> [!TIP]
-> With the Python/Playwright environment from runbook 13, the helper logs
-> in through the UI and checks the authenticated session API. It reads the
-> initial password in memory without saving authentication state.
-
-- [ ] If using the automated alternative, run:
+- [ ] Configure Admin VIP access using [runbook 16, section 1](16-private-platform-access.md#1-configure-private-administrative-access).
+- [ ] Open NONPROD `https://192.168.77.16:8080` or PROD `https://192.168.77.17:8080` through Tailscale.
+- [ ] Authenticate as `admin` using that cluster's protected credentials.
+- [ ] For an initial installation, retrieve the initial password only in a private terminal:
 
 ```sh
-bash scripts/local-python.sh scripts/kubernetes/verify-argocd-ui.py
+kubectl --kubeconfig="$kubeconfig" -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 --decode
 ```
 
-Standalone script: [Verify private Argo CD UI login](../scripts/kubernetes/verify-argocd-ui.py).
-Operators can copy this file and use their own prepared Python environment.
-The helper accepts `argocd_cluster`, `kubeconfig`, and `argocd_port`; it uses a
-three-minute browser timeout for this slow lab. The helper is only for initial
-bootstrap; after rotating the admin password, use the private manual procedure.
+- [ ] After password rotation, use the replacement credential from the recovery kit.
+- [ ] Preserve replacement access before removing the initial-admin Secret.
 
-### Preserve replacement access
-
-- [ ] Keep the initial Secret until its password has been rotated and
-      replacement access has been verified.
-
-> [!NOTE]
-> Argo CD bootstrap state is not part of the version 1 recovery YAML schema;
-> this phase does not overwrite the existing recovery archive.
+Argo CD serves native HTTPS. Validate the private endpoint's certificate identity
+through the trusted administrative path; this certificate is independent of
+public application certificates. Permanent access requires neither SSH tunnels
+nor port-forward.
 
 ## 3. Publish and review before ownership changes
 
@@ -143,8 +98,7 @@ bootstrap; after rotating the admin password, use the private manual procedure.
 > `app-dev` and `app-stage`, and PROD to `app-prod`. The separate bootstrap
 > project permits only Application and AppProject objects in local `argocd`.
 
-- [ ] Confirm reviewed GitOps files and the verified PROD single-worker fix
-      are on remote `main`; render the cluster-specific paths:
+- [ ] Confirm the selected GitOps manifests are on remote `main`; render the cluster-specific paths:
 
 ```sh
 git rev-parse HEAD
@@ -243,7 +197,7 @@ kubectl --kubeconfig="$kubeconfig" -n argocd get applications,appprojects
 > Do not enable pruning to clear an OutOfSync status. The PVC's
 > `Prune=false,Delete=false` annotation does not protect a direct deletion.
 
-## 5. Acceptance and recovery boundaries
+## 5. Completion checks
 
 - [ ] Confirm both private Argo CD UIs, intended local cluster destinations,
       successful root and child reconciliations, correct image IDs, healthy
@@ -256,17 +210,15 @@ kubectl --kubeconfig="$kubeconfig" -n argocd get applications,appprojects
 > Do not change credentials, image tags, replica counts, or data for the
 > self-heal test. Do not delete data-bearing resources to test pruning.
 
-- [ ] Record completed and pending checks in
-      `docs/testreports/PHASE6_REPORT.md` and the implementation plan.
+- [ ] Record the selected revision, resource inventory and reconciliation results in the deployment/change record.
 
-> [!NOTE]
-> Stop before Phase 7. Public routing, Argo CD external ingress,
-> monitoring, and database replacement are separate phases.
+**Done when:** Roots and children are Synced/Healthy, expected image digests and PVC bindings are retained, and automation/pruning match the cluster policy.
+
+**Stop:** Unexpected deletions, mismatched namespaces, failed hooks or database changes. Hold reconciliation and inspect the diff; do not delete an Application as a rollback method.
 
 Official references: [installation](https://argo-cd.readthedocs.io/en/stable/getting_started/),
 [declarative setup](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/),
 [sync policy](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/), and
 [hooks/waves](https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/).
 
-After Phase 6 acceptance, [runbook 15](15-publish-application.md) covers authorized
-public application routing and TLS. Keep Argo CD access private.
+Use [runbook 15](15-publish-application.md) for public application routing and TLS. Keep Argo CD access private.

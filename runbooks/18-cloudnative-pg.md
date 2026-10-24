@@ -1,190 +1,118 @@
-# Install fresh CloudNativePG application databases
+# Install CloudNativePG databases
 
-Use this procedure only with explicit authorization to discard application data.
-It is not a logical migration or a database restoration procedure. Work in the
-original infrastructure checkout. Complete DEV, then STAGE, then PROD; stop
-advancing if an environment fails. Do not rebuild application images or run a
-Jenkins regression solely for this replacement.
+**Where:** Management VM 200, infrastructure repository root.
+**Use for:** Empty databases on a new installation.
+**Order:** DEV → STAGE → PROD. Complete each environment before continuing.
 
-## Configuration and prerequisites
+## Preconditions
 
-Install the [pinned operator](../kubernetes/platform/cloudnative-pg/kustomization.yaml)
-independently in each cluster. See its [provenance and compatibility](../kubernetes/platform/cloudnative-pg/UPSTREAM.md).
+- [ ] Complete [K3s installation](09-install-k3s-clusters.md).
+- [ ] Select the environment and export the variables in [runbook 13](13-deploy-application-manifests.md#1-select-and-render-one-environment).
+- [ ] Confirm the target namespace has no application database or data-bearing PVCs.
+- [ ] For data recovery, use the [disaster recovery procedure](../01-Disaster_recovery.md). Do not initialize an empty database in place of a restore.
+- [ ] Provision `backend-secrets`, `db-secrets` and registry access using runbook 13.
+- [ ] Reserve resources for the database, backup sidecar and operators.
 
-| Environment | Namespace | Instances | Volume per instance | Requested / limited CPU | Requested / limited memory |
+## Configuration reference
+
+| Environment | Namespace | Instances | PVC per instance | CPU request / limit | Memory request / limit |
 | --- | --- | --- | --- | --- | --- |
-| DEV | app-dev | 1 | 2 GiB local-path | 250m / 1 | 512 MiB / 1 GiB |
-| STAGE | app-stage | 1 | 2 GiB local-path | 250m / 1 | 512 MiB / 1 GiB |
-| PROD | app-prod | 2 | 2 GiB local-path | 250m / 1 | 512 MiB / 1 GiB |
+| DEV | app-dev | 1 | 2 GiB | 250m / 1 | 512 MiB / 1 GiB |
+| STAGE | app-stage | 1 | 2 GiB | 250m / 1 | 512 MiB / 1 GiB |
+| PROD | app-prod | 2 | 2 GiB | 250m / 1 | 512 MiB / 1 GiB |
 
-PROD requires different node hostnames for its primary and standby. Streaming
-replication is asynchronous; no synchronous replication is configured. Four
-instances total request 1 CPU, 2 GiB memory and 8 GiB disk. Each operator requests
-100m CPU/128 MiB and is limited to 500m CPU/256 MiB. This is a small lab budget,
-not a capacity benchmark. Local-path claim sizes are planning requests, not
-filesystem quotas; monitor the underlying node filesystem too. WAL and data
-share the per-instance volume. Replication slots can retain WAL during standby
-trouble; monitor free space and expand before exhaustion. A second replica is
-not an off-host backup. `enablePDB: false` keeps operator-generated disruption
-budgets outside this checkpoint, as requested; no HPA/PDB rollout is included.
+PostgreSQL 16 and operator images are pinned in the
+[operator installation](../kubernetes/platform/cloudnative-pg/kustomization.yaml)
+and application components. PROD uses asynchronous streaming replication and
+required placement on different nodes. Local-path PVC requests are not filesystem
+quotas; data and WAL share the backing filesystem.
 
-Record actual server versions, extensions, image digests, Secrets references,
-PVC/PV bindings, free capacity, Argo ownership and approved Jenkins states before
-changes. Preserve private evidence under `.local-work/private/phase10/`, mode
-0700 directories/0600 files. Do not print passwords or authentication tokens.
+| Purpose | Configuration |
+| --- | --- |
+| Application endpoint | `db:5432` |
+| Database / owner | `app` / `app_owner` |
+| Application bootstrap Secret | `cnpg-app` |
+| Administrative role / Secret | `postgres` / `cnpg-superuser` |
+| Required extension | `uuid-ossp` |
 
-## Hold conflicting automation
+## 1. Install the operator
 
-Disable only new main CI scheduling and remove its polling trigger; allow
-in-flight CI and its trusted publisher to finish. Once queue and running work
-are empty, disable the trusted publisher. Do not abort retained work or enable
-unrelated jobs. Save the previous job settings for exact restoration.
-
-Pause root Argo automation before pausing its application children, so root
-self-healing cannot undo the hold. Record their original automation policies.
-Use committed maintenance replica counts and explicit revision-bound Argo syncs;
-do not use imperative scaling that self-healing can reverse. Keep application
-image entries untouched. Argo roots remain held until all environments pass.
-
-## Install operators and bootstrap credentials
-
-For NONPROD use `$HOME/.kube/config-dev-stage`; for PROD use
-`$HOME/.kube/config-prod`. Inspect the server address before each operation.
+- [ ] Check the selected API and node identities.
+- [ ] Install independently in NONPROD and PROD:
 
 ```sh
+kubectl --kubeconfig="$kubeconfig" config view --minify -o jsonpath='{.clusters[0].cluster.server}'
 kubectl --kubeconfig="$kubeconfig" apply --server-side --field-manager=liora-cnpg-platform -k kubernetes/platform/cloudnative-pg
 kubectl --kubeconfig="$kubeconfig" -n cnpg-system rollout status deployment/cnpg-controller-manager --timeout=600s
-kubectl --kubeconfig="$kubeconfig" apply -f "kubernetes/gitops/argocd/$argocd_cluster/settings.yaml"
 ```
 
-The operator owns its platform installation. Argo's `fastapi` AppProject permits
-only namespaced CNPG Cluster objects in its own application namespaces. Its
-Cluster health customization waits for Ready=True and every requested instance
-before allowing the later prestart Sync wave. The operator's generated Pods,
-Services, certificates and PVCs belong to the environment Cluster.
+- [ ] Install cert-manager and the Barman plugin using [runbook 19, section 1](19-cnpg-r2-backup-pitr.md#1-install-backup-dependencies-and-access) before applying database manifests that request the backup plugin.
 
-Create bootstrap Secrets from existing application credentials:
+## 2. Provision database credentials
+
+- [ ] Confirm the selected environment's private recovery inputs match its application Secrets.
+- [ ] Create the derived CNPG Secrets:
 
 ```sh
 bash scripts/local-python.sh scripts/kubernetes/bootstrap-cnpg-secrets.py --kubeconfig "$kubeconfig" --environment "$environment"
 ```
 
-Standalone script: [Bootstrap CNPG Secrets](../scripts/kubernetes/bootstrap-cnpg-secrets.py).
+Standalone script: [bootstrap-cnpg-secrets.py](../scripts/kubernetes/bootstrap-cnpg-secrets.py).
 
-It keeps existing backend/db passwords unchanged, creates `cnpg-app` with
-username `app_owner` and `cnpg-superuser` with username `postgres`, and refuses
-to overwrite mismatching existing CNPG credentials. These private Kubernetes
-Secrets are not Git resources. Their values can be regenerated from the
-existing environment recovery inputs; no new recovery password is introduced.
+The helper derives `app_owner` and administrative credentials from the existing
+environment database password. It refuses conflicting existing CNPG credentials.
+Do not rotate passwords by editing a Secret alone.
 
-The `app` database belongs to `app_owner`. CNPG initdb installs `uuid-ossp` before
-the existing Alembic process runs. The application uses the non-superuser owner;
-`postgres` remains available with the existing database password for Adminer
-administration. Keep the existing application initial administrator credentials,
-signing key, registry credentials and all other Secrets unchanged.
+## 3. Create and initialize the database
 
-## Transition one environment
+- [ ] Return to [runbook 13, section 3](13-deploy-application-manifests.md#3-bring-up-postgresql-then-prestart).
+- [ ] Apply the selected configuration, ObjectStore, Cluster and stable `db` Service.
+- [ ] Wait for Cluster Ready and all requested instances.
+- [ ] Run the existing prestart Job. Require Alembic completion before application startup.
+- [ ] Start the application using the selected existing digest pair.
 
-The shared application base contains no database workload. Current overlays
-select `components/cloudnative-pg`. The independent legacy component used during
-the cutover is retained in Git history at `2ff6364` and was removed after all
-three environments passed. For a fresh installation, provision the operator
-and credentials, then sync the CNPG overlay; skip legacy maintenance and
-retirement. The numbered sequence below records conversion of an existing
-legacy environment, not instructions to recreate the obsolete workload.
+Argo CD uses database readiness at wave -2, prestart at wave 0 and application
+workloads at wave 1. The fresh database initialization creates the application
+administrator from the environment's initialization credentials.
 
-1. Provision bootstrap Secrets and apply the pinned component `cluster.yaml`
-   in the selected namespace alongside the legacy database using field manager
-   `liora-cnpg-bootstrap`. For PROD render a reviewed local copy with
-   `instances: 2`. This creates only the new database; the environment Argo
-   Application adopts the same Cluster during step 3. Wait for all instances
-   and bound PVCs before switching the application endpoint.
-2. Commit zero backend/frontend replicas for that environment and explicitly
-   sync that revision. Wait until its application Pods have terminated. Do not
-   change routing, namespace, Adminer or database credentials.
-3. Select only the CNPG component; restore the original backend/frontend replica
-   counts. Its Service patch retains the existing `db` ClusterIP and changes
-   only its selector to `cnpg.io/cluster: liora-db`, `role: primary`. Its backend
-   ConfigMap changes only the database username to `app_owner`. The backend
-   restart after maintenance reloads the new connection configuration. Render and inspect before
-   publishing, then explicitly sync the exact revision with hooks enabled.
-4. CNPG readiness is wave -2; existing `prestart` runs at Sync wave 0 using the
-   unchanged backend image. It waits for SQL connectivity, runs Alembic to head
-   and initializes the existing administrator. Backend/frontend wave 1 then
-   resume writes after these basic gates; no extended observation window.
-5. Check database/owner/extensions, migration head, image references and actual
-   running IDs, frontend/backend readiness, HTTPS, existing administrator login,
-   and disposable item create/read/update/delete. Check Adminer's existing
-   private endpoint and database connectivity. For PROD also check different
-   nodes, `pg_stat_replication` streaming/async and standby recovery/replay.
-6. Only after checks pass, remove the obsolete `postgres-deployment`, `db-config`
-   and **only** the selected environment's old `postgres-vol` PVC. The PVC has
-   prune/delete protection, so retire it explicitly after checking its saved
-   UID/PV and verifying no Pod uses it. Confirm its old PV deletion and the CNPG
-   PVCs remain Bound. Never delete namespaces or use wildcard PVC deletion.
-7. Reconcile Argo again and require Synced/Healthy, correct resource ownership
-   and no pending unexpected pruning before proceeding to the next environment.
+## 4. Verify database and application
 
-Fresh databases intentionally do not retain old accounts, rows or synthetic
-acceptance markers. Existing initialization credentials recreate application
-access. Old image rollback does not restore discarded data or undo migrations.
-If a step fails, keep deployment/promotion held, stop before the next environment
-and retain private diagnostics; do not invent a data-preserving rollback claim.
-
-### Browser CRUD with disposable-item cleanup
-
-Use the environment selection from runbook 13 and its prepared local browser
-tools. The existing checker verifies health, browser login, create, read, update,
-reload/persistence and optional deletion with both a 404 and UI absence check.
-Select the matching public hostname and the existing private HAProxy route;
-Chromium retains hostname/SNI and verifies trusted HTTPS.
+- [ ] Inspect Cluster state, instance placement and PVC bindings:
 
 ```sh
-acceptance_url="https://$hostname" acceptance_address=192.168.77.240 acceptance_cleanup=true bash scripts/local-python.sh scripts/kubernetes/verify-application-ui.py
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" get cluster,pods,pvc -o wide
+primary=$(kubectl --kubeconfig="$kubeconfig" -n "$namespace" get cluster liora-db -o jsonpath='{.status.currentPrimary}')
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" exec "$primary" -c postgres -- psql -U postgres -d app -c 'SELECT current_database(), pg_get_userbyid(datdba) AS owner FROM pg_database WHERE datname = current_database();'
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" exec "$primary" -c postgres -- psql -U postgres -d app -c 'SELECT extname FROM pg_extension; SELECT version_num FROM alembic_version;'
 ```
 
-Standalone script: [Verify application UI](../scripts/kubernetes/verify-application-ui.py).
-Keep `environment`, `namespace`, `recovery_dir` and `render_dir` exported as in
-runbook 13. This operator-invoked check does not create an automatic STAGE
-acceptance receipt or satisfy the PROD image-promotion gate. Testing through the
-private edge does not independently establish public-origin reachability.
+- [ ] Require database `app`, owner `app_owner`, `uuid-ossp` and the migration revision required by the selected backend image.
+- [ ] For PROD, require two Ready instances on different nodes and one asynchronous streaming standby:
 
-### Database restart and application connection pools
+```sh
+kubectl --kubeconfig="$HOME/.kube/config-prod" -n app-prod get pods -l cnpg.io/cluster=liora-db -o wide
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" exec "$primary" -c postgres -- psql -U postgres -d app -c 'SELECT application_name, state, sync_state FROM pg_stat_replication; SHOW synchronous_standby_names;'
+```
 
-Pin both the controller image and `OPERATOR_IMAGE_NAME` before provisioning
-instances. Changing the injected bootstrap image can cause CNPG to refresh
-existing Pods; allow its managed shutdown/startup to finish, then recheck every
-instance. A readiness snapshot during a managed refresh is not a completed gate.
+- [ ] Complete HTTPS, login and disposable item create/read/update/delete using runbook 13.
+- [ ] Log in to Adminer with server `db`, database `app` and administrative credentials.
 
-The existing application image has long-lived SQLAlchemy connections without
-pool pre-ping. After a database restart, an old pooled connection can make the
-first login fail. For this installation the final committed backend database
-revision annotation rolls the existing images after the last operator refresh;
-DEV's overlay explicitly retains that annotation. Wait for those backend
-rollouts, then repeat login/CRUD before restoring deployment automation. Keep
-future operator/database restarts coordinated with application reconnects until
-a separately reviewed application change provides automatic stale-pool handling.
-Do not rebuild application images as part of this procedure.
+**Done when:** All requested instances are Ready, database identities and schema match, application login/CRUD succeeds, and PROD replication is asynchronous across different nodes.
 
-## Restore automation and record boundaries
+## Database maintenance
 
-Restore each child's original policy, then its root's original policy. Verify
-both roots and all children reconcile the published revision. Restore only the
-previously approved main polling trigger (approximately every two minutes) and
-trusted publisher enablement after checking the queue and running work. Leave
-unrelated jobs, schedules and indexing disabled. Preserve administrator/user
-hashes, Jenkins build history and unrelated PVC/Secret identities.
+- [ ] Record the current image pair, Argo policies and Jenkins job/trigger settings before work.
+- [ ] Block new conflicting deployments and allow active CI/publisher work to finish.
+- [ ] Pause root reconciliation before application children; use reviewed declarative maintenance settings.
+- [ ] Wait for the database/operator rollout to finish.
+- [ ] For backend images requiring connection-pool refresh, change the backend rollout annotation declaratively while retaining its image digest; wait for rollout completion.
+- [ ] Require actual login and CRUD after the restart. Readiness probes alone do not check authenticated database use.
+- [ ] Restore child policies before root policies and restore the recorded Jenkins settings.
 
-Record fresh installation and existing-image application results separately
-from CI/CD regression: the latter is not rerun here. PROD application promotion
-remains blocked by its pending automatic STAGE acceptance gate. Phase 9 startup,
-observer, acceptance serialization and promotion work remain separate tasks.
+**Stop:** On failed database, replication, login or CRUD checks, keep conflicting deployment activity held and retain diagnostics. Do not reset databases or delete PVCs to clear readiness errors.
 
-## R2 physical backup and restoration
+## Related procedures
 
-The fresh-installation checkpoint did not configure backups. Phase 10.2 has
-subsequently added physical base backups, continuous WAL and isolated PITR.
-Use [runbook 19](19-cnpg-r2-backup-pitr.md) for current operations and
-[the Phase 10.2 report](../docs/testreports/PHASE10_2_REPORT.md) for scope,
-measured objectives and limitations. Never treat a raw copy of a running PVC
-as a database backup.
+- [Backup installation and isolated PITR](19-cnpg-r2-backup-pitr.md)
+- [Storage and replication alert response](../docs/operations/STORAGE_REPLICATION_ALERTS.md)
+- [Disaster recovery](../01-Disaster_recovery.md)

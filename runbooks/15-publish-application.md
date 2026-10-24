@@ -17,8 +17,7 @@
       state in the operator archive.
 
 > [!NOTE]
-> The existing Debian template has a 200GiB thin disk; this module does
-> not shrink or overwrite it.
+> Review the source template disk size and the resulting edge disk allocation. The module does not shrink existing disks.
 
 - [ ] Apply the reviewed Terraform module, then the linked Ansible playbook:
 
@@ -79,8 +78,7 @@ kubectl --kubeconfig="$HOME/.kube/config-prod" -n cert-manager rollout status de
 ```
 
 The same installation retains CNPG/Barman internal certificate management.
-Do not install another controller or restore the old namespace-only controller
-flags. Wait for the webhook and cainjector Deployments too on a fresh cluster.
+Use one cert-manager installation per cluster with the configured cluster-wide scope. Wait for the webhook and cainjector Deployments too on a fresh cluster.
 
 - [ ] Restore `recovery/cloudflare-dns-token` privately (mode `0600`) from the
       encrypted recovery kit, or supply a new zone-scoped token. Use
@@ -120,8 +118,7 @@ kubectl --kubeconfig="$kubeconfig" -n "$namespace" get certificates,certificater
 Traefik keeps using `app-tls`. Keys rotate on renewal; cert-manager updates the
 Secret without restarting application Pods. Inspect `status.renewalTime`,
 `status.notAfter`, Ready/Issuing conditions and Order/Challenge events. DNS
-propagation can take minutes. Do not delete working TLS Secrets to retry or run
-legacy Secret distribution alongside cert-manager.
+propagation can take minutes. Do not delete working TLS Secrets to retry or install a second writer for the TLS Secret.
 
 - [ ] Verify the exact issued certificate, trust chain and hostname at all
       ingress nodes and HAProxy (example DEV):
@@ -160,9 +157,7 @@ do not replace verification of the certificate actually served.
 
 ## 5. Align HTTPS configuration and publish 443
 
-- [ ] Keep STAGE/PROD HTTPS origins and TLS references. Change DEV's
-      origin/CORS to `https://dev.liora.aprt.info` where needed; retain its
-      documented environment setting, single-worker command and `app-tls` reference.
+- [ ] Confirm each environment uses its canonical HTTPS origin/CORS, single-worker backend command and namespace-local `app-tls` reference.
 - [ ] Publish the reviewed infrastructure change and confirm Argo CD
       reconciliation. Keep administrative Services private, with no ingress.
 
@@ -206,6 +201,7 @@ export recovery_dir="$HOME/fastapi-traefik-liora-infrastructure/recovery"
 export render_dir="$PWD/.local-work/acceptance/$environment"
 export acceptance_url=https://dev.liora.aprt.info
 export acceptance_address=192.168.77.240
+export acceptance_cleanup=true
 bash scripts/local-python.sh scripts/kubernetes/verify-application-ui.py
 ```
 
@@ -225,15 +221,13 @@ bash scripts/local-python.sh scripts/kubernetes/verify-application-ui.py
 
 ### Cloudflare protection/Access
 
-The owner confirms protection/Access is enabled for DEV/STAGE. PROD remains
-DNS-only. Preserve this distinction on fresh deployment and recovery.
+Configure protection/Access for DEV/STAGE and DNS-only access for PROD.
+Preserve the environment-specific policy during recovery.
 
 - [ ] With trusted origin certificates, use Full (strict) for proxied
       DEV/STAGE. Check that unauthenticated browser access encounters Access,
       approved users can log in, and PROD remains publicly accessible.
-- [ ] Record the observed proxy/Access state without changing unrelated
-      subdomains or zone-wide settings. This documentation update records owner
-      confirmation; it does not claim a new Access test.
+- [ ] Record proxy/Access state. Keep unrelated subdomains and zone-wide settings unchanged.
 
 > [!NOTE]
 > Private origin acceptance does not establish an Access-protected browser
@@ -246,17 +240,14 @@ DNS-only. Preserve this distinction on fresh deployment and recovery.
 > configuration or prior reviewed ingress commit. Do not flush host rules,
 > delete a namespace/PVC, or replace unrelated DNS records.
 
-### Historical migration and recovery
+## Rebuild and reissue certificates
 
-The one-time edge Certbot/distribution handover, preserved private rollback
-artifacts and execution evidence belong in
-[the Phase 11 report](../docs/testreports/PHASE11_REPORT.md). Do not install the
-legacy distribution timer on fresh deployments or disaster recovery.
+- [ ] Rebuild infrastructure using the [disaster recovery procedure](../01-Disaster_recovery.md).
+- [ ] Restore the DNS token and provision the issuer using sections 2–3.
+- [ ] Reissue application certificates and verify serving using section 4.
+- [ ] Complete database recovery and application login/CRUD before releasing the application to users.
 
-Rebuild infrastructure with the [recovery navigator](../01-Disaster_recovery.md),
-then provision the DNS token/issuer and reissue certificates using this runbook.
-Application database restoration is a separate recovery step; certificate
-readiness does not establish restored data or application acceptance.
+**Done when:** Each application hostname serves its matching trusted certificate, HTTPS/login/CRUD passes, environment-specific Access policy is correct, and administrative endpoints remain private.
 
 References: [K3s ServiceLB](https://docs.k3s.io/networking/networking-services),
 [ACME challenge types](https://letsencrypt.org/docs/challenge-types/), and

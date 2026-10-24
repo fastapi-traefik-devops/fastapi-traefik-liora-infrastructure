@@ -14,7 +14,7 @@
 ## Clone and configure VM 200
 
 - [ ] On a new host, make a full clone: `qm clone 9013 200 --name k3s-mgmt --full`.
-- [ ] Set the VM's Cloud-Init network and identity with a verified public-key file on the Proxmox host:
+- [ ] Set the VM's Cloud-Init network and identity with a matching public-key file on the Proxmox host:
 
    ```bash
    qm set 200 --cores 2 --memory 2048

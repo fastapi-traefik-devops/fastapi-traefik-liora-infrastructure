@@ -2,7 +2,7 @@
 
 **Where:** Management VM 200, from the repository checkout. Install the client and test VPN connectivity on your PC/laptop.
 
-This phase clones Debian 13 template **9013** into VM **250** (`192.168.77.250/24`) on `vnet77`, then advertises `192.168.77.0/24` through Tailscale. Step 7 already placed the local, Git-ignored credentials in `recovery/` and [installed Ansible and Terraform](11-install-management-tools.md) on VM 200. Terraform reads the public key from that directory; Ansible uses its matching private key. The private key is never installed on VM 250.
+This procedure clones Debian 13 template **9013** into VM **250** (`192.168.77.250/24`) on `vnet77`, then advertises `192.168.77.0/24` through Tailscale. Step 7 already placed the local, Git-ignored credentials in `recovery/` and [installed Ansible and Terraform](11-install-management-tools.md) on VM 200. Terraform reads the public key from that directory; Ansible uses its matching private key. The private key is never installed on VM 250.
 
 ## 1. Prepare infrastructure inputs
 
@@ -58,18 +58,8 @@ terraform apply router.tfplan
 > [!WARNING]
 > Terraform tried to create the Cloud-Init drive on `local-lvm`, which does not exist on the current host. Set `DISK_STORAGE` in `recovery/.env` to the storage selected in [the template runbook](03-create-debian13-template.md), then reload the environment before planning again.
 
-```sh
-│ Error: All attempts fail:  
-│ #1: the requested resource does not exist  
-│ received an HTTP 500 response - Reason: storage 'local-lvm' does not exist  
-│    
-│   with proxmox_virtual_environment_vm.ts_router,  
-│   on main.tf line 25, in resource "proxmox_virtual_environment_vm" "ts_router":  
-│   25: resource "proxmox_virtual_environment_vm" "ts_router" {  
-│    
-```
 
-The failed apply already created the Tailscale auth key.
+A partial apply can create the Tailscale key before VM creation; inspect state before planning again.
 
 - [ ] From `edge/tailscale/terraform`, check Terraform state and whether Proxmox left VM 250 behind:
 
@@ -99,31 +89,6 @@ Do not reuse the earlier saved plan: Terraform state changed when the auth key w
 > [!WARNING]
 > Inspect its configuration and reconcile it with Terraform state before another plan or apply. Do not blindly create or delete it.
 
-After Terraform succeeds, continue with Ansible below. A recovered apply can look like this:
-```sh
-$ terraform apply router.tfplan  
-proxmox_virtual_environment_vm.ts_router: Destroying... [id=250]  
-proxmox_virtual_environment_vm.ts_router: Destruction complete after 1s  
-proxmox_virtual_environment_vm.ts_router: Creating...  
-proxmox_virtual_environment_vm.ts_router: Still creating... [00m10s elapsed]  
-proxmox_virtual_environment_vm.ts_router: Still creating... [00m20s elapsed]  
-proxmox_virtual_environment_vm.ts_router: Still creating... [00m30s elapsed]  
-proxmox_virtual_environment_vm.ts_router: Still creating... [00m40s elapsed]  
-proxmox_virtual_environment_vm.ts_router: Still creating... [00m50s elapsed]  
-proxmox_virtual_environment_vm.ts_router: Still creating... [01m00s elapsed]  
-proxmox_virtual_environment_vm.ts_router: Still creating... [01m10s elapsed]  
-proxmox_virtual_environment_vm.ts_router: Still creating... [01m20s elapsed]  
-proxmox_virtual_environment_vm.ts_router: Still creating... [01m30s elapsed]  
-proxmox_virtual_environment_vm.ts_router: Creation complete after 1m34s [id=250]  
-  
-Apply complete! Resources: 1 added, 0 changed, 1 destroyed.  
-  
-Outputs:  
-  
-ts_authkey = <sensitive>  
-ts_router_ip = "192.168.77.250"
-```
-
 ### Ansible
 
 - [ ] Register and configure the subnet router with the one-use auth key:
@@ -142,30 +107,10 @@ The auth key is passed to Ansible only for the router's first login. Terraform s
 > [!WARNING]
 > Review a replacement plan with `terraform plan -replace=tailscale_tailnet_key.router` and apply it before rerunning Ansible. Replacing only VM 250 reuses the earlier key.
 
-#### If router registration fails in Ansible
+#### If router registration fails
 
-```sh
-$ ansible-playbook -i edge/tailscale/ansible/inventory.ini 
-....
-....
-ok: [ts-router]  
-  
-TASK [Register the subnet router on first login] ***********************************************************  
-[ERROR]: Task failed: Module failed: non-zero return code  
-Origin: /home/root-admin/fastapi-traefik-liora-infrastructure/edge/tailscale/ansible/tailscale-router.yml:68:7  
-  
-66       no_log: true  
-67  
-68     - name: Register the subnet router on first login  
-        ^ column 7  
-  
-fatal: [ts-router]: FAILED! => {"censored": "the output has been hidden due to the fact that 'no_log: true' was specified for this result", "changed": true}  
-  
-PLAY RECAP **************************************************
-ts-router                  : ok=10   changed=5    unreachable=0    failed=1    skipped=0    rescued=0    ignored=0
-```
-> [!WARNING]
-> The `no_log: true` setting hides Tailscale's exact error. The one-use key expires one hour after Terraform creates it. If that hour has passed, replace the key before rerunning Ansible. A VM-only replacement reuses the previous key.
+- [ ] Inspect the router service and registration state privately.
+- [ ] If the first-login key expired, replace only the one-use key. Keep `no_log` enabled for credential-bearing tasks.
 
 From `edge/tailscale/terraform` on VM 200:
 
