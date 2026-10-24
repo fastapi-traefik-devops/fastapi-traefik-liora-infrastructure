@@ -19,7 +19,7 @@ records; Kustomize does not consume them.
 Before the import, all 25 unique selected historical blobs were scanned in
 six change snapshots (110 file instances) with Gitleaks 8.30.1 default rules,
 explicitly ignoring source allow comments and without source ignore files.
-There were no findings and no Secret or SealedSecret resources. The official
+There were no findings and no Secret or legacy encrypted credential resources. The official
 Gitleaks release checksum was checked before execution. The filtered eight-commit
 history was also scanned with no findings. A scanner result is not proof that
 arbitrary secrets can never be present; no live credentials were imported.

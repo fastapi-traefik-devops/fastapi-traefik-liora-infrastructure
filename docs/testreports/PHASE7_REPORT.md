@@ -175,9 +175,20 @@ state remains root-only on the edge. These are operator data, outside Git.
 ## Remaining boundaries and next phase
 
 Phase 7 passes DNS-only public-origin HTTPS acceptance. Cloudflare proxy mode,
-Full (strict) traffic, floating ingress VIPs, edge HA, node/edge failover, reboot
+Full (strict) traffic, edge HA, node/edge failover, reboot
 persistence, data backup/restore and a future scheduled real certificate renewal
 remain unverified. Keep these limits distinct from functional acceptance.
 
 Next after confirmation: Phase 8, separate cluster monitoring and controlled
 private operational access. Do not begin Phase 8 in this increment.
+
+
+## Later architecture decision
+
+The Phase 7 limits above describe that checkpoint, not the current backlog.
+The owner subsequently enabled Cloudflare protection/Access for DEV/STAGE and
+removed legacy VM100 administrative DNAT. The current design retains HAProxy
+and Traefik ServiceLB node pools; separate ingress VIPs are not planned. Edge
+redundancy/public IP capacity is an optional future production-scale review.
+See [the decision record](ARCHITECTURE_DECISIONS_2026-10-24.md). This note records
+owner confirmation without rerunning network tests.

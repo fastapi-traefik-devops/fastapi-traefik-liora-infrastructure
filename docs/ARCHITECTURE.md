@@ -39,16 +39,17 @@ budget of the single Proxmox host.
 | Purpose | NONPROD | PROD |
 | --- | --- | --- |
 | Kubernetes API | `192.168.77.11:6443` | `192.168.77.12:6443` |
-| Public application ingress | Dedicated NONPROD ingress VIP | Dedicated PROD ingress VIP |
+| Public application ingress | Traefik ServiceLB nodes `.201`–`.203` | Traefik ServiceLB nodes `.211`–`.213` |
 | Private administrative Services | `192.168.77.16` | `192.168.77.17` |
 
 API, public ingress and administrative addresses have separate roles and
-controller ownership. Public ingress VIP addresses are network configuration
-parameters; they must not overlap API VIPs, Admin VIPs, static VMs or DHCP.
+controller ownership. HAProxy sends application traffic to each cluster's
+Traefik ServiceLB node addresses. Separate public-ingress VIPs are not part of
+this design; API and Admin VIPs are never ingress backends.
 
 API kube-vip instances serve cluster control-plane access. Separate
-services-only kube-vip instances serve administrative Services. Public ingress
-has its own address ownership; neither an API nor an Admin VIP is reused for it.
+services-only kube-vip instances serve administrative Services. K3s ServiceLB
+owns the public Traefik Service; neither an API nor an Admin VIP is reused for it.
 Each LoadBalancer Service has one controller responsible for its status and
 address advertisement. LoadBalancer classes and admission rules enforce that
 ownership without competing ServiceLB updates.
@@ -63,8 +64,8 @@ ownership without competing ServiceLB updates.
 
 Cloudflare manages public DNS. DEV and STAGE use Cloudflare protection/Access;
 PROD uses DNS-only public-origin access. The origin path is Proxmox public
-TCP 80/443 forwarding to HAProxy VM 240, then the selected cluster's dedicated
-ingress VIP and Traefik. HTTP requests redirect to HTTPS. HAProxy routes only
+TCP 80/443 forwarding to HAProxy VM 240, then the selected cluster's Traefik
+ServiceLB node pool. HTTP requests redirect to HTTPS. HAProxy routes only
 application hostnames and rejects unknown and administrative names.
 
 ```mermaid
@@ -73,10 +74,10 @@ flowchart LR
   ProdBrowser[PROD browser] --> Origin[Proxmox public origin]
   Cloudflare --> Origin
   Origin --> Edge[HAProxy VM 240]
-  Edge --> NonprodVIP[NONPROD ingress VIP]
-  Edge --> ProdVIP[PROD ingress VIP]
-  NonprodVIP --> NonprodTraefik[NONPROD Traefik]
-  ProdVIP --> ProdTraefik[PROD Traefik]
+  Edge --> NonprodNodes[NONPROD nodes .201–.203]
+  Edge --> ProdNodes[PROD nodes .211–.213]
+  NonprodNodes --> NonprodTraefik[NONPROD Traefik]
+  ProdNodes --> ProdTraefik[PROD Traefik]
   NonprodTraefik --> NonprodApps[DEV / STAGE application Services]
   ProdTraefik --> ProdApp[PROD application Services]
 ```
@@ -122,6 +123,9 @@ flowchart LR
 | Prometheus | `http://192.168.77.16:9090` | `http://192.168.77.17:9090` |
 | Alertmanager | `http://192.168.77.16:9093` | `http://192.168.77.17:9093` |
 | Jenkins | `http://192.168.77.16:8085` | — |
+| Adminer DEV | `http://192.168.77.16:8081` | — |
+| Adminer STAGE | `http://192.168.77.16:8082` | — |
+| Adminer PROD | — | `http://192.168.77.17:8081` |
 
 Services provide their native HTTP/HTTPS and authentication. Argo CD uses its
 native HTTPS endpoint; an IP endpoint does not require a publicly trusted
@@ -164,9 +168,13 @@ budgets are environment-specific. The stable application endpoint is `db:5432`;
 `app_owner` owns the application database, while `postgres` is an administrative
 role with separate connection settings.
 Application migrations use the prestart/migration lifecycle and preserve
-compatibility with the deployed application. Database administration uses a
-private operational access path; Adminer is excluded from the final application
-stack.
+compatibility with the deployed application.
+
+Database administration uses Adminer through the private Admin VIP endpoints
+and native database authentication. Adminer is intentionally retained in DEV,
+STAGE and PROD. During the project's startup period, unplanned direct database
+intervention remains a necessary operational option; the owner accepts that risk.
+Removing PROD Adminer is not a deployment milestone or current requirement.
 
 Persistent storage has explicit ownership, retention and recovery rules.
 Node-local `local-path` storage does not replicate volume contents. Database
@@ -221,14 +229,14 @@ never replace live endpoints. Operators repeat the exercise monthly and after
 significant backup changes; no automated weekly restore schedule is required.
 
 Recovery procedures cover application data, etcd, infrastructure state,
-cluster credentials and encryption keys. Backup copies and private recovery
+cluster credentials and the encryption material required by the retained backups. Backup copies and private recovery
 inputs stay outside Git.
 
 The recovery kit contains the inputs and procedures needed to recreate the
 Proxmox guests, both clusters, GitOps and platform services, then restore data.
 Jenkins recovery includes controller state, credential encryption material,
-users, jobs and retained history. Secret-controller keys and registry access
-are recoverable independently of an application deployment.
+users, jobs and retained history. Application/database credentials and registry
+access are recoverable independently of an application deployment.
 
 ## GitOps ownership
 
@@ -323,11 +331,16 @@ are selected within the observability design and resource budget.
 
 ## Secrets and repository boundaries
 
-Each cluster has a separate Sealed Secrets controller and recovery key.
-Git-managed Secret resources contain encrypted data; controller private keys
-and live credentials remain private recovery inputs. Application, database,
-registry, GitHub App and Cloudflare credentials have distinct purposes and
-scopes. Public manifests and logs contain no live credential values.
+Operators create Kubernetes Secrets with Ansible, the reviewed provisioning
+helpers or a deliberate manual procedure using private inputs under `recovery/`.
+Live inputs are Git-ignored and included in the protected offsite recovery kit.
+No live Secret payloads, plaintext or encrypted, belong in Git. Tracked files
+contain only visibly fake examples, Secret references and provisioning logic.
+
+Application, database, registry, GitHub App and Cloudflare credentials have
+distinct purposes and scopes. Public manifests and logs contain no live
+credential values. Rebuilding a cluster restores private inputs and provisions
+Secrets before the workloads that consume them.
 
 | Repository or path | Responsibility |
 | --- | --- |
@@ -351,9 +364,28 @@ state and operator data are never committed.
 
 Two clusters provide separate control planes and environment ownership on one
 physical Proxmox host. The HAProxy edge and Tailscale router each have their own
-VM. Common power, host and storage remain shared failure domains.
+VM. Common power, host and storage remain shared failure domains. HAProxy
+VM 240 is a single point of failure for public application access.
+
+The project shares one public IPv4 address between host/Proxmox administration
+and application DNAT to HAProxy. Keeping this working edge and its node pools
+is an accepted limitation; a separate ingress-VIP migration is not planned.
+Private cluster VIPs and public IP allocation are separate network decisions.
 
 API/VIP elections, application replicas, database replication and persistent
 storage recovery solve different availability problems. None substitutes for
 host-independent backups or a complete recovery procedure. Physical-host
 redundancy is outside this topology.
+
+
+## Optional longer-term improvements
+
+These are optional reviews, not prerequisites for the current platform:
+
+- For a substantially larger production deployment, reassess the single edge
+  failure domain, available public IP addresses and a redundant public ingress
+  design. An additional public IP may form part of that design; this is not a
+  committed implementation task for the current lab.
+- Reassess PROD Adminer in approximately one to two years, once the system has
+  demonstrated stable operation and direct interventions have become exceptional.
+  Remove it only if a practical alternative operational path is available.

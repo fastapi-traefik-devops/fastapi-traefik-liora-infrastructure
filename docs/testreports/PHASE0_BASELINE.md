@@ -114,7 +114,7 @@ Only key presence and obvious placeholder status were inspected; no values
 are reproduced or copied. Infrastructure `recovery/.env` has populated
 `GHCR_REGISTRY`, `GHCR_USERNAME`, and `GHCR_TOKEN` fields. Authenticated GHCR token issuance, tag listing, and manifest reads succeeded
 for both application repositories. Cluster-side image pulls remain untested.
-`recovery/recovery.yaml` identifies a nonprod Sealed Secrets controller-key
+`recovery/recovery.yaml` identifies a nonprod legacy encryption controller-key
 location, not a verified backup of the required application Secrets.
 Do not import old ciphertext or controller keys in this phase.
 
@@ -193,10 +193,10 @@ Using the current STAGE pair for the first educational PROD deployment is a
 concrete available option requiring the operator's selection. Image layers
 were not downloaded and no live cluster pull was attempted.
 
-`recovery.yaml` contains two populated nonprod Sealed Secrets controller
+`recovery.yaml` contains two populated nonprod legacy encryption controller
 certificate/private-key pairs; it does not contain backend/database Secret
 values for the three target environments. Historical application DEV
-SealedSecret files exist and have relevant key names, but decryptability and
+legacy encrypted credential files exist and have relevant key names, but decryptability and
 credential suitability have not been verified. They were not imported,
 decrypted, or applied. This inventory does not establish usable credentials
 for STAGE or PROD.

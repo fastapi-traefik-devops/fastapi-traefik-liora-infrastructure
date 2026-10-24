@@ -9,7 +9,10 @@ The existing K3s ServiceLB exposes Traefik on each cluster's three node addresse
 HAProxy balances TLS connections over `.201`–`.203` for DEV/STAGE and
 `.211`–`.213` for PROD. These disjoint ingress endpoint sets are different from
 API VIPs `.11`/`.12`. This increment keeps ServiceLB and does not introduce a
-second address announcer. Dedicated floating ingress VIPs remain a later option.
+second address announcer. This node-pool path is the accepted design; no
+separate ingress-VIP migration is planned. VM 240 remains a single point of
+failure. Reassessing a redundant edge and additional public IP capacity is an
+optional longer-term topic for a substantially larger production deployment.
 
 The nonprod TLS routes are controlled by `liora_tls_nonprod_enabled`; enable
 them only after both nonprod certificates and HTTPS ingress are verified.

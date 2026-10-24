@@ -125,8 +125,12 @@ Token shape does not establish validity, scopes or expiry.
 
 ## `recovery.yaml`
 
-The complete version 1 document has exactly these supported paths. Every listed
-field is required by `--all`. Mappings use unique string keys; YAML anchors,
+The version 1 document retains legacy archive compatibility alongside current
+private application inputs. The current deployment uses Ansible/helpers/manual
+Secret provisioning; it does not require an encryption controller. Every listed
+field, including the legacy archive list, is still required by `--all` until
+the separate schema update is implemented. Mappings use unique string keys;
+YAML anchors,
 aliases, merges and custom tags are unsupported. Unknown fields warn at every
 mapping level, including controller list items, Secret key maps and nested keys
 inside unsupported sections.
@@ -134,10 +138,10 @@ inside unsupported sections.
 | Path | Constraint |
 | --- | --- |
 | `schema_version` | Integer `1` (a Boolean or quoted number is invalid). |
-| `kubernetes.nonprod.sealed_secrets_controller_keys` | Nonempty list of controller key records. This is the currently supported nonproduction controller backup; no `prod` controller key section is consumed today. |
+| `kubernetes.nonprod` legacy archive section | The current v1 validator still requires the original nonempty controller-key list. See the exact legacy list field in [the fake YAML example](recovery.yaml.example); this is archive compatibility, not a platform installation requirement. A separate schema update must retire this requirement without deleting old recovery material. |
 | `…[i].secret_name` | Unique original Kubernetes Secret DNS subdomain name, at most 253 characters: lowercase letters/digits/`-`/`.` with each component starting and ending with a letter/digit. |
 | `…[i].tls_crt_pem` | Parseable PEM X.509 certificate whose public key matches the private key below. |
-| `…[i].tls_key_pem` | Parseable, unencrypted RSA PEM private key (PKCS#1 or PKCS#8), required by Sealed Secrets RSA encryption. Keys shorter than 2048 bits warn. |
+| `…[i].tls_key_pem` | Parseable, unencrypted RSA PEM private key (PKCS#1 or PKCS#8), used by the legacy archive format. Keys shorter than 2048 bits warn. |
 | `application_credentials` | Mapping containing `dev`, `stage`, `prod`; each has all fields below. |
 | `application_credentials.<env>.namespace` | Exactly `app-dev`, `app-stage` or `app-prod`, matching `<env>`. |
 | `…first_superuser` | Valid application `EmailStr`, at most 255 characters, with deliverability checks disabled. Must match the current ConfigMaps/bootstrap account `admin007@liora.aprt.info`. The tracked example intentionally uses a fake address that must be replaced. |
@@ -149,7 +153,8 @@ inside unsupported sections.
 
 Expired/not-yet-valid controller certificates warn rather than fail: historical
 private keys can still be needed to decrypt backups. Retain all required original
-key pairs; do not generate replacements for old encrypted SealedSecrets. Name
+key pairs while historical encrypted archives are retained; do not replace
+their original keys merely because current Secret provisioning has changed. Name
 rules follow [Kubernetes resource names](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/).
 Application constraints come from `backend/app/models.py` (`UserBase`/`UserCreate`)
 and `backend/app/core/config.py` in the application repository; consumer-specific

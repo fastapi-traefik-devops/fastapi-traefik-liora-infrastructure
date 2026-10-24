@@ -39,7 +39,8 @@ ansible-playbook -i edge/haproxy/ansible/inventory.yml edge/haproxy/ansible/site
 > HAProxy accepts application Host/SNI names only. TLS passes through to
 > Traefik. Its backend sets are ServiceLB node addresses `.201`–`.203`
 > and `.211`–`.213`, never API VIPs `.11`/`.12`. Dedicated floating
-> ingress VIPs remain a later option.
+> ingress VIPs are not part of the accepted design. The single HAProxy edge
+> is a known failure domain; future edge HA is an optional separate review.
 
 > [!WARNING]
 > Do not print tokens or store them in tracked tfvars.
@@ -48,8 +49,8 @@ ansible-playbook -i edge/haproxy/ansible/inventory.yml edge/haproxy/ansible/site
 
 - [ ] Obtain the **current** Proxmox public IPv4. Check for conflicting
       A/AAAA/CNAME records in the Cloudflare-managed `aprt.info` zone.
-- [ ] Create or verify these **DNS-only** records without removing unrelated
-      records:
+- [ ] Create or verify only these application records without removing unrelated
+      records. DEV/STAGE use Cloudflare proxying and Access; PROD is DNS-only:
 
 | Host | Origin |
 | --- | --- |
@@ -219,14 +220,21 @@ bash scripts/local-python.sh scripts/kubernetes/verify-application-ui.py
 
 - [ ] Check private Argo CD and Adminer access independently.
 
-### If enabling Cloudflare proxying
+### Cloudflare protection/Access
 
-- [ ] After the origin has a trusted certificate, use Full (strict) and
-      repeat public browser/API acceptance through the proxied path.
-      Record each DNS record's proxy state in the phase report.
+The owner confirms protection/Access is enabled for DEV/STAGE. PROD remains
+DNS-only. Preserve this distinction on fresh deployment and recovery.
+
+- [ ] With trusted origin certificates, use Full (strict) for proxied
+      DEV/STAGE. Check that unauthenticated browser access encounters Access,
+      approved users can log in, and PROD remains publicly accessible.
+- [ ] Record the observed proxy/Access state without changing unrelated
+      subdomains or zone-wide settings. This documentation update records owner
+      confirmation; it does not claim a new Access test.
 
 > [!NOTE]
-> DNS-only origin acceptance does not establish a proxied Cloudflare path.
+> Private origin acceptance does not establish an Access-protected browser
+> path. The accepted direct-origin bypass remains described in the architecture.
 
 ### If routing must be rolled back
 

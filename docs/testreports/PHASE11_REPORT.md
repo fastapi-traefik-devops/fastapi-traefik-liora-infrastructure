@@ -1,9 +1,9 @@
 # Phase 11 — Public certificate migration
 
 Status: **public certificate migration completed on 2026-10-24**, with the
-external network and future unattended-renewal limitations recorded below.
-This report covers the public certificate subtask only. DHCP alignment and other
-polishing work are outside this checkpoint.
+subsequent owner-confirmed external verification and DHCP correction recorded
+below. The defined certificate/DHCP scope is complete; observing the first
+scheduled unattended certificate renewal remains an operational follow-up.
 
 ## Preflight on 2026-10-24
 
@@ -174,11 +174,61 @@ configuration and pre-cutover TLS Secret backups. Do not publish that directory.
 
 Public-DNS TCP access from this execution host returned ConnectionRefusedError;
 private node and edge checks passed with real hostnames and normal certificate
-validation. A new independent external-browser confirmation remains outstanding.
-The helper's explicit `--public` mode preserves that distinction. No public
-reachability result is inferred from DNS-01 issuance.
+validation. The owner subsequently confirmed external browser access for all
+three domains, resolving this gap as recorded below. The original local network
+limitation remains historical; public verification is attributed to the owner,
+not inferred from DNS-01 issuance.
 
 Manual renewal verified the same controller/ACME/Secret update path used for
 scheduled renewal, but the future unattended renewal date has not yet occurred.
-Dedicated public-certificate expiry alert integration was not added. DHCP/static
-alignment and the remaining Phase 9 work are still separate pending tasks.
+An internal public-certificate expiry alert integration was not added; the
+owner confirmed that UptimeRobot provides external certificate monitoring.
+DHCP alignment is now owner-confirmed complete. Remaining Phase 9 work is
+separate from this checkpoint.
+
+
+## Subsequent owner confirmation
+
+The owner confirmed that all three domains work from an external browser
+without certificate warnings and that certificate dates and serial numbers
+changed. Supplied external OpenSSL output shows these new validity periods and
+SHA-1 fingerprints (public certificate identifiers, not secret values):
+
+| Domain | Not Before (UTC) | Not After (UTC) | SHA-1 fingerprint |
+| --- | --- | --- | --- |
+| `liora.aprt.info` | 2026-10-24 07:52:28 | 2027-01-22 07:52:27 | `42:66:1A:76:96:1B:B6:12:DE:DC:B2:89:D8:42:AC:BB:4A:9C:B3:2E` |
+| `dev.liora.aprt.info` | 2026-10-24 07:46:03 | 2027-01-22 07:46:02 | `43:C1:F5:18:BC:70:1E:51:37:74:4F:EC:7E:15:76:A7:75:30:1A:72` |
+| `stage.liora.aprt.info` | 2026-10-24 07:48:42 | 2027-01-22 07:48:41 | `21:CB:4A:8D:39:FD:5D:72:BB:9C:30:E7:8B:9E:59:F8:3B:D6:68:9E` |
+
+The expiry timestamps match the expected revision-2 certificates documented
+above. The initial external-network verification gap is closed by this owner
+confirmation; no new external test was executed during this documentation update.
+
+UptimeRobot monitors availability and certificates for all three domains, as
+confirmed by the owner. This supplies the external monitoring coverage; a
+separate internal expiry-alert implementation is not required for this scope.
+No additional alert-delivery test was supplied or performed here.
+
+The owner also changed DHCP from `.201`–`.241` to `192.168.77.180`–
+`192.168.77.199`. Existing machines remain statically addressed. DHCP is retained
+for new-machine onboarding, without overlapping the documented static VM or
+API/Admin VIP addresses. This is an owner-applied configuration change, recorded
+without modifying or independently inspecting Proxmox during this update.
+
+The defined Phase 11 certificate/DHCP scope is complete. The first future
+scheduled certificate renewal still needs observation when due; its successful
+manual-renewal test is not relabeled as an unattended renewal.
+
+
+## Later public-access and operating-model decisions
+
+The owner confirms that Cloudflare protection/Access is enabled for DEV/STAGE
+and legacy VM100 administrative DNAT has been removed. These changes followed
+the certificate migration; the migration's earlier DNS snapshot remains
+historical evidence, not the current proxy-state inventory. No fresh Access or
+NAT verification was executed during this documentation update.
+
+The accepted operating model retains the single HAProxy edge and Traefik
+ServiceLB node pools, provisions Secrets privately outside Git and keeps
+Adminer available privately in PROD. See
+[the architecture decision record](ARCHITECTURE_DECISIONS_2026-10-24.md).

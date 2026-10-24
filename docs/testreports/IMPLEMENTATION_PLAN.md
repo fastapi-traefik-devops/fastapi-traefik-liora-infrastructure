@@ -16,6 +16,10 @@ approved automation was restored. Full Jenkins CI/CD regression was not rerun.
 
 ## Target architecture
 
+Current operating-model decisions are recorded in
+[the owner decision update](ARCHITECTURE_DECISIONS_2026-10-24.md). They supersede
+earlier ingress, Secret-management and Adminer targets in historical sections.
+
 The final state uses two independent K3s clusters and three application
 environments. DEV and STAGE share one cluster but have separate namespaces and
 data. PROD runs on its own cluster.
@@ -27,16 +31,20 @@ data. PROD runs on its own cluster.
 | Application | `app-dev` and `app-stage` namespaces | `app-prod` namespace |
 | GitOps | Own Argo CD, AppProject, and root Application | Independent Argo CD, AppProject, and root Application |
 | Sync | Reviewed PR, then auto-sync, self-heal, and reviewed pruning | Reviewed PR, then auto-sync and self-heal; no automatic pruning |
-| Secrets | Cluster-specific Sealed Secrets key; GHCR pull credentials per namespace | Separate controller key and GHCR pull credentials |
+| Secrets | Private recovery inputs; Ansible/helpers/manual provisioning; GHCR credentials per namespace | Independent private PROD inputs and Secret provisioning |
 | Data | Separate DEV and STAGE databases | PROD database with tested backups and restore |
 | Monitoring | Cluster monitoring and administrative Grafana | Separate monitoring and controlled access to PROD metrics |
 | Jenkins | One controller in namespace `jenkins`; own persistent volume; CI migration in Phase 9 | No separate Jenkins controller; reviewed promotion and local Argo CD deploy PROD |
 
-The existing public path is Cloudflare DNS-only → Proxmox TCP/80,443 DNAT →
+The public path uses Cloudflare protection/Access for DEV/STAGE and DNS-only
+access for PROD → Proxmox TCP/80,443 DNAT →
 HAProxy edge VM 240 → the selected cluster's Traefik ingress → application
 Services. Public ingress uses node pools `.201`–`.203` and `.211`–`.213`,
 separate from API VIPs and the new Admin VIPs. Keep this working path unchanged
-while adding private administration.
+while operating private administration. Dedicated ingress VIPs are not planned.
+The owner confirms that DEV/STAGE Cloudflare protection/Access is enabled and
+legacy VM100 administrative DNAT rules have been removed; these confirmations
+are not new tests of the owner-managed configuration.
 
 The database platform is CloudNativePG: DEV/STAGE each use one instance and
 PROD uses two asynchronously replicated instances on distinct nodes. Phase 10.1
@@ -136,7 +144,7 @@ daemons and metrics endpoints do not receive administrative browser endpoints.
 | CI agents / registry publisher / build daemon | DEV/STAGE CI platform; Phase 9 | Preserve existing CI/publisher separation; no extra browser ports |
 | GitHub / GHCR | External existing services | Source, reviewed promotion changes and container registry |
 | Slack | Existing kind destination available; new-cluster destination not yet confirmed | Configure delivery only after destination agreement; no assumption of verified notification receipt |
-| Sealed Secrets | Separate controllers and keys; later platform phase | Cluster-specific encrypted Secret management |
+| Private Secret provisioning | Ansible, reviewed helpers or manual bootstrap from ignored `recovery/` inputs | No live Secret payloads in Git; protect the external recovery kit |
 | CloudNativePG | Per-environment namespaces; Phase 10.1 | Fresh PostgreSQL 16 databases; DEV 1, STAGE 1, PROD 2 async instances on different nodes |
 | R2 database backups | Phase 10.2 complete | Physical backups/WAL and isolated PITR passed for all environments; monthly exercises and retention-window aging continue |
 
@@ -201,7 +209,8 @@ commit live credentials, controller private keys, or state.
   Phase 10 CNPG replacement removes the legacy database ConfigMap, Deployment
   and PVC from the active base, retains `service-db.yaml` as the stable primary
   endpoint and selects the database component independently per overlay.
-  Remove Adminer only after an alternative operational path works.
+  Keep private Adminer in every environment, including PROD, as an accepted
+  startup-stage operational trade-off; removal is not a migration milestone.
 - Adapt `argocd/app-dev.yaml`, `app-stage.yaml`, and `project.yaml` for
   the nonprod cluster. Create independent PROD equivalents, bootstrap
   resources, and root Applications. Each Argo CD points to this repository
@@ -231,8 +240,8 @@ commit live credentials, controller private keys, or state.
   `Jenkinsfile.promote` without executing trusted publishing code from an
   untrusted application checkout. Add rendering and placeholder-image checks
   for all three overlays. The GitOps GitHub App needs access to this repository.
-- Do not deploy the application's historical `k8s/` tree, old SealedSecret
-  ciphertext, or application `.env` files. Review `infra/jenkins-host/`
+- Do not deploy the application's historical `k8s/` tree, legacy encrypted
+  credential manifests, or application `.env` files. Review `infra/jenkins-host/`
   separately from the Kubernetes manifests.
 
 ## Implementation order
@@ -476,7 +485,10 @@ Certbot renewal simulations and the management certificate-distribution service
 passed; both timers are enabled. Argo CD remains Synced/Healthy.
 
 Cloudflare currently supplies DNS only: proxied traffic and Full (strict) mode
-were not configured or verified. Dedicated floating ingress VIPs, edge failover,
+were not configured or verified at that checkpoint. Later decisions retain
+HAProxy and its node pools without dedicated ingress VIPs; owner-confirmed
+Cloudflare Access and legacy DNAT cleanup are recorded in the decision update.
+Edge failover,
 reboot persistence and a later unattended renewal cycle remain untested.
 Phase 8 progress is recorded below.
 
@@ -1000,7 +1012,10 @@ RPO/RTO. Delegated Phase 9 work and PROD promotion gate remain separate.
 Measured PITR application usability: DEV 286.163s, STAGE 195.483s, PROD
 287.029s. Natural WAL delivery: 303.059s, 304.031s, 304.043s respectively.
 The full VM 250 sequence and cross-host overlap refusal passed. Its 02:00 UTC
-timer is enabled; original Argo/Jenkins policies and main polling are restored.
+timer is enabled; the owner subsequently confirmed that the overnight run
+produced new archives in R2. This confirms observed scheduled backup output,
+not an additional restore test or a review of every coordinator terminal state.
+Original Argo/Jenkins policies and main polling are restored.
 All 13 original PVCs, current data and application images were preserved.
 Slack delivery is delegated; bucket-policy metadata inspection remains limited
 by 403 responses. Full 7/14-day archive coverage requires elapsed retention
@@ -1014,24 +1029,33 @@ changes. These database checks do not complete the separate PROD image gate.
       after database/operator restarts as documented in runbook 18. This does
       not require an application rebuild for the completed 10.1 checkpoint.
 - [ ] Reconcile the remaining ADR backlog; refine resource budgets and approve
-      logging, external uptime checks, alert delivery, HPA/PDB, Secret encryption
-      and the recovery kit before implementing them.
-- [ ] Add per-cluster Secret encryption/recovery keys and dedicated ingress
-      addresses separately. Public Certbot automation was retired in the Phase 11
-      certificate checkpoint; dedicated ingress addresses remain pending.
-- [ ] Remove Adminer only after a replacement operational path works; preserve
-      its current private access during 10.1.
+      logging, alert delivery, HPA/PDB and the private recovery kit
+      before implementing them. External uptime and certificate monitoring for
+      all three application domains is already provided by UptimeRobot, as
+      confirmed by the owner.
+- [ ] Align the recovery validator/examples with the current private-input
+      model: retire mandatory legacy controller-key fields through a deliberate
+      schema update while preserving older recovery archives. No controller or
+      Git-managed encrypted Secret payloads are part of the target design.
+- Private Adminer remains approved for DEV/STAGE/PROD. Review possible removal
+  from PROD in one to two years after sustained stability, when direct
+  interventions are exceptional and an alternative operational path exists.
+- Optional only: for a substantially larger production deployment, reassess
+  HAProxy's single point of failure, public IP availability and a redundant edge
+  design. Keep the current HAProxy → Traefik ServiceLB node-pool path; there is
+  no dedicated ingress-VIP implementation task.
 
 **10.1 pass:** fresh databases and existing-image application checks succeed in
 all three environments; obsolete DB resources are retired and approved
 reconciliation/automation restored. This does not close Phase 9 or establish
 backup/recovery readiness.
 
-## Phase 11 — Доведення до ідеалу або полірування
+## Phase 11 — Final refinement and polishing
 
-Status: **in progress: public certificate migration completed on 2026-10-24;
-DHCP/static alignment remains pending**. This certificate checkpoint does not
-close the remaining polishing or delegated Phase 9 work.
+Status: **completed for the defined certificate and DHCP scope**, including
+owner-confirmed external HTTPS checks, UptimeRobot monitoring and DHCP range
+correction. Observation of the first scheduled certificate renewal remains an
+operational follow-up; delegated Phase 9 work remains separate.
 
 ### Kubernetes-native certificate management
 
@@ -1061,27 +1085,39 @@ not modified.
 
 Evidence and limitations are in [Phase 11](PHASE11_REPORT.md). All five Argo
 Applications are Synced/Healthy with successful operations and their existing
-automated policies. Public-DNS connectivity from this host was refused; private
-edge checks validate the real names and trust chains but are not an external
-network/browser verification. Future scheduled unattended renewal has not
-yet occurred; automatic renewal scheduling is configured and manual renewal
-through the same controller/ACME/Secret path passed.
+automated policies. The owner subsequently confirmed external browser access
+without certificate warnings for all three domains. The supplied external
+OpenSSL results show the new certificate validity dates and fingerprints,
+matching the expected renewal expiry timestamps. This resolves the external
+verification gap; the execution host's earlier connection refusal is historical.
 
-DNS-01 removes the public HTTP challenge-path dependency before future
-DEV/STAGE Access protection. Enabling proxy mode or Access remains separately
-scoped; neither was changed by certificate migration.
+UptimeRobot monitors availability and certificates for `liora.aprt.info`,
+`dev.liora.aprt.info` and `stage.liora.aprt.info`, as confirmed by the owner.
+An additional internal certificate-expiry alert integration is not required for
+this checkpoint. Alert-delivery testing was not separately reported.
+
+- [x] Obtain external verification of all three application HTTPS domains.
+- [x] Confirm external availability and certificate monitoring through UptimeRobot.
+- [ ] Observe the first scheduled unattended certificate renewal when due.
+      Manual renewal through the same controller/ACME/Secret path has passed.
+
+DNS-01 removes the public HTTP challenge-path dependency. The owner now
+confirms Cloudflare protection/Access enabled for DEV/STAGE and removal of
+legacy VM100 administrative DNAT. The certificate migration itself did not
+perform those owner-managed changes; no fresh Access or NAT test is claimed
+by this documentation update.
 
 ### DHCP and static address alignment
 
-The current Proxmox DHCP range `.201`–`.241` overlaps statically configured
-cluster and edge VM addresses. Its correction is deferred to this final
-polishing phase; it is not a prerequisite for the current static deployment.
+The owner corrected the Proxmox DHCP range to `192.168.77.180`–
+`192.168.77.199`. Existing machines use static addresses; DHCP remains enabled
+for onboarding new machines. The old `.201`–`.241` overlap is resolved.
 
-- [ ] Inventory static addresses and actual DHCP use, then agree a
-      non-overlapping allocation or disable unused DHCP service as appropriate.
-      Preserve the existing static VM addresses and API/Admin VIP assignments.
-- [ ] Apply the reviewed DHCP correction and update network/address
-      documentation with the resulting allocation.
+- [x] Retain DHCP for initial configuration of new machines and use a range
+      separate from the documented static VM addresses and API/Admin VIPs.
+- [x] Record the owner-applied DHCP correction to `.180`–`.199`. This update
+      records operator confirmation; no DHCP configuration was changed or
+      independently inspected during the documentation update.
 
 **Pass:** public application certificate issuance and renewal use per-cluster
 cert-manager with Cloudflare DNS-01, superseded certificate automation is

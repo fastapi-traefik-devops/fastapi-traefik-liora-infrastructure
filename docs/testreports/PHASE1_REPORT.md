@@ -90,7 +90,7 @@ compared successfully. All 25 historical blob IDs are unchanged.
 
 Before importing history, Gitleaks 8.30.1 scanned all 25 unique historical blobs
 through six change snapshots (110 file instances), without source suppressions.
-No credentials or Secret/SealedSecret resources were found. The filtered history
+No credentials or Secret/legacy encrypted credential resources were found. The filtered history
 and final application directory also passed scans. Merge-tree blob coverage was
 checked against the pre-import snapshot inventory. This establishes the stated
 scan coverage, not a guarantee about every possible credential pattern.

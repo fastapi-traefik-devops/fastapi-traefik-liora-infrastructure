@@ -45,7 +45,7 @@ routing, DNS, or certificate automation. Preserve each environment's data.
 > Secret. Setting these hostnames does not configure DNS, certificates, or
 > public access. A trusted HTTPS check needs a matching certificate and
 > private ingress path; otherwise record it as pending. API VIPs are not
-> dedicated ingress VIPs.
+> ingress backends; HAProxy uses the Traefik ServiceLB node pools.
 
 Require `kubectl`, Python 3 with PyYAML (`python3 -c 'import yaml'`), access to
 both explicit kubeconfigs, and the reviewed Git revision. Each Python block
@@ -87,9 +87,9 @@ fields; add `--strict-warnings` when they must fail a gate.
 
 > [!IMPORTANT]
 > Do not print values, use shell tracing, put credentials in command
-> arguments, or commit generated Secret manifests. Old Sealed Secrets
-> controller keys in the recovery YAML are not required by this manual
-> bootstrap.
+> arguments, or commit generated Secret manifests. Provision Secrets with the
+> reviewed helpers, Ansible or a deliberate manual procedure from private
+> `recovery/` inputs. Legacy archive keys are not a deployment dependency.
 
 ## 1. Select and render one environment
 
