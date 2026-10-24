@@ -1,0 +1,22 @@
+EXCERPTS SOURCE: rollback.log (unchanged command blocks)
+
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage exec deployment/persistence -- wget -qO- http://127.0.0.1:8080
+v1
+
+EXIT_CODE=0; elapsed_seconds=0.808
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage exec deployment/persistence -- cat /data/marker
+liora-dr-20261024
+
+EXIT_CODE=0; elapsed_seconds=0.298
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage exec deployment/persistence -- wget -qO- http://127.0.0.1:8080
+v2
+
+EXIT_CODE=0; elapsed_seconds=0.813
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage exec deployment/persistence -- wget -qO- http://127.0.0.1:8080
+v1
+
+EXIT_CODE=0; elapsed_seconds=0.809
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage exec deployment/persistence -- cat /data/marker
+liora-dr-20261024
+
+EXIT_CODE=0; elapsed_seconds=0.205

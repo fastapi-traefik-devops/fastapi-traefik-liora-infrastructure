@@ -1,0 +1,9 @@
+global:
+  resolve_timeout: 1m
+receivers:
+- name: discard
+route:
+  group_interval: 5s
+  group_wait: 1s
+  receiver: discard
+  repeat_interval: 1h

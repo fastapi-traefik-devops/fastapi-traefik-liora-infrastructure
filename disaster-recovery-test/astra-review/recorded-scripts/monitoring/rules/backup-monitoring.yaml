@@ -1,0 +1,220 @@
+groups:
+- name: nonprod-database-backups
+  rules:
+  - alert: CNPGFullBackupFailed
+    expr: max(liora_backup_last_failure_timestamp{environment="DEV",namespace="app-dev"})
+      > max(liora_backup_last_success_timestamp{environment="DEV",namespace="app-dev"})
+    for: 2m
+    labels:
+      cluster: nonprod
+      environment: DEV
+      namespace: app-dev
+      severity: critical
+    annotations:
+      summary: CNPGFullBackupFailed
+      description: Latest physical full backup failed; no immediate automatic retry.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.
+  - alert: CNPGFullBackupOverdue
+    expr: time() - max(liora_backup_last_success_timestamp{environment="DEV",namespace="app-dev"})
+      > 26 * 3600
+    for: 5m
+    labels:
+      cluster: nonprod
+      environment: DEV
+      namespace: app-dev
+      severity: critical
+    annotations:
+      summary: CNPGFullBackupOverdue
+      description: No completed physical backup within the daily cycle plus two-hour
+        margin.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.
+  - alert: CNPGBackupTelemetryMissing
+    expr: (max(liora_backup_telemetry_ok{environment="DEV",namespace="app-dev"}) ==
+      0) or absent(liora_backup_telemetry_ok{environment="DEV",namespace="app-dev"})
+    for: 5m
+    labels:
+      cluster: nonprod
+      environment: DEV
+      namespace: app-dev
+      severity: critical
+    annotations:
+      summary: CNPGBackupTelemetryMissing
+      description: Coordinator cannot observe the source Backup resources.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.
+  - alert: CNPGWALArchivingFailure
+    expr: max(cnpg_pg_stat_archiver_last_failed_time{namespace="app-dev",role="primary"})
+      > max(cnpg_pg_stat_archiver_last_archived_time{namespace="app-dev",role="primary"})
+    for: 2m
+    labels:
+      cluster: nonprod
+      environment: DEV
+      namespace: app-dev
+      severity: critical
+    annotations:
+      summary: CNPGWALArchivingFailure
+      description: WAL archiving failed more recently than its last success; check
+        R2 delivery.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.
+  - alert: CNPGWALArchiveDelayed
+    expr: (max(cnpg_collector_pg_wal_archive_status{namespace="app-dev",role="primary",value="ready"})
+      > 0) and (time() - max(cnpg_pg_stat_archiver_last_archived_time{namespace="app-dev",role="primary"})
+      > 2700)
+    for: 1m
+    labels:
+      cluster: nonprod
+      environment: DEV
+      namespace: app-dev
+      severity: critical
+    annotations:
+      summary: CNPGWALArchiveDelayed
+      description: Completed WAL segments remain pending beyond the warning margin;
+        RPO headroom is being consumed.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.
+  - alert: CNPGWALTelemetryMissing
+    expr: absent(cnpg_pg_stat_archiver_last_archived_time{namespace="app-dev",role="primary"})
+    for: 5m
+    labels:
+      cluster: nonprod
+      environment: DEV
+      namespace: app-dev
+      severity: critical
+    annotations:
+      summary: CNPGWALTelemetryMissing
+      description: Primary WAL archive metrics are absent; absence is not proof of
+        successful archiving.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.
+  - alert: CNPGFullBackupFailed
+    expr: max(liora_backup_last_failure_timestamp{environment="STAGE",namespace="app-stage"})
+      > max(liora_backup_last_success_timestamp{environment="STAGE",namespace="app-stage"})
+    for: 2m
+    labels:
+      cluster: nonprod
+      environment: STAGE
+      namespace: app-stage
+      severity: critical
+    annotations:
+      summary: CNPGFullBackupFailed
+      description: Latest physical full backup failed; no immediate automatic retry.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.
+  - alert: CNPGFullBackupOverdue
+    expr: time() - max(liora_backup_last_success_timestamp{environment="STAGE",namespace="app-stage"})
+      > 26 * 3600
+    for: 5m
+    labels:
+      cluster: nonprod
+      environment: STAGE
+      namespace: app-stage
+      severity: critical
+    annotations:
+      summary: CNPGFullBackupOverdue
+      description: No completed physical backup within the daily cycle plus two-hour
+        margin.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.
+  - alert: CNPGBackupTelemetryMissing
+    expr: (max(liora_backup_telemetry_ok{environment="STAGE",namespace="app-stage"})
+      == 0) or absent(liora_backup_telemetry_ok{environment="STAGE",namespace="app-stage"})
+    for: 5m
+    labels:
+      cluster: nonprod
+      environment: STAGE
+      namespace: app-stage
+      severity: critical
+    annotations:
+      summary: CNPGBackupTelemetryMissing
+      description: Coordinator cannot observe the source Backup resources.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.
+  - alert: CNPGWALArchivingFailure
+    expr: max(cnpg_pg_stat_archiver_last_failed_time{namespace="app-stage",role="primary"})
+      > max(cnpg_pg_stat_archiver_last_archived_time{namespace="app-stage",role="primary"})
+    for: 2m
+    labels:
+      cluster: nonprod
+      environment: STAGE
+      namespace: app-stage
+      severity: critical
+    annotations:
+      summary: CNPGWALArchivingFailure
+      description: WAL archiving failed more recently than its last success; check
+        R2 delivery.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.
+  - alert: CNPGWALArchiveDelayed
+    expr: (max(cnpg_collector_pg_wal_archive_status{namespace="app-stage",role="primary",value="ready"})
+      > 0) and (time() - max(cnpg_pg_stat_archiver_last_archived_time{namespace="app-stage",role="primary"})
+      > 2700)
+    for: 1m
+    labels:
+      cluster: nonprod
+      environment: STAGE
+      namespace: app-stage
+      severity: critical
+    annotations:
+      summary: CNPGWALArchiveDelayed
+      description: Completed WAL segments remain pending beyond the warning margin;
+        RPO headroom is being consumed.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.
+  - alert: CNPGWALTelemetryMissing
+    expr: absent(cnpg_pg_stat_archiver_last_archived_time{namespace="app-stage",role="primary"})
+    for: 5m
+    labels:
+      cluster: nonprod
+      environment: STAGE
+      namespace: app-stage
+      severity: critical
+    annotations:
+      summary: CNPGWALTelemetryMissing
+      description: Primary WAL archive metrics are absent; absence is not proof of
+        successful archiving.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.
+  - alert: R2BackupUsageHigh
+    expr: liora_r2_usage_bytes > 10 * 1024 * 1024 * 1024
+    for: 5m
+    labels:
+      cluster: nonprod
+      environment: PLATFORM
+      namespace: monitoring
+      severity: warning
+    annotations:
+      summary: R2BackupUsageHigh
+      description: Aggregate R2 usage exceeds informational 10 GiB threshold; review
+        capacity, never force-delete or stop backups.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.
+  - alert: R2BackupUsageTelemetryMissing
+    expr: (liora_r2_usage_telemetry_ok == 0) or (time() - liora_r2_usage_last_success_timestamp
+      > 900) or absent(liora_r2_usage_telemetry_ok)
+    for: 5m
+    labels:
+      cluster: nonprod
+      environment: PLATFORM
+      namespace: monitoring
+      severity: warning
+    annotations:
+      summary: R2BackupUsageTelemetryMissing
+      description: Complete bucket usage collection is unavailable or stale.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.
+  - alert: CNPGBackupCollectorStale
+    expr: (time() - liora_backup_collection_timestamp > 300) or absent(liora_backup_collection_timestamp)
+    for: 5m
+    labels:
+      cluster: nonprod
+      environment: PLATFORM
+      namespace: monitoring
+      severity: critical
+    annotations:
+      summary: CNPGBackupCollectorStale
+      description: VM 250 backup telemetry stopped; WAL archiving remains cluster-local.
+      action: Inspect CNPG Backup/ObjectStore, WAL archiver and VM 250 coordinator;
+        follow runbook 19.

@@ -1,0 +1,9 @@
+{
+  "started_utc": "2026-10-24T09:16:18.607088+00:00",
+  "mode": "stopped",
+  "status": "PASS",
+  "original_mount_attachments_present": true,
+  "all_containers_stopped": true,
+  "scope": "Read-only local stop/mount/context recheck, not a fresh recovery run",
+  "finished_utc": "2026-10-24T09:16:20.816205+00:00"
+}

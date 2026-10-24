@@ -1,0 +1,70 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: liora-dr
+  namespace: argocd
+spec:
+  description: Liora nonprod applications on the local cluster only
+  sourceRepos:
+  - https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure.git
+  destinations:
+  - server: https://kubernetes.default.svc
+    namespace: dr-gitops
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+  - group: ''
+    kind: ConfigMap
+  - group: ''
+    kind: Service
+  - group: ''
+    kind: PersistentVolumeClaim
+  - group: apps
+    kind: Deployment
+  - group: batch
+    kind: Job
+  - group: networking.k8s.io
+    kind: Ingress
+  - group: postgresql.cnpg.io
+    kind: Cluster
+  - group: barmancloud.cnpg.io
+    kind: ObjectStore
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: recovered-dev
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/skip-reconcile: 'true'
+spec:
+  project: liora-dr
+  source:
+    repoURL: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure.git
+    targetRevision: main
+    path: kubernetes/apps/liora/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dr-gitops
+  syncPolicy:
+    automated:
+      enabled: false
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: recovered-stage
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/skip-reconcile: 'true'
+spec:
+  project: liora-dr
+  source:
+    repoURL: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure.git
+    targetRevision: main
+    path: kubernetes/apps/liora/overlays/stage
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dr-gitops
+  syncPolicy:
+    automated:
+      enabled: false

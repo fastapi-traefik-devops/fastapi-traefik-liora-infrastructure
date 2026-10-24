@@ -38,3 +38,21 @@ Verify artifact integrity from the infrastructure repository root:
 ```sh
 sha256sum -c disaster-recovery-test/evidence/SHA256SUMS
 ```
+
+
+## Independent local runtime follow-up — 24 October 2026
+
+The preceding assessment is preserved as historical evidence. A subsequent actual
+local runtime exercise is documented separately:
+
+- [Independent audit and improvements](DR_INDEPENDENT_AUDIT_REPORT.md)
+- [Real local recovery report](LOCAL_DISASTER_RECOVERY_TEST_REPORT.md)
+- [Presentation-ready selections](DR_PRESENTATION_FINAL_EVIDENCE.md)
+- [New evidence index](astra-review/INDEX.md)
+- [Verifier and validation instructions](astra-review/README.md)
+
+25 captures yielded 24 unique genuine screenshots; one exact duplicate is not
+republished. Local Kubernetes storage, limited Argo/monitoring, synthetic Jenkins
+restore and logical/workload rollback passed. **R2 restore and complete application
+recovery remain blocked.** These results do not supersede historical simulations
+or prove full Proxmox disaster recovery.

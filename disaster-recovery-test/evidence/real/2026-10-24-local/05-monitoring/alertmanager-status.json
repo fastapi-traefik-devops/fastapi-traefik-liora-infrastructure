@@ -1,0 +1,18 @@
+{
+  "cluster": {
+    "peers": [],
+    "status": "disabled"
+  },
+  "config": {
+    "original": "global:\n  resolve_timeout: 1m\n  http_config:\n    follow_redirects: true\n    enable_http2: true\n  smtp_hello: localhost\n  smtp_require_tls: true\n  smtp_tls_config:\n    insecure_skip_verify: false\n  slack_app_url: https://slack.com/api/chat.postMessage\n  pagerduty_url: https://events.pagerduty.com/v2/enqueue\n  opsgenie_api_url: https://api.opsgenie.com/\n  wechat_api_url: https://qyapi.weixin.qq.com/cgi-bin/\n  victorops_api_url: https://alert.victorops.com/integrations/generic/20131114/alert/\n  telegram_api_url: https://api.telegram.org\n  webex_api_url: https://webexapis.com/v1/messages\n  rocketchat_api_url: https://open.rocket.chat/\nroute:\n  receiver: discard\n  continue: false\n  group_wait: 1s\n  group_interval: 5s\n  repeat_interval: 1h\nreceivers:\n- name: discard\n  labels:\n    name: discard\ntemplates: []\n"
+  },
+  "uptime": "2026-10-24T08:07:09.334Z",
+  "versionInfo": {
+    "branch": "HEAD",
+    "buildDate": "20260917-07:53:02",
+    "buildUser": "root@68a5f2da6323",
+    "goVersion": "go1.26.8",
+    "revision": "73c6bfe7393929211294c1954f30d8ed78e4d0ad",
+    "version": "0.34.1"
+  }
+}

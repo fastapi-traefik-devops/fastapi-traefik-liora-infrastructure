@@ -1,0 +1,13 @@
+{
+  "synthetic_lab_source": true,
+  "source_stopped_before_archive": true,
+  "original_helper": "infrastructure/scripts/kubernetes/stage-jenkins-home.py",
+  "helper_sha256": "aca0a70f28b54c1145bf46a1dc64f15f66a67577da4db193f1a66545678fc8bd",
+  "backup_sha256": "dad0cb7c63fc021482a0f09254d250bef98e79c4ce37cd69f8cf5a2bcd784b1b",
+  "backup_bytes": 52299857,
+  "source_contains_master_key": true,
+  "source_contains_hudson_util_secret": true,
+  "source_encrypted_marker_retained": true,
+  "master_key_preserved": true,
+  "hudson_secret_preserved": true
+}

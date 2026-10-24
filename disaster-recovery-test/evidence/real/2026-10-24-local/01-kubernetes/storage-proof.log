@@ -1,0 +1,31 @@
+EXCERPT SOURCE: verification-retry.log (unchanged command output)
+
++ k -n dr-storage get pods,pvc -o wide
++ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage get pods,pvc -o wide
+NAME                               READY   STATUS    RESTARTS   AGE   IP          NODE                             NOMINATED NODE   READINESS GATES
+pod/persistence-76c587ffdd-r4r9m   1/1     Running   0          13s   10.42.0.5   k3d-liora-dr-20261024-server-0   <none>           <none>
+
+NAME                               STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+persistentvolumeclaim/checkpoint   Bound    pvc-952e5c4d-f08c-42e7-aa49-bd56f6b4afe1   64Mi       RWO            local-path     <unset>                 13s   Filesystem
++ k -n dr-storage exec deploy/persistence -- cat /data/marker
++ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage exec deploy/persistence -- cat /data/marker
+liora-dr-20261024
++ k -n dr-storage rollout restart deploy/persistence
++ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage rollout restart deploy/persistence
+deployment.apps/persistence restarted
++ k -n dr-storage rollout status deploy/persistence --timeout=120s
++ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage rollout status deploy/persistence --timeout=120s
+Waiting for deployment "persistence" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "persistence" rollout to finish: 1 old replicas are pending termination...
+deployment "persistence" successfully rolled out
++ k -n dr-storage exec deploy/persistence -- cat /data/marker
++ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage exec deploy/persistence -- cat /data/marker
+liora-dr-20261024
++ k -n dr-storage get pods,pvc -o wide
++ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage get pods,pvc -o wide
+NAME                               READY   STATUS        RESTARTS   AGE   IP          NODE                             NOMINATED NODE   READINESS GATES
+pod/persistence-587cb6557-lr7bs    1/1     Running       0          2s    10.42.0.6   k3d-liora-dr-20261024-server-0   <none>           <none>
+pod/persistence-76c587ffdd-r4r9m   1/1     Terminating   0          15s   10.42.0.5   k3d-liora-dr-20261024-server-0   <none>           <none>
+
+NAME                               STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+persistentvolumeclaim/checkpoint   Bound    pvc-952e5c4d-f08c-42e7-aa49-bd56f6b4afe1   64Mi       RWO            local-path     <unset>                 15s   Filesystem

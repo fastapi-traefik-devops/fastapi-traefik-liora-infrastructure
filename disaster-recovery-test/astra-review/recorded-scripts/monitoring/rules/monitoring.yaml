@@ -1,0 +1,222 @@
+groups:
+- name: nonprod-platform
+  rules:
+  - alert: NodeMemoryPressure
+    expr: kube_node_status_condition{condition="MemoryPressure",status="true"} ==
+      1
+    for: 5m
+    labels:
+      severity: warning
+      cluster: nonprod
+      environment: PLATFORM
+    annotations:
+      summary: Node has sustained Kubernetes memory pressure
+      description: Node has sustained Kubernetes memory pressure. Inspect the affected
+        resource in this cluster.
+      action: Check node conditions, capacity, events and system workloads.
+  - alert: NodeDiskPressure
+    expr: kube_node_status_condition{condition="DiskPressure",status="true"} == 1
+    for: 5m
+    labels:
+      severity: warning
+      cluster: nonprod
+      environment: PLATFORM
+    annotations:
+      summary: Node has sustained Kubernetes disk pressure
+      description: Node has sustained Kubernetes disk pressure. Inspect the affected
+        resource in this cluster.
+      action: Check node conditions, capacity, events and system workloads.
+  - alert: NodeHighCPU
+    expr: (1 - avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) >
+      0.85
+    for: 15m
+    labels:
+      severity: warning
+      cluster: nonprod
+      environment: PLATFORM
+    annotations:
+      summary: Node CPU usage sustained above 85 percent
+      description: Node CPU usage sustained above 85 percent. Inspect the affected
+        resource in this cluster.
+      action: Check node conditions, capacity, events and system workloads.
+  - alert: NodeHighMemory
+    expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 0.90
+    for: 15m
+    labels:
+      severity: warning
+      cluster: nonprod
+      environment: PLATFORM
+    annotations:
+      summary: Node memory usage sustained above 90 percent
+      description: Node memory usage sustained above 90 percent. Inspect the affected
+        resource in this cluster.
+      action: Check node conditions, capacity, events and system workloads.
+  - alert: ApplicationRestartSpike
+    expr: sum by(namespace,pod,container) (increase(kube_pod_container_status_restarts_total{namespace=~"app-dev|app-stage"}[15m]))
+      >= 3
+    for: 5m
+    labels:
+      severity: warning
+      cluster: nonprod
+      environment: '{{ if eq $labels.namespace "app-dev" }}DEV{{ else }}STAGE{{ end
+        }}'
+    annotations:
+      summary: DEV or STAGE container restarted at least three times in 15 minutes
+      description: DEV or STAGE container restarted at least three times in 15 minutes.
+        Inspect the affected resource in this cluster.
+      action: Check pod events, logs and rollout status in the affected namespace.
+  - alert: ApplicationDeploymentUnavailable
+    expr: kube_deployment_status_replicas_available{namespace=~"app-dev|app-stage"}
+      < kube_deployment_spec_replicas{namespace=~"app-dev|app-stage"}
+    for: 10m
+    labels:
+      severity: warning
+      cluster: nonprod
+      environment: '{{ if eq $labels.namespace "app-dev" }}DEV{{ else }}STAGE{{ end
+        }}'
+    annotations:
+      summary: DEV or STAGE deployment has fewer available replicas than desired
+      description: DEV or STAGE deployment has fewer available replicas than desired.
+        Inspect the affected resource in this cluster.
+      action: Check pod events, logs and rollout status in the affected namespace.
+  - alert: ArgoApplicationUnhealthy
+    expr: argocd_app_info{name=~"app-dev|app-stage",health_status!="Healthy"} == 1
+    for: 10m
+    labels:
+      severity: warning
+      cluster: nonprod
+      environment: '{{ if eq $labels.name "app-dev" }}DEV{{ else }}STAGE{{ end }}'
+    annotations:
+      summary: DEV or STAGE Argo Application is unhealthy
+      description: DEV or STAGE Argo Application is unhealthy. Inspect the affected
+        resource in this cluster.
+      action: Check Argo CD application health, sync status and events.
+  - alert: ArgoApplicationOutOfSync
+    expr: argocd_app_info{name=~"app-dev|app-stage",sync_status!="Synced"} == 1
+    for: 10m
+    labels:
+      severity: warning
+      cluster: nonprod
+      environment: '{{ if eq $labels.name "app-dev" }}DEV{{ else }}STAGE{{ end }}'
+    annotations:
+      summary: DEV or STAGE Argo Application is out of sync
+      description: DEV or STAGE Argo Application is out of sync. Inspect the affected
+        resource in this cluster.
+      action: Check Argo CD application health, sync status and events.
+  - alert: KubernetesNodeNotReady
+    expr: max by(node) (kube_node_status_condition{condition="Ready",status="true"})
+      == 0
+    for: 5m
+    labels:
+      severity: critical
+      cluster: nonprod
+      environment: '{{ if or (eq $labels.namespace "app-dev") (eq $labels.name "app-dev")
+        }}DEV{{ else if or (eq $labels.namespace "app-stage") (eq $labels.name "app-stage")
+        }}STAGE{{ else }}PLATFORM{{ end }}'
+    annotations:
+      summary: Kubernetes node has not been Ready for five minutes.
+      description: Kubernetes node has not been Ready for five minutes.
+      action: Run kubectl get nodes and kubectl describe node for the named node;
+        inspect K3s and network health.
+  - alert: PrometheusTargetDown
+    expr: min by(job,instance,namespace,service) (up) == 0
+    for: 5m
+    labels:
+      severity: warning
+      cluster: nonprod
+      environment: '{{ if or (eq $labels.namespace "app-dev") (eq $labels.name "app-dev")
+        }}DEV{{ else if or (eq $labels.namespace "app-stage") (eq $labels.name "app-stage")
+        }}STAGE{{ else }}PLATFORM{{ end }}'
+    annotations:
+      summary: A discovered Prometheus target has failed scraping for five minutes.
+      description: A discovered Prometheus target has failed scraping for five minutes.
+      action: Open Prometheus /targets; inspect the failing endpoint, ServiceMonitor
+        and network connectivity.
+  - alert: PrometheusTargetMissing
+    expr: absent(up{job="apiserver"}) or absent(up{job="kubelet"}) or absent(up{job="node-exporter"})
+      or absent(up{job="kube-state-metrics"}) or absent(up{job="argocd-metrics"})
+      or absent(up{job="argocd-repo-server"}) or absent(up{job="argocd-server-metrics"})
+      or absent(up{job="monitoring-alertmanager"}) or absent(up{job="monitoring-prometheus"})
+      or absent(up{job="monitoring/traefik"}) or absent(up{job="monitoring-operator"})
+      or absent(up{job="monitoring-grafana"})
+    for: 10m
+    labels:
+      severity: warning
+      cluster: nonprod
+      environment: '{{ if or (eq $labels.namespace "app-dev") (eq $labels.name "app-dev")
+        }}DEV{{ else if or (eq $labels.namespace "app-stage") (eq $labels.name "app-stage")
+        }}STAGE{{ else }}PLATFORM{{ end }}'
+    annotations:
+      summary: An expected monitoring job has disappeared from service discovery.
+      description: An expected monitoring job has disappeared from service discovery.
+      action: Inspect Prometheus /targets and service discovery; verify the corresponding
+        Service, monitor and pods still exist.
+  - alert: CertificateExpiringSoon
+    expr: min by(instance,subject,usages) (k3s_certificate_expiration_seconds{job="apiserver"})
+      < 30 * 24 * 60 * 60
+    for: 30m
+    labels:
+      severity: warning
+      cluster: nonprod
+      environment: '{{ if or (eq $labels.namespace "app-dev") (eq $labels.name "app-dev")
+        }}DEV{{ else if or (eq $labels.namespace "app-stage") (eq $labels.name "app-stage")
+        }}STAGE{{ else }}PLATFORM{{ end }}'
+    annotations:
+      summary: A K3s certificate has less than 30 days remaining (or has expired).
+      description: A K3s certificate has less than 30 days remaining (or has expired).
+      action: On the affected K3s server run k3s certificate check --output table;
+        plan renewal using the K3s certificate runbook.
+  - alert: MonitoringMetricsMissing
+    expr: label_replace(absent(kube_node_info), "metric", "kube_node_info", "", "")
+      or label_replace(absent(kube_node_status_condition{condition="Ready",status="true"}),
+      "metric", "kube_node_status_condition", "", "") or label_replace(absent(kube_deployment_spec_replicas),
+      "metric", "kube_deployment_spec_replicas", "", "") or label_replace(absent(kube_deployment_status_replicas_available),
+      "metric", "kube_deployment_status_replicas_available", "", "") or label_replace(absent(node_cpu_seconds_total),
+      "metric", "node_cpu_seconds_total", "", "") or label_replace(absent(node_memory_MemAvailable_bytes),
+      "metric", "node_memory_MemAvailable_bytes", "", "") or label_replace(absent(node_memory_MemTotal_bytes),
+      "metric", "node_memory_MemTotal_bytes", "", "") or label_replace(absent(kube_pod_container_status_restarts_total),
+      "metric", "kube_pod_container_status_restarts_total", "", "") or label_replace(absent(argocd_app_info{name="app-dev"}),
+      "metric", "argocd_app_info", "", "") or label_replace(absent(argocd_app_info{name="app-stage"}),
+      "metric", "argocd_app_info", "", "")
+    for: 10m
+    labels:
+      severity: warning
+      cluster: nonprod
+      environment: '{{ if or (eq $labels.namespace "app-dev") (eq $labels.name "app-dev")
+        }}DEV{{ else if or (eq $labels.namespace "app-stage") (eq $labels.name "app-stage")
+        }}STAGE{{ else }}PLATFORM{{ end }}'
+    annotations:
+      summary: A metric required by platform alerts is missing.
+      description: A metric required by platform alerts is missing.
+      action: Inspect the named metric and exporter in Prometheus. Missing telemetry
+        does not establish that the resource is healthy.
+  - alert: NodeReadinessMetricMissing
+    expr: max by(node) (kube_node_info) unless on(node) max by(node) (kube_node_status_condition{condition="Ready",status="true"})
+    for: 10m
+    labels:
+      severity: warning
+      cluster: nonprod
+      environment: '{{ if or (eq $labels.namespace "app-dev") (eq $labels.name "app-dev")
+        }}DEV{{ else if or (eq $labels.namespace "app-stage") (eq $labels.name "app-stage")
+        }}STAGE{{ else }}PLATFORM{{ end }}'
+    annotations:
+      summary: A known node no longer exposes its Ready condition.
+      description: A known node no longer exposes its Ready condition.
+      action: Compare kubectl get nodes with kube-state-metrics and inspect exporter
+        logs.
+  - alert: CertificateMetricMissing
+    expr: up{job="apiserver"} == 1 unless on(instance) k3s_certificate_expiration_seconds{job="apiserver"}
+    for: 1h
+    labels:
+      severity: warning
+      cluster: nonprod
+      environment: '{{ if or (eq $labels.namespace "app-dev") (eq $labels.name "app-dev")
+        }}DEV{{ else if or (eq $labels.namespace "app-stage") (eq $labels.name "app-stage")
+        }}STAGE{{ else }}PLATFORM{{ end }}'
+    annotations:
+      summary: A reachable K3s API endpoint no longer exposes certificate lifetime
+        metrics.
+      description: A reachable K3s API endpoint no longer exposes certificate lifetime
+        metrics.
+      action: Inspect K3s /metrics for this instance; verify supervisor metrics and
+        certificate monitor health.

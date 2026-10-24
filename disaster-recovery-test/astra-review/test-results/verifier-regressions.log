@@ -1,0 +1,13 @@
+test_command_failure_not_masked (__main__.VerifierTests.test_command_failure_not_masked) ... ok
+test_existing_output_preserved_before_queries (__main__.VerifierTests.test_existing_output_preserved_before_queries) ... ok
+test_fail_result_is_recorded_and_returns_nonzero (__main__.VerifierTests.test_fail_result_is_recorded_and_returns_nonzero) ... ok
+test_partial_rollout_rejected (__main__.VerifierTests.test_partial_rollout_rejected) ... ok
+test_running_original_rejected (__main__.VerifierTests.test_running_original_rejected) ... ok
+test_stale_generation_rejected (__main__.VerifierTests.test_stale_generation_rejected) ... ok
+test_wrong_cluster_short_circuits (__main__.VerifierTests.test_wrong_cluster_short_circuits) ... ok
+test_zero_replicas_rejected (__main__.VerifierTests.test_zero_replicas_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.003s
+
+OK

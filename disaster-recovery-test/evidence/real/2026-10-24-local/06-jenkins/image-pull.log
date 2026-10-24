@@ -1,0 +1,37 @@
+docker.io/jenkins/jenkins@sha256:e00aee28e0233941e1c952062b2c6f47e44447f8f5a74243dd9ac4e7d7298030: Pulling from jenkins/jenkins
+56920c4ae35d: Pulling fs layer
+080e44371360: Pulling fs layer
+cd4bd21db123: Pulling fs layer
+49aee6e49d83: Pulling fs layer
+f0b00c4ebaee: Pulling fs layer
+dee3d4175ff6: Pulling fs layer
+814cb1bed135: Pulling fs layer
+fd422a845561: Pulling fs layer
+48165dafb0fb: Pulling fs layer
+ad571fe7dd0f: Pulling fs layer
+f0b00c4ebaee: Download complete
+cd4bd21db123: Download complete
+44136fa355b3: Already exists
+49aee6e49d83: Download complete
+814cb1bed135: Download complete
+fd422a845561: Download complete
+ad571fe7dd0f: Download complete
+d6c4fd6f1c6a: Download complete
+48165dafb0fb: Download complete
+56920c4ae35d: Download complete
+56920c4ae35d: Pull complete
+fd422a845561: Pull complete
+f0b00c4ebaee: Pull complete
+814cb1bed135: Pull complete
+48165dafb0fb: Pull complete
+080e44371360: Download complete
+dee3d4175ff6: Download complete
+dee3d4175ff6: Pull complete
+49aee6e49d83: Pull complete
+ad571fe7dd0f: Pull complete
+080e44371360: Pull complete
+cd4bd21db123: Pull complete
+Digest: sha256:e00aee28e0233941e1c952062b2c6f47e44447f8f5a74243dd9ac4e7d7298030
+Status: Downloaded newer image for jenkins/jenkins@sha256:e00aee28e0233941e1c952062b2c6f47e44447f8f5a74243dd9ac4e7d7298030
+docker.io/jenkins/jenkins:2.585-alpine-jdk21@sha256:e00aee28e0233941e1c952062b2c6f47e44447f8f5a74243dd9ac4e7d7298030
+EXIT_CODE=0

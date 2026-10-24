@@ -1,0 +1,19 @@
+EXCERPTS SOURCE: rollback.log (unchanged command blocks)
+
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application exec liora-lab-db-1 -- psql -v ON_ERROR_STOP=1 -U postgres -d app -Atc 'SELECT id,marker FROM public.dr_checkpoint ORDER BY id;'
+1|checkpoint-v1
+Defaulted container "postgres" out of: postgres, bootstrap-controller (init)
+EXIT_CODE=0; elapsed_seconds=0.287
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application exec liora-lab-db-1 -- psql -v ON_ERROR_STOP=1 -U postgres -d app -Atc 'SELECT id,marker FROM public.dr_checkpoint ORDER BY id;'
+1|changed-v2
+2|after-checkpoint
+Defaulted container "postgres" out of: postgres, bootstrap-controller (init)
+EXIT_CODE=0; elapsed_seconds=0.298
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application exec -i liora-lab-db-1 -- pg_restore -U postgres -d app --clean --if-exists
+
+Defaulted container "postgres" out of: postgres, bootstrap-controller (init)
+EXIT_CODE=0; elapsed_seconds=0.304
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application exec liora-lab-db-1 -- psql -v ON_ERROR_STOP=1 -U postgres -d app -Atc 'SELECT id,marker FROM public.dr_checkpoint ORDER BY id;'
+1|checkpoint-v1
+Defaulted container "postgres" out of: postgres, bootstrap-controller (init)
+EXIT_CODE=0; elapsed_seconds=0.299

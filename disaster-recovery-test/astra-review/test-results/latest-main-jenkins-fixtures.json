@@ -1,0 +1,8 @@
+{
+  "started_utc": "2026-10-24T09:16:52.272450+00:00",
+  "finished_utc": "2026-10-24T09:16:52.455108+00:00",
+  "source_commit": "06c62f86cc691ff171f7ab8555fa79caf2526194",
+  "source_helper_sha256": "aca0a70f28b54c1145bf46a1dc64f15f66a67577da4db193f1a66545678fc8bd",
+  "exit_code": 0,
+  "scope": "Latest-main helper tests on disposable copied synthetic fixtures; no Jenkins runtime or production contact"
+}

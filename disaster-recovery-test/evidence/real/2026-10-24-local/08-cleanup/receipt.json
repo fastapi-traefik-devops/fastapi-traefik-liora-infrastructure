@@ -1,0 +1,11 @@
+{
+  "all_running_docker_containers": "",
+  "original_context": "k3d-gitlab-gitops",
+  "owned_k3d_cluster_stopped": true,
+  "original_containers_retained_and_stopped": true,
+  "original_vms_unchanged_stopped": true,
+  "removed_only_owned_git_source_container": true,
+  "lab_node_and_pvcs_retained_for_repeat": true,
+  "production_api_connections_in_this_run": false,
+  "production_or_r2_mutations_in_this_run": false
+}

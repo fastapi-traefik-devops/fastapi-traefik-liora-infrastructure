@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-24",
+  "timezone": "Europe/Tirane",
+  "source": "Observed command results during this run; rounded values, not a synthetic benchmark",
+  "logical_cpus": 8,
+  "memory_total_GiB": 7.6,
+  "initial_available_memory_GiB_range": [2.1, 2.3],
+  "initial_swap_used_GiB": 3.9,
+  "initial_disk_available_GiB": 205,
+  "original_running_containers_stopped_by_request": ["infra-agent-1", "infra-jenkins-1", "infra-docker-1"],
+  "existing_vms_already_stopped": ["lemp-server", "win10"],
+  "existing_k3d_clusters_already_stopped": ["flagship-platform", "gitlab-gitops"],
+  "original_kubectl_context": "k3d-gitlab-gitops",
+  "lab_api_bind": "127.0.0.1:16443",
+  "lab_initial_memory_limit_MiB": 1536,
+  "lab_Argo_phase_memory_limit_MiB": 2048,
+  "host_permissions_or_system_services_changed": false
+}

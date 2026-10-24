@@ -1,0 +1,2 @@
+DR_SYNTHETIC_ENCRYPTION_CHECK=true; executors=0; quiet=true; job_disabled=true
+2026-10-24 08:08:38.498+0000 [id=24]	INFO	hudson.lifecycle.Lifecycle#onReady: Jenkins is fully up and running

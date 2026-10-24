@@ -1,0 +1,11 @@
+[36mINFO[0m[0000] Using the k3d-tools node to gather environment information 
+[36mINFO[0m[0000] Starting new tools node...                   
+[36mINFO[0m[0000] Starting node 'k3d-liora-dr-20261024-tools'  
+[36mINFO[0m[0000] HostIP: using network gateway 172.28.0.1 address 
+[36mINFO[0m[0000] Starting cluster 'liora-dr-20261024'         
+[36mINFO[0m[0000] Starting servers...                          
+[36mINFO[0m[0000] Starting node 'k3d-liora-dr-20261024-server-0' 
+[36mINFO[0m[0007] All agents already running.                  
+[36mINFO[0m[0007] All helpers already running.                 
+[36mINFO[0m[0007] Injecting records for hostAliases (incl. host.k3d.internal) and for 1 network members into CoreDNS configmap... 
+[36mINFO[0m[0009] Started cluster 'liora-dr-20261024'          

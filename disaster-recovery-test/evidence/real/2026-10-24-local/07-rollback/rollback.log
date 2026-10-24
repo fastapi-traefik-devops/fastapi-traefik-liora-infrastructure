@@ -1,0 +1,173 @@
+2026-10-24T08:13:31.119467+00:00
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl get namespace kube-system -o 'jsonpath={.metadata.uid}'
+aa85f393-9b41-42a5-af6a-7fadfc783683
+
+EXIT_CODE=0; elapsed_seconds=0.159
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage patch deployment persistence --type=strategic -p '{"spec": {"template": {"spec": {"containers": [{"name": "storage", "image": "busybox:1.37", "env": [{"name": "DR_REVISION", "value": "v1"}], "command": ["sh", "-c", "mkdir -p /www; echo \"$DR_REVISION\" > /www/index.html; httpd -f -p 8080 -h /www"]}]}}}}'
+deployment.apps/persistence patched
+
+EXIT_CODE=0; elapsed_seconds=0.154
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage scale deployment/persistence --replicas=1
+deployment.apps/persistence scaled
+
+EXIT_CODE=0; elapsed_seconds=0.183
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage rollout status deployment/persistence --timeout=90s
+Waiting for deployment "persistence" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "persistence" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "persistence" rollout to finish: 1 old replicas are pending termination...
+deployment "persistence" successfully rolled out
+
+EXIT_CODE=0; elapsed_seconds=5.172
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage exec deployment/persistence -- wget -qO- http://127.0.0.1:8080
+v1
+
+EXIT_CODE=0; elapsed_seconds=0.808
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage exec deployment/persistence -- cat /data/marker
+liora-dr-20261024
+
+EXIT_CODE=0; elapsed_seconds=0.298
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage set env deployment/persistence DR_REVISION=v2
+deployment.apps/persistence env updated
+
+EXIT_CODE=0; elapsed_seconds=0.230
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage rollout status deployment/persistence --timeout=90s
+Waiting for deployment "persistence" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "persistence" rollout to finish: 1 old replicas are pending termination...
+deployment "persistence" successfully rolled out
+
+EXIT_CODE=0; elapsed_seconds=1.656
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage exec deployment/persistence -- wget -qO- http://127.0.0.1:8080
+v2
+
+EXIT_CODE=0; elapsed_seconds=0.813
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage rollout undo deployment/persistence
+deployment.apps/persistence rolled back
+
+EXIT_CODE=0; elapsed_seconds=0.273
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage rollout status deployment/persistence --timeout=90s
+Waiting for deployment "persistence" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "persistence" rollout to finish: 1 old replicas are pending termination...
+deployment "persistence" successfully rolled out
+
+EXIT_CODE=0; elapsed_seconds=0.918
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage exec deployment/persistence -- wget -qO- http://127.0.0.1:8080
+v1
+
+EXIT_CODE=0; elapsed_seconds=0.809
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage exec deployment/persistence -- cat /data/marker
+liora-dr-20261024
+
+EXIT_CODE=0; elapsed_seconds=0.205
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage rollout history deployment/persistence
+deployment.apps/persistence 
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+3         <none>
+5         <none>
+6         <none>
+
+EXIT_CODE=0; elapsed_seconds=0.275
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage get pods,pvc -o wide
+NAME                               READY   STATUS        RESTARTS   AGE   IP           NODE                             NOMINATED NODE   READINESS GATES
+pod/persistence-697964dd65-blvx7   1/1     Running       0          3s    10.42.0.26   k3d-liora-dr-20261024-server-0   <none>           <none>
+pod/persistence-697964dd65-cg82p   1/1     Terminating   0          12s   10.42.0.24   k3d-liora-dr-20261024-server-0   <none>           <none>
+pod/persistence-78969749f6-85mhd   1/1     Terminating   0          5s    10.42.0.25   k3d-liora-dr-20261024-server-0   <none>           <none>
+
+NAME                               STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+persistentvolumeclaim/checkpoint   Bound    pvc-952e5c4d-f08c-42e7-aa49-bd56f6b4afe1   64Mi       RWO            local-path     <unset>                 22m   Filesystem
+
+EXIT_CODE=0; elapsed_seconds=0.234
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-storage scale deployment/persistence --replicas=0
+deployment.apps/persistence scaled
+
+EXIT_CODE=0; elapsed_seconds=0.170
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n cnpg-system scale deployment/cnpg-controller-manager --replicas=1
+deployment.apps/cnpg-controller-manager scaled
+
+EXIT_CODE=0; elapsed_seconds=0.183
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n cnpg-system rollout status deployment/cnpg-controller-manager --timeout=90s
+Waiting for deployment "cnpg-controller-manager" rollout to finish: 0 out of 1 new replicas have been updated...
+Waiting for deployment "cnpg-controller-manager" rollout to finish: 0 of 1 updated replicas are available...
+deployment "cnpg-controller-manager" successfully rolled out
+
+EXIT_CODE=0; elapsed_seconds=7.104
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application annotate cluster/liora-lab-db cnpg.io/hibernation-
+cluster.postgresql.cnpg.io/liora-lab-db annotated
+
+EXIT_CODE=0; elapsed_seconds=0.243
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application wait --for=create pod/liora-lab-db-1 --timeout=120s
+pod/liora-lab-db-1 condition met
+
+EXIT_CODE=0; elapsed_seconds=1.677
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application wait --for=condition=Ready pod/liora-lab-db-1 --timeout=120s
+pod/liora-lab-db-1 condition met
+
+EXIT_CODE=0; elapsed_seconds=11.157
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application wait --for=condition=Ready cluster/liora-lab-db --timeout=120s
+cluster.postgresql.cnpg.io/liora-lab-db condition met
+
+EXIT_CODE=0; elapsed_seconds=0.878
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application exec liora-lab-db-1 -- psql -v ON_ERROR_STOP=1 -U postgres -d app -Atc 'CREATE TABLE public.dr_checkpoint (id integer PRIMARY KEY, marker text NOT NULL); INSERT INTO public.dr_checkpoint VALUES (1, '"'"'checkpoint-v1'"'"');'
+CREATE TABLE
+INSERT 0 1
+Defaulted container "postgres" out of: postgres, bootstrap-controller (init)
+EXIT_CODE=0; elapsed_seconds=0.533
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application exec liora-lab-db-1 -- psql -v ON_ERROR_STOP=1 -U postgres -d app -Atc 'SELECT id,marker FROM public.dr_checkpoint ORDER BY id;'
+1|checkpoint-v1
+Defaulted container "postgres" out of: postgres, bootstrap-controller (init)
+EXIT_CODE=0; elapsed_seconds=0.287
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application exec liora-lab-db-1 -- pg_dump -U postgres -d app -Fc -t public.dr_checkpoint
+Captured binary pg_dump: 1682 bytes
+Defaulted container "postgres" out of: postgres, bootstrap-controller (init)
+EXIT_CODE=0; elapsed_seconds=0.512
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application exec liora-lab-db-1 -- psql -v ON_ERROR_STOP=1 -U postgres -d app -Atc 'UPDATE public.dr_checkpoint SET marker='"'"'changed-v2'"'"'; INSERT INTO public.dr_checkpoint VALUES (2,'"'"'after-checkpoint'"'"');'
+UPDATE 1
+INSERT 0 1
+Defaulted container "postgres" out of: postgres, bootstrap-controller (init)
+EXIT_CODE=0; elapsed_seconds=0.494
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application exec liora-lab-db-1 -- psql -v ON_ERROR_STOP=1 -U postgres -d app -Atc 'SELECT id,marker FROM public.dr_checkpoint ORDER BY id;'
+1|changed-v2
+2|after-checkpoint
+Defaulted container "postgres" out of: postgres, bootstrap-controller (init)
+EXIT_CODE=0; elapsed_seconds=0.298
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application exec -i liora-lab-db-1 -- pg_restore -U postgres -d app --clean --if-exists
+
+Defaulted container "postgres" out of: postgres, bootstrap-controller (init)
+EXIT_CODE=0; elapsed_seconds=0.304
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application exec liora-lab-db-1 -- psql -v ON_ERROR_STOP=1 -U postgres -d app -Atc 'SELECT id,marker FROM public.dr_checkpoint ORDER BY id;'
+1|checkpoint-v1
+Defaulted container "postgres" out of: postgres, bootstrap-controller (init)
+EXIT_CODE=0; elapsed_seconds=0.299
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application exec liora-lab-db-1 -- psql -v ON_ERROR_STOP=1 -U postgres -d app -Atc 'SELECT version(); SELECT extname FROM pg_extension ORDER BY extname;'
+PostgreSQL 16.15 (Debian 16.15-1.pgdg13+2) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+plpgsql
+uuid-ossp
+Defaulted container "postgres" out of: postgres, bootstrap-controller (init)
+EXIT_CODE=0; elapsed_seconds=0.298
+$ docker exec -i k3d-liora-dr-20261024-server-0 kubectl -n dr-application get clusters,pods,pvc -o wide
+NAME                                      AGE   INSTANCES   READY   STATUS                     PRIMARY
+cluster.postgresql.cnpg.io/liora-lab-db   18m   1           1       Cluster in healthy state   liora-lab-db-1
+
+NAME                 READY   STATUS    RESTARTS   AGE   IP           NODE                             NOMINATED NODE   READINESS GATES
+pod/liora-lab-db-1   1/1     Running   0          15s   10.42.0.28   k3d-liora-dr-20261024-server-0   <none>           <none>
+
+NAME                                   STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+persistentvolumeclaim/liora-lab-db-1   Bound    pvc-07f8170d-a8fc-4438-92af-cfd299955a3d   2Gi        RWO            local-path     <unset>                 18m   Filesystem
+
+EXIT_CODE=0; elapsed_seconds=0.301
+{
+  "config_before": "v1",
+  "config_changed": "v2",
+  "config_restored": "v1",
+  "persistent_marker_preserved": true,
+  "config_rollback_seconds": 2.204440256999078,
+  "postgres_baseline": "1|checkpoint-v1",
+  "postgres_changed": "1|changed-v2\n2|after-checkpoint",
+  "postgres_restored": "1|checkpoint-v1",
+  "postgres_logical_rollback_seconds": 0.6023425410003256,
+  "total_exercise_seconds": 36.92626123300033,
+  "r2_restore": false,
+  "pitr": false
+}
+FINAL_EXIT_CODE=0

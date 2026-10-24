@@ -1,0 +1,14 @@
+2026-10-24T10:02:30+02:00
+deployment.apps/argocd-applicationset-controller scaled
+deployment.apps/argocd-dex-server scaled
+deployment.apps/argocd-notifications-controller scaled
+deployment.apps/argocd-redis scaled
+deployment.apps/argocd-repo-server scaled
+deployment.apps/argocd-server scaled
+statefulset.apps/argocd-application-controller scaled
+liora-dr-git-source
+[36mINFO[0m[0000] Stopping cluster 'liora-dr-20261024'         
+[36mINFO[0m[0011] Stopped cluster 'liora-dr-20261024'          
+               total        used        free      shared  buff/cache   available
+Mem:           7.6Gi       3.5Gi       1.5Gi       293Mi       3.0Gi       4.0Gi
+Swap:          8.0Gi       2.6Gi       5.4Gi

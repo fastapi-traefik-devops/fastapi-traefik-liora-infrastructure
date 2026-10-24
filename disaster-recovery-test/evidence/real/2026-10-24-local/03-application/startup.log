@@ -1,0 +1,23 @@
+2026-10-24T09:55:07+02:00
+Warning: resource namespaces/dr-application is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+namespace/dr-application configured
+cluster.postgresql.cnpg.io/liora-lab-db created
+deployment.apps/backend created
+service/backend created
+deployment.apps/frontend created
+service/frontend created
+networkpolicy.networking.k8s.io/local-only-egress created
+cluster.postgresql.cnpg.io/liora-lab-db condition met
+deployment "backend" successfully rolled out
+deployment "frontend" successfully rolled out
+NAME                 READY   STATUS    RESTARTS   AGE   IP           NODE                             NOMINATED NODE   READINESS GATES
+pod/liora-lab-db-1   1/1     Running   0          12s   10.42.0.16   k3d-liora-dr-20261024-server-0   <none>           <none>
+
+NAME                                   STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE     VOLUMEMODE
+persistentvolumeclaim/liora-lab-db-1   Bound    pvc-07f8170d-a8fc-4438-92af-cfd299955a3d   2Gi        RWO            local-path     <unset>                 2m25s   Filesystem
+
+NAME                                      AGE     INSTANCES   READY   STATUS                     PRIMARY
+cluster.postgresql.cnpg.io/liora-lab-db   2m27s   1           1       Cluster in healthy state   liora-lab-db-1
+               total        used        free      shared  buff/cache   available
+Mem:           7.6Gi       4.0Gi       1.2Gi       304Mi       2.9Gi       3.6Gi
+Swap:          8.0Gi       2.7Gi       5.3Gi

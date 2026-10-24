@@ -1,0 +1,2569 @@
+{
+  "uid": "liora-nonprod-operations",
+  "title": "Liora / NONPROD Operations",
+  "description": "NONPROD RED/USE operations. Environment-scoped service/workload signals; clearly labeled cluster-wide capacity and incidents. Kubernetes database readiness is not SQL health.",
+  "schemaVersion": 39,
+  "version": 1,
+  "style": "dark",
+  "editable": false,
+  "timezone": "browser",
+  "refresh": "1m",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "graphTooltip": 1,
+  "tags": [
+    "Liora",
+    "Operations",
+    "NONPROD",
+    "RED",
+    "USE"
+  ],
+  "links": [
+    {
+      "type": "link",
+      "title": "Platform & nodes",
+      "url": "/d/platform-nodes",
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "targetBlank": false
+    },
+    {
+      "type": "link",
+      "title": "Traefik detail",
+      "url": "/d/ingress-traefik",
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "targetBlank": false
+    },
+    {
+      "type": "link",
+      "title": "Argo CD detail",
+      "url": "/d/gitops-argocd",
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "targetBlank": false
+    },
+    {
+      "type": "link",
+      "title": "DEV workloads",
+      "url": "/d/dev-stage-workloads?var-namespace=app-dev",
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "targetBlank": false
+    },
+    {
+      "type": "link",
+      "title": "STAGE workloads",
+      "url": "/d/dev-stage-workloads?var-namespace=app-stage",
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "targetBlank": false
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "environment",
+        "label": "Environment",
+        "type": "custom",
+        "query": "DEV : dev,STAGE : stage",
+        "multi": false,
+        "includeAll": true,
+        "allValue": "dev|stage",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "options": [
+          {
+            "text": "All",
+            "value": "$__all",
+            "selected": true
+          },
+          {
+            "text": "DEV",
+            "value": "dev",
+            "selected": false
+          },
+          {
+            "text": "STAGE",
+            "value": "stage",
+            "selected": false
+          }
+        ]
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Request rate",
+      "description": "Selected application services only. Zero means observed counters with no requests; missing counters remain No telemetry.",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1m",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval]))",
+          "legendFormat": "Request rate",
+          "instant": true,
+          "range": false,
+          "interval": "1m",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "No telemetry",
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "auto",
+        "wideLayout": true,
+        "textSize": {
+          "value": 38
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "HTTP 5xx",
+      "description": "Selected application 5xx / total requests. No traffic produces no ratio, not a false healthy zero.",
+      "type": "stat",
+      "gridPos": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1m",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\",code=~\"5..\"}[$__rate_interval])) or (0 * sum(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval])))) / (sum(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval])) > 0)",
+          "legendFormat": "HTTP 5xx",
+          "instant": true,
+          "range": false,
+          "interval": "1m",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "noValue": "No traffic / telemetry",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.01
+              },
+              {
+                "color": "red",
+                "value": 0.05
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "auto",
+        "wideLayout": true,
+        "textSize": {
+          "value": 38
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "p95 latency",
+      "description": "Selected application service histogram estimate. No requests can yield NaN / no value; this is not a successful health check.",
+      "type": "stat",
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1m",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95,sum by(le)(rate(traefik_service_request_duration_seconds_bucket{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval])))",
+          "legendFormat": "p95 latency",
+          "instant": true,
+          "range": false,
+          "interval": "1m",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "No traffic / telemetry",
+          "decimals": 2,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.3
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "auto",
+        "wideLayout": true,
+        "textSize": {
+          "value": 38
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Replica gap",
+      "description": "Backend/frontend desired minus available. Missing availability counts as unavailable. The KPI is suppressed unless desired-deployment series cover two workloads per observed Argo environment application; incomplete inventory is not healthy zero.",
+      "type": "stat",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 4,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1m",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(clamp_min(max by(namespace,deployment)(kube_deployment_spec_replicas{namespace=~\"app-(${environment:regex})\",deployment=~\"backend|frontend\"}) - (max by(namespace,deployment)(kube_deployment_status_replicas_available{namespace=~\"app-(${environment:regex})\",deployment=~\"backend|frontend\"}) or on(namespace,deployment) (0 * max by(namespace,deployment)(kube_deployment_spec_replicas{namespace=~\"app-(${environment:regex})\",deployment=~\"backend|frontend\"}))),0)) and on() (count(max by(namespace,deployment)(kube_deployment_spec_replicas{namespace=~\"app-(${environment:regex})\",deployment=~\"backend|frontend\"})) == 2 * count(max by(name)(argocd_app_info{name=~\"app-(${environment:regex})\"})))",
+          "legendFormat": "Replica gap",
+          "instant": true,
+          "range": false,
+          "interval": "1m",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No telemetry",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "auto",
+        "wideLayout": true,
+        "textSize": {
+          "value": 38
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Critical",
+      "description": "Firing critical Prometheus alerts across this entire cluster, including shared platform; independent of Environment selection. Synthetic test alerts excluded.",
+      "type": "stat",
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 4,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1m",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(ALERTS{alertstate=\"firing\",severity=\"critical\",purpose!=\"test\"}) or (0 * max(up{job=\"monitoring-prometheus\",endpoint=\"http-web\"} == 1)))",
+          "legendFormat": "Critical",
+          "instant": true,
+          "range": false,
+          "interval": "1m",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No telemetry",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "auto",
+        "wideLayout": true,
+        "textSize": {
+          "value": 38
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Nodes Ready",
+      "description": "Ready nodes / known nodes in this cluster. A missing Ready series for a known node lowers the fraction. No node inventory means no telemetry.",
+      "type": "stat",
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1m",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(max by(node)(kube_node_status_condition{condition=\"Ready\",status=\"true\"})) / count(max by(node)(kube_node_info))",
+          "legendFormat": "Nodes Ready",
+          "instant": true,
+          "range": false,
+          "interval": "1m",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "noValue": "No telemetry",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.99
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "auto",
+        "wideLayout": true,
+        "textSize": {
+          "value": 38
+        }
+      }
+    },
+    {
+      "id": 7,
+      "type": "row",
+      "title": "01  /  Traffic, errors & latency \u00b7 RED",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 8,
+      "title": "Requests by Traefik service",
+      "description": "Actual service labels from this cluster; no router/entrypoint traffic from unrelated platform routes.",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1m",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(service)(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval]))",
+          "legendFormat": "{{service}}",
+          "instant": false,
+          "range": true,
+          "interval": "1m",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "No telemetry",
+          "decimals": 2,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 9,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "axisSoftMin": 0,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "app-(dev|stage|prod)-(backend|frontend)-80@kubernetes",
+            "renamePattern": "$1 / $2"
+          }
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "HTTP response classes",
+      "description": "2xx / 4xx / 5xx request rates for selected services. Missing error classes use zero only when total request telemetry exists.",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 8,
+        "y": 6,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1m",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "(sum(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\",code=~\"2..\"}[$__rate_interval])) or (0 * sum(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval]))))",
+          "legendFormat": "2xx \u00b7 success",
+          "instant": false,
+          "range": true,
+          "interval": "1m",
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "(sum(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\",code=~\"4..\"}[$__rate_interval])) or (0 * sum(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval]))))",
+          "legendFormat": "4xx \u00b7 client error",
+          "instant": false,
+          "range": true,
+          "interval": "1m",
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "(sum(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\",code=~\"5..\"}[$__rate_interval])) or (0 * sum(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval]))))",
+          "legendFormat": "5xx \u00b7 server error",
+          "instant": false,
+          "range": true,
+          "interval": "1m",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "No telemetry",
+          "decimals": 2,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 9,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "axisSoftMin": 0,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "2xx \u00b7 success"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "4xx \u00b7 client error"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "5xx \u00b7 server error"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Request latency \u00b7 p50 / p95 / p99",
+      "description": "Traefik service histogram quantiles over the rate window, aggregated across selected application services. Low traffic can produce gaps and coarse estimates.",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 16,
+        "y": 6,
+        "w": 8,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1m",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.5,sum by(le)(rate(traefik_service_request_duration_seconds_bucket{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval])))",
+          "legendFormat": "p50",
+          "instant": false,
+          "range": true,
+          "interval": "1m",
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "expr": "histogram_quantile(0.95,sum by(le)(rate(traefik_service_request_duration_seconds_bucket{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval])))",
+          "legendFormat": "p95",
+          "instant": false,
+          "range": true,
+          "interval": "1m",
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "expr": "histogram_quantile(0.99,sum by(le)(rate(traefik_service_request_duration_seconds_bucket{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval])))",
+          "legendFormat": "p99",
+          "instant": false,
+          "range": true,
+          "interval": "1m",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "No telemetry",
+          "decimals": 2,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 9,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "axisSoftMin": 0,
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "row",
+      "title": "02  /  Delivery & application health",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 12,
+      "title": "Available replicas \u00b7 backend / frontend",
+      "description": "Observed available replicas by namespace and deployment. Pair with missing replicas; this is not an external HTTP availability probe.",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 8,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1m",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by(namespace,deployment)(kube_deployment_status_replicas_available{namespace=~\"app-(${environment:regex})\",deployment=~\"backend|frontend\"})",
+          "legendFormat": "{{namespace}} / {{deployment}}",
+          "instant": true,
+          "range": false,
+          "interval": "1m",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No telemetry",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "app-(dev|stage|prod) / (.*)",
+            "renamePattern": "$1 / $2"
+          }
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "title": "Missing replicas \u00b7 backend / frontend",
+      "description": "Desired minus available, never negative. An absent availability series counts as desired replicas missing. Entirely missing desired series stay absent.",
+      "type": "bargauge",
+      "gridPos": {
+        "x": 8,
+        "y": 15,
+        "w": 8,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1m",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "clamp_min(max by(namespace,deployment)(kube_deployment_spec_replicas{namespace=~\"app-(${environment:regex})\",deployment=~\"backend|frontend\"}) - (max by(namespace,deployment)(kube_deployment_status_replicas_available{namespace=~\"app-(${environment:regex})\",deployment=~\"backend|frontend\"}) or on(namespace,deployment) (0 * max by(namespace,deployment)(kube_deployment_spec_replicas{namespace=~\"app-(${environment:regex})\",deployment=~\"backend|frontend\"}))),0)",
+          "legendFormat": "{{namespace}} / {{deployment}}",
+          "instant": true,
+          "range": false,
+          "interval": "1m",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No telemetry",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "transformations": [
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "app-(dev|stage|prod) / (.*)",
+            "renamePattern": "$1 / $2"
+          }
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "title": "Argo CD \u00b7 sync & health",
+      "description": "Environment applications only. Health and sync are distinct columns. A missing application is not reported healthy.",
+      "type": "table",
+      "gridPos": {
+        "x": 16,
+        "y": 15,
+        "w": 8,
+        "h": 6
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1m",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by(name,health_status,sync_status)(argocd_app_info{name=~\"app-(${environment:regex})\"})",
+          "legendFormat": "Argo CD \u00b7 sync & health",
+          "instant": true,
+          "range": false,
+          "interval": "1m",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No telemetry",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true
+            },
+            "indexByName": {
+              "name": 0,
+              "health_status": 1,
+              "sync_status": 2
+            },
+            "renameByName": {
+              "name": "Application",
+              "health_status": "Health",
+              "sync_status": "Sync"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "title": "Container restarts \u00b7 last 15m",
+      "description": "Recent restart increases grouped by environment/pod. Only counters observed in the selected namespaces contribute.",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 21,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1m",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by(namespace,pod)(increase(kube_pod_container_status_restarts_total{namespace=~\"app-(${environment:regex})\"}[15m]))",
+          "legendFormat": "{{namespace}} / {{pod}}",
+          "instant": false,
+          "range": true,
+          "interval": "1m",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "No telemetry",
+          "decimals": 0,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 9,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "axisSoftMin": 0,
+            "thresholdsStyle": {
+              "mode": "off"
+            },
+            "axisSoftMax": 1
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 16,
+      "title": "Pod readiness",
+      "description": "Readiness gauge by namespace and pod: 1 Ready, 0 not Ready. Succeeded batch jobs are excluded; disappearing pod metrics leave gaps.",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 21,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "interval": "1m",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "max by(namespace,pod)(kube_pod_status_ready{namespace=~\"app-(${environment:regex})\",condition=\"true\"}) unless on(namespace,pod) max by(namespace,pod)(kube_pod_status_phase{namespace=~\"app-(${environment:regex})\",phase=~\"Succeeded|Failed\"} == 1)",
+          "legendFormat": "{{namespace}} / {{pod}}",
+          "instant": false,
+          "range": true,
+          "interval": "1m",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "noValue": "No telemetry",
+          "decimals": 1,
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 9,
+            "showPoints": "never",
+            "spanNulls": false,
+            "axisCenteredZero": false,
+            "axisSoftMin": 0,
+            "thresholdsStyle": {
+              "mode": "off"
+            },
+            "axisSoftMax": 1
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        }
+      }
+    },
+    {
+      "id": 17,
+      "type": "row",
+      "title": "03  /  DEV \u2194 STAGE comparison",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 18,
+          "title": "Environment request rate",
+          "description": "DEV and STAGE remain separate series. Environment selection narrows this comparison. No-data gaps are preserved.",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 0,
+            "y": 29,
+            "w": 8,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(environment)(label_replace(sum by(service)(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval])),\"environment\",\"$1\",\"service\",\"app-(dev|stage)-.*\"))",
+              "legendFormat": "{{environment}}",
+              "instant": false,
+              "range": true,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "noValue": "No telemetry",
+              "decimals": 2,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 9,
+                "showPoints": "never",
+                "spanNulls": false,
+                "axisCenteredZero": false,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 19,
+          "title": "Environment 5xx fraction",
+          "description": "DEV and STAGE remain separate series. Environment selection narrows this comparison. No-data gaps are preserved.",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 8,
+            "y": 29,
+            "w": 8,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(environment)(label_replace((sum by(service)(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\",code=~\"5..\"}[$__rate_interval])) or (0 * sum by(service)(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval])))),\"environment\",\"$1\",\"service\",\"app-(dev|stage)-.*\")) / (sum by(environment)(label_replace(sum by(service)(rate(traefik_service_requests_total{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval])),\"environment\",\"$1\",\"service\",\"app-(dev|stage)-.*\")) > 0)",
+              "legendFormat": "{{environment}}",
+              "instant": false,
+              "range": true,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No telemetry",
+              "decimals": 1,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 9,
+                "showPoints": "never",
+                "spanNulls": false,
+                "axisCenteredZero": false,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                },
+                "axisSoftMax": 1
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 20,
+          "title": "Environment p95 latency",
+          "description": "DEV and STAGE remain separate series. Environment selection narrows this comparison. No-data gaps are preserved.",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 16,
+            "y": 29,
+            "w": 8,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "histogram_quantile(0.95,sum by(le,environment)(label_replace(rate(traefik_service_request_duration_seconds_bucket{service=~\"app-(${environment:regex})-(backend|frontend)-80@kubernetes\"}[$__rate_interval]),\"environment\",\"$1\",\"service\",\"app-(dev|stage)-.*\")))",
+              "legendFormat": "{{environment}}",
+              "instant": false,
+              "range": true,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "noValue": "No telemetry",
+              "decimals": 2,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 9,
+                "showPoints": "never",
+                "spanNulls": false,
+                "axisCenteredZero": false,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "type": "row",
+      "title": "04  /  Capacity, requests & limits \u00b7 USE",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 29,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 22,
+          "title": "CPU \u00b7 usage / declared budgets",
+          "description": "Namespace usage divided by declared requests or limits. All observed application containers contribute to usage; absent/zero total budgets produce no ratio. Requests may legitimately be exceeded.",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 0,
+            "y": 30,
+            "w": 12,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(namespace)(rate(container_cpu_usage_seconds_total{namespace=~\"app-(${environment:regex})\",container!=\"\",container!=\"POD\"}[$__rate_interval])) / (sum by(namespace)(kube_pod_container_resource_requests{namespace=~\"app-(${environment:regex})\",resource=\"cpu\",unit=\"core\"}) > 0)",
+              "legendFormat": "{{namespace}} / requests",
+              "instant": false,
+              "range": true,
+              "interval": "1m",
+              "format": "time_series"
+            },
+            {
+              "refId": "B",
+              "expr": "sum by(namespace)(rate(container_cpu_usage_seconds_total{namespace=~\"app-(${environment:regex})\",container!=\"\",container!=\"POD\"}[$__rate_interval])) / (sum by(namespace)(kube_pod_container_resource_limits{namespace=~\"app-(${environment:regex})\",resource=\"cpu\",unit=\"core\"}) > 0)",
+              "legendFormat": "{{namespace}} / limits",
+              "instant": false,
+              "range": true,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No telemetry",
+              "decimals": 1,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.8
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.95
+                  }
+                ]
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 9,
+                "showPoints": "never",
+                "spanNulls": false,
+                "axisCenteredZero": false,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                },
+                "axisSoftMax": 1
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 23,
+          "title": "MEMORY \u00b7 usage / declared budgets",
+          "description": "Namespace usage divided by declared requests or limits. All observed application containers contribute to usage; absent/zero total budgets produce no ratio. Requests may legitimately be exceeded.",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 12,
+            "y": 30,
+            "w": 12,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by(namespace)(container_memory_working_set_bytes{namespace=~\"app-(${environment:regex})\",container!=\"\",container!=\"POD\"}) / (sum by(namespace)(kube_pod_container_resource_requests{namespace=~\"app-(${environment:regex})\",resource=\"memory\",unit=\"byte\"}) > 0)",
+              "legendFormat": "{{namespace}} / requests",
+              "instant": false,
+              "range": true,
+              "interval": "1m",
+              "format": "time_series"
+            },
+            {
+              "refId": "B",
+              "expr": "sum by(namespace)(container_memory_working_set_bytes{namespace=~\"app-(${environment:regex})\",container!=\"\",container!=\"POD\"}) / (sum by(namespace)(kube_pod_container_resource_limits{namespace=~\"app-(${environment:regex})\",resource=\"memory\",unit=\"byte\"}) > 0)",
+              "legendFormat": "{{namespace}} / limits",
+              "instant": false,
+              "range": true,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No telemetry",
+              "decimals": 1,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.8
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.95
+                  }
+                ]
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 9,
+                "showPoints": "never",
+                "spanNulls": false,
+                "axisCenteredZero": false,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                },
+                "axisSoftMax": 1
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 24,
+          "title": "Node CPU busy",
+          "description": "Cluster-wide node saturation, independent of the Environment filter. Root-filesystem capacity does not represent every PVC or an off-host backup.",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 0,
+            "y": 37,
+            "w": 8,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "(1 - avg by(instance)(rate(node_cpu_seconds_total{job=\"node-exporter\",mode=\"idle\"}[$__rate_interval]))) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
+              "legendFormat": "{{nodename}}",
+              "instant": false,
+              "range": true,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No telemetry",
+              "decimals": 1,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.8
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.95
+                  }
+                ]
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 9,
+                "showPoints": "never",
+                "spanNulls": false,
+                "axisCenteredZero": false,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                },
+                "axisSoftMax": 1
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 25,
+          "title": "Node memory used",
+          "description": "Cluster-wide node saturation, independent of the Environment filter. Root-filesystem capacity does not represent every PVC or an off-host backup.",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 8,
+            "y": 37,
+            "w": 8,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "(1 - node_memory_MemAvailable_bytes{job=\"node-exporter\"} / node_memory_MemTotal_bytes{job=\"node-exporter\"}) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
+              "legendFormat": "{{nodename}}",
+              "instant": false,
+              "range": true,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No telemetry",
+              "decimals": 1,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.8
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.95
+                  }
+                ]
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 9,
+                "showPoints": "never",
+                "spanNulls": false,
+                "axisCenteredZero": false,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                },
+                "axisSoftMax": 1
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 26,
+          "title": "Root filesystem used",
+          "description": "Cluster-wide node saturation, independent of the Environment filter. Root-filesystem capacity does not represent every PVC or an off-host backup.",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 16,
+            "y": 37,
+            "w": 8,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "max by(instance)(1 - node_filesystem_avail_bytes{job=\"node-exporter\",mountpoint=\"/\",fstype!~\"tmpfs|overlay|squashfs\"} / node_filesystem_size_bytes{job=\"node-exporter\",mountpoint=\"/\",fstype!~\"tmpfs|overlay|squashfs\"}) * on(instance) group_left(nodename) node_uname_info{job=\"node-exporter\"}",
+              "legendFormat": "{{nodename}}",
+              "instant": false,
+              "range": true,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No telemetry",
+              "decimals": 1,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.8
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.95
+                  }
+                ]
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 9,
+                "showPoints": "never",
+                "spanNulls": false,
+                "axisCenteredZero": false,
+                "axisSoftMin": 0,
+                "thresholdsStyle": {
+                  "mode": "off"
+                },
+                "axisSoftMax": 1
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            },
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            }
+          }
+        },
+        {
+          "id": 27,
+          "title": "Allocatable CPU",
+          "description": "Cluster-wide schedulable capacity reported by kube-state-metrics, rather than raw host capacity.",
+          "type": "stat",
+          "gridPos": {
+            "x": 0,
+            "y": 44,
+            "w": 12,
+            "h": 4
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(kube_node_status_allocatable{resource=\"cpu\",unit=\"core\"})",
+              "legendFormat": "Allocatable CPU",
+              "instant": true,
+              "range": false,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "cores",
+              "noValue": "No telemetry",
+              "decimals": 2,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "textMode": "auto",
+            "wideLayout": true,
+            "textSize": {
+              "value": 38
+            }
+          }
+        },
+        {
+          "id": 28,
+          "title": "Allocatable memory",
+          "description": "Cluster-wide schedulable capacity reported by kube-state-metrics, rather than raw host capacity.",
+          "type": "stat",
+          "gridPos": {
+            "x": 12,
+            "y": 44,
+            "w": 12,
+            "h": 4
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(kube_node_status_allocatable{resource=\"memory\",unit=\"byte\"})",
+              "legendFormat": "Allocatable memory",
+              "instant": true,
+              "range": false,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "bytes",
+              "noValue": "No telemetry",
+              "decimals": 2,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "textMode": "auto",
+            "wideLayout": true,
+            "textSize": {
+              "value": 38
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "type": "row",
+      "title": "05  /  Incidents & monitoring coverage",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 30,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 30,
+          "title": "Active critical",
+          "description": "Cluster-wide firing alerts, excluding purpose=test. Zero requires a successful Prometheus self-scrape.",
+          "type": "stat",
+          "gridPos": {
+            "x": 0,
+            "y": 31,
+            "w": 6,
+            "h": 5
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "(sum(ALERTS{alertstate=\"firing\",severity=\"critical\",purpose!=\"test\"}) or (0 * max(up{job=\"monitoring-prometheus\",endpoint=\"http-web\"} == 1)))",
+              "legendFormat": "Active critical",
+              "instant": true,
+              "range": false,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No telemetry",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "textMode": "auto",
+            "wideLayout": true,
+            "textSize": {
+              "value": 38
+            }
+          }
+        },
+        {
+          "id": 31,
+          "title": "Active warning",
+          "description": "Cluster-wide firing alerts, excluding purpose=test. Zero requires a successful Prometheus self-scrape.",
+          "type": "stat",
+          "gridPos": {
+            "x": 6,
+            "y": 31,
+            "w": 6,
+            "h": 5
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "(sum(ALERTS{alertstate=\"firing\",severity=\"warning\",purpose!=\"test\"}) or (0 * max(up{job=\"monitoring-prometheus\",endpoint=\"http-web\"} == 1)))",
+              "legendFormat": "Active warning",
+              "instant": true,
+              "range": false,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No telemetry",
+              "decimals": 0,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "textMode": "auto",
+            "wideLayout": true,
+            "textSize": {
+              "value": 38
+            }
+          }
+        },
+        {
+          "id": 32,
+          "title": "Discovered scrape targets healthy",
+          "description": "Healthy / discovered targets. A removed discovery target is outside this denominator; consult PrometheusTargetMissing and MonitoringMetricsMissing alerts.",
+          "type": "stat",
+          "gridPos": {
+            "x": 12,
+            "y": 31,
+            "w": 12,
+            "h": 5
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(up) / count(up)",
+              "legendFormat": "Discovered scrape targets healthy",
+              "instant": true,
+              "range": false,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No telemetry",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.99
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "center",
+            "textMode": "auto",
+            "wideLayout": true,
+            "textSize": {
+              "value": 38
+            }
+          }
+        },
+        {
+          "id": 33,
+          "title": "Firing incidents \u00b7 cluster scope",
+          "description": "Actual firing warning/critical alerts with environment, namespace and resource labels. Empty means no matching series; check the counts and telemetry first.",
+          "type": "table",
+          "gridPos": {
+            "x": 0,
+            "y": 36,
+            "w": 12,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "ALERTS{alertstate=\"firing\",severity=~\"critical|warning\",purpose!=\"test\"}",
+              "legendFormat": "Firing incidents \u00b7 cluster scope",
+              "instant": true,
+              "range": false,
+              "interval": "1m",
+              "format": "table"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "noValue": "No telemetry",
+              "decimals": 0,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          },
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Value": true,
+                  "__name__": true,
+                  "alertstate": true
+                }
+              }
+            }
+          ]
+        },
+        {
+          "id": 34,
+          "title": "Scrape availability by job",
+          "description": "Average health of currently discovered endpoints per job. Missing jobs have no row rather than a fabricated healthy state.",
+          "type": "table",
+          "gridPos": {
+            "x": 12,
+            "y": 36,
+            "w": 12,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "avg by(job)(up)",
+              "legendFormat": "Scrape availability by job",
+              "instant": true,
+              "range": false,
+              "interval": "1m",
+              "format": "table"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No telemetry",
+              "decimals": 1,
+              "color": {
+                "mode": "palette-classic"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.99
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          },
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true
+                },
+                "renameByName": {
+                  "job": "Job",
+                  "Value": "Available"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "type": "row",
+      "title": "06  /  Database, certificates & assurance gaps",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 36,
+          "title": "Database pod readiness \u00b7 Kubernetes only",
+          "description": "Readiness of observed liora-db-N pods. This is Kubernetes readiness, not SQL connectivity, replication health, RPO or restore verification. No CNPG/Postgres exporter is scraped.",
+          "type": "bargauge",
+          "gridPos": {
+            "x": 0,
+            "y": 32,
+            "w": 8,
+            "h": 11
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "max by(namespace,pod)(kube_pod_status_ready{namespace=~\"app-(${environment:regex})\",pod=~\"liora-db-[0-9]+\",condition=\"true\"})",
+              "legendFormat": "{{namespace}} / {{pod}}",
+              "instant": true,
+              "range": false,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "noValue": "No telemetry",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "min": 0,
+              "max": 1
+            },
+            "overrides": []
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "basic",
+            "showUnfilled": true,
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            }
+          },
+          "transformations": [
+            {
+              "id": "renameByRegex",
+              "options": {
+                "regex": "app-(dev|stage|prod) / (.*)",
+                "renamePattern": "$1 / $2"
+              }
+            }
+          ]
+        },
+        {
+          "id": 37,
+          "title": "K3s certificate lifetime \u00b7 internal only",
+          "description": "Minimum remaining lifetime per K3s server via its API metrics endpoint, converted from seconds to days. This is NOT public HTTPS/edge certificate validity. No blackbox/cert-manager certificate exporter was observed.",
+          "type": "bargauge",
+          "gridPos": {
+            "x": 8,
+            "y": 32,
+            "w": 8,
+            "h": 11
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "interval": "1m",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "min by(instance)(k3s_certificate_expiration_seconds{job=\"apiserver\"}) / 86400",
+              "legendFormat": "{{instance}}",
+              "instant": true,
+              "range": false,
+              "interval": "1m",
+              "format": "time_series"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "suffix:days",
+              "noValue": "No telemetry",
+              "decimals": 1,
+              "color": {
+                "mode": "thresholds"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 7
+                  },
+                  {
+                    "color": "green",
+                    "value": 30
+                  }
+                ]
+              },
+              "min": 0,
+              "max": 365
+            },
+            "overrides": []
+          },
+          "options": {
+            "orientation": "horizontal",
+            "displayMode": "basic",
+            "showUnfilled": true,
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            }
+          }
+        },
+        {
+          "id": 38,
+          "type": "text",
+          "title": "Assurance \u00b7 not instrumented",
+          "gridPos": {
+            "x": 16,
+            "y": 32,
+            "w": 8,
+            "h": 11
+          },
+          "description": "Explicit monitoring gaps, not healthy/zero status values.",
+          "options": {
+            "mode": "markdown",
+            "content": "### Backup: NOT INSTRUMENTED\nNo success, freshness or restore evidence. Snapshot duration is not proof of recoverability.\n\n**Database:** pod readiness only; no SQL/replication metrics.\n\n**Public TLS:** not covered by internal K3s certificates.\n\n**External uptime:** no UptimeRobot metrics.\n\nRunbook: `GRAFANA_OPERATIONS_DASHBOARDS.md`."
+          }
+        }
+      ]
+    }
+  ],
+  "timepicker": {
+    "refresh_intervals": [
+      "1m",
+      "2m",
+      "5m",
+      "15m"
+    ]
+  }
+}
