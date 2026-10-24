@@ -157,3 +157,17 @@ Private detailed evidence is retained under `.local-work/private/phase10-2/`;
 credentials and generated coordinator access remain in ignored `recovery/`
 files, outside Git. Monthly restore exercises, accumulated retention-window
 coverage and delegated notification/release work remain ongoing operations.
+
+
+## Subsequent scheduled-backup confirmation
+
+The owner confirmed that the automatic overnight backup run produced new
+archives in the project's R2 bucket. This provides operator-observed evidence
+of scheduled backup output after the initial implementation and timer setup.
+
+This confirmation did not include per-environment Backup identifiers, coordinator
+logs or terminal-state records, so it is not presented as an independently
+reviewed PROD → STAGE → DEV cycle. It is also not an additional PITR exercise
+or proof of accumulated 7/14-day recovery-window coverage. The previously
+recorded isolated restore results remain the recovery-verification evidence.
+No live backup, R2 or coordinator settings were changed during this update.
