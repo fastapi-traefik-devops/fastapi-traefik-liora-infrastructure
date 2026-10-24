@@ -34,6 +34,19 @@ data:
               workDirSettings:
                 disabled: false
                 workDirPath: /home/jenkins/agent
+      # Read-only STAGE acceptance agent (acceptance/ overlay). Declared here because
+      # JCasC replaces the node list on every controller start.
+      - permanent:
+          name: stage-observer
+          remoteFS: /home/jenkins/agent
+          labelString: stage-observer
+          numExecutors: 1
+          mode: EXCLUSIVE
+          launcher:
+            inbound:
+              workDirSettings:
+                disabled: false
+                workDirPath: /home/jenkins/agent
       securityRealm:
         local:
           allowsSignup: false
