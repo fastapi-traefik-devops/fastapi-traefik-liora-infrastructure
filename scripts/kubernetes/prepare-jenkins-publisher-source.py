@@ -11,7 +11,9 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE_COMMIT = '8b584055a83c8f73be1bc3d81f085bbd0db02484'
+# Temporarily the unmerged PR #67 commit (CNPG validation fix) so the already
+# built main #17 (8b58405) can be promoted; re-pin to its merge commit after merge.
+SOURCE_COMMIT = '81e31b56da489a85465f8ea59c5f510c66328550'
 SOURCE_REPOSITORY = 'fastapi-traefik-devops/fastapi-traefik-liora-application'
 
 
