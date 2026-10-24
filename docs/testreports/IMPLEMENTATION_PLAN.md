@@ -1123,7 +1123,8 @@ by this documentation update.
 These alerting checks do not complete delegated Phase 9 work or replace monthly
 PITR. Before another Terraform apply, compare the current VM memory fix/private
 overrides with the tracked 2048 MiB minimum default; VM policy was not changed
-by alerting work. Post-rollout Slack receipt is distinct from transport success.
+by alerting work. The owner confirmed receipt of all three post-rollout backup
+telemetry RESOLVED messages; timestamps are recorded in the hardening report.
 
 ### DHCP and static address alignment
 

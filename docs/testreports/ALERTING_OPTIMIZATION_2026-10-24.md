@@ -167,11 +167,25 @@ notification errors were observed in the checked 10-minute windows. Effective
 configs use the new titles and the same normal/testing receivers; NONPROD has
 four reviewed inhibition rules and PROD five.
 
-No arbitrary new Slack message or synthetic live failure was sent. Transport
-counters and cleared API state do not independently prove a person received the
-post-change RESOLVED messages; that confirmation was requested from the owner
-and remains outstanding unless subsequently recorded. All newly added failure
-scenarios are fixture-tested, not claimed as real incident delivery tests.
+No arbitrary new Slack message or synthetic live failure was sent. The owner
+subsequently supplied the actual post-change Slack messages, confirming receipt
+of all three `CNPGBackupTelemetryMissing` RESOLVED notifications:
+
+| Channel | Environment | Resolved UTC |
+| --- | --- | --- |
+| `#liora-alerts-nonprod` | DEV | 2026-10-24 13:43:50 |
+| `#liora-alerts-nonprod` | STAGE | 2026-10-24 13:43:50 |
+| `#liora-alerts-prod` | PROD | 2026-10-24 13:47:13 |
+
+This closes the post-change backup-resolution receipt gap. The supplied PROD
+`ApplicationPodFailed` warning started at 13:51:42 UTC and contains the initial
+unrefined expression, before the replacement-aware correction in `5f11e41`.
+It refers to the preserved historical Pod described above, not a newly induced
+backend failure. A fresh read-only check after this owner confirmation found
+both Prometheus alert lists and both Alertmanager alert lists empty. Slack
+receipt of that warning's RESOLVED notification was not supplied and is not
+claimed. All newly added failure scenarios remain fixture-tested rather than
+claimed as real incident delivery tests.
 
 ## Operator recheck and rollback
 
