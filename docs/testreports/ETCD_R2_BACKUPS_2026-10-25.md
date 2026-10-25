@@ -220,3 +220,18 @@ changes belong to that concurrent CI/CD work, not this backup task. The merged
 application overlays and Jenkins definitions retain the upstream versions.
 The owner also independently committed the unchanged encrypted-archive helper
 as `85e02f4`; its source hash remained unchanged during this backup work.
+
+
+## Publishing result
+
+The reviewed normal `git push origin main` was rejected by GitHub:
+`Permission to fastapi-traefik-devops/fastapi-traefik-liora-infrastructure.git denied to deploy key`.
+The active SSH deploy key does not have write access. No force-push, permission
+change, branch-rule change or alternative credential use was attempted. The
+merged commits remain on local `main`; publishing requires the owner's normal
+authorized writer. Live snapshot schedules, R2 uploads and monitoring do not
+depend on that push and remain enabled.
+
+Final live checks found five local snapshots on each of the six servers, three
+Ready nodes per cluster, and both new rules healthy/inactive in each Prometheus.
+The fixed token/node metadata checks and archive-helper source hash still pass.
