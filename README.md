@@ -1,7 +1,11 @@
 # Proxmox and K3s infrastructure
 
-This repository documents the Proxmox VE 9 host and management VM setup, then
-provisions a Tailscale subnet router and two three-node K3s clusters.
+This repository contains the infrastructure and operator procedures for a
+Proxmox VE 9 host, a management VM, a Tailscale subnet router, and two
+three-node K3s clusters. It also contains the Kubernetes platform, application
+deployment configuration, GitOps, CI infrastructure, and backup procedures.
+The infrastructure is reusable, but its configuration is optimized for and
+tested with the separate [Liora application repository](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application).
 
 ## Infrastructure at a glance
 
@@ -47,11 +51,11 @@ infrastructure/k3s-cluster/    Terraform VMs and Ansible K3s installation
 kubernetes/apps/liora/         Application base, overlays, and source history
 kubernetes/gitops/argocd/      Independent nonprod/PROD GitOps bootstrap
 kubernetes/platform/          Cluster platform configuration and source history
-docs/testreports/              Implementation plans and phase reports
+docs/testreports/              Implementation plans, phase reports, and evidence
 runbooks/                      Operator instructions
-recovery/                      Ignored credentials/tokens/metadata; no etcd snapshots
+recovery/                      Credential examples and local, ignored secrets
 scripts/proxmox/               Proxmox host scripts
-.local-work/                   Ignored tools/cache and private temporary recovery work
+.local-work/                   Ignored tools/cache and protected private operator data
 ```
 
 Prepare management and operator tools using [runbook 11](runbooks/11-install-management-tools.md).
