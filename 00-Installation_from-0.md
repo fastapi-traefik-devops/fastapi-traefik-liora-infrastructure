@@ -61,7 +61,7 @@ not exist yet.
    - [ ] [Bootstrap the management checkout](runbooks/06-bootstrap-management-checkout.md).
 8. **Install the operator tools.** Ansible configures the guests, Terraform
    provisions VMs, and kubectl/Helm manage cluster resources.
-   - [ ] [Install Ansible, Terraform, kubectl and Helm](runbooks/11-install-management-tools.md).
+   - [ ] [Install Ansible, Terraform, kubectl, kubeconform and Helm](runbooks/11-install-management-tools.md).
 9. **Enable Proxmox automation.** Add the current host's API token to the
    transferred `recovery/.env`. Terraform uses it to read template `9013`
    and provision VMs.

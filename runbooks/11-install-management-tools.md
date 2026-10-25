@@ -81,6 +81,26 @@ kubectl version --client
 
 The download and checksum method follows the [official Kubernetes Linux installation guide](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/).
 
+## kubeconform
+
+- [ ] Install kubeconform for strict GitOps manifest validation. The existing
+      helper downloads checksum-verified Linux amd64 binaries of kubeconform and
+      kustomize using [the repository tool lock](../scripts/ci/tools.lock.json):
+
+```sh
+(
+set -e
+python3 scripts/ci/install-validation-tools.py .local-work/tools/validation
+sudo install -o root -g root -m 0755 .local-work/tools/validation/kubeconform /usr/local/bin/kubeconform
+kubeconform -v
+)
+```
+
+Run from the infrastructure repository root on VM 200. The helper also leaves
+kustomize in `.local-work/tools/validation`; the validator can use the installed
+kubectl to render manifests. See [GitOps validation](../scripts/ci/README.md) for
+strict validation commands and schema updates.
+
 ## Helm
 
 - [ ] Install Helm from its Debian APT repository and check the version. Verify
@@ -152,6 +172,6 @@ script that creates resources or performs application writes.
 - [ ] Install Gitleaks separately when a credential scan is required; it is not a Python dependency. Target source paths, enable redaction and exclude private operator data.
 - [ ] Recreate disposable tools/cache from their pins; preserve required private data through the recovery kit procedure.
 
-**Done when:** Ansible, Terraform/OpenTofu, kubectl and Helm report versions;
+**Done when:** Ansible, Terraform/OpenTofu, kubectl, kubeconform and Helm report versions;
 the Python dependency check succeeds, Chromium dependencies are installed, and
 the wrapper imports the required operator packages.
