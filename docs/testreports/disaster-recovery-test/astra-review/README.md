@@ -18,16 +18,16 @@ Run from the infrastructure repository root with Python 3.10+ and Pillow/PyYAML
 for package validation (the read-only verifier itself uses only the standard library):
 
 ```sh
-python3 -B disaster-recovery-test/astra-review/scripts/test_verify_local_lab.py
-python3 -B disaster-recovery-test/astra-review/scripts/validate_package.py
-sha256sum -c disaster-recovery-test/evidence/SHA256SUMS
-sha256sum -c disaster-recovery-test/astra-review/SHA256SUMS
+python3 -B docs/testreports/disaster-recovery-test/astra-review/scripts/test_verify_local_lab.py
+python3 -B docs/testreports/disaster-recovery-test/astra-review/scripts/validate_package.py
+sha256sum -c docs/testreports/disaster-recovery-test/evidence/SHA256SUMS
+sha256sum -c docs/testreports/disaster-recovery-test/astra-review/SHA256SUMS
 ```
 
 Optional actual retained-lab read-only recheck, requiring Docker/kubectl access:
 
 ```sh
-python3 -B disaster-recovery-test/astra-review/scripts/verify_local_lab.py \
+python3 -B docs/testreports/disaster-recovery-test/astra-review/scripts/verify_local_lab.py \
   --mode stopped --output /tmp/liora-dr-new-recheck
 ```
 

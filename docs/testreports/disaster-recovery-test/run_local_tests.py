@@ -24,7 +24,7 @@ from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent
 EVIDENCE = ROOT / 'evidence'
-REPO = ROOT.parent
+REPO = ROOT.parents[2]
 INFRA = REPO if (REPO / 'kubernetes').is_dir() else REPO / 'infrastructure'
 
 

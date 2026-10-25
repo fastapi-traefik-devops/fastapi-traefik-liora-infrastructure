@@ -72,7 +72,7 @@ def main():
     parser.add_argument('--output', type=Path, required=True, help='New directory outside this Git repository')
     args = parser.parse_args()
     out = args.output.resolve()
-    repo = Path(__file__).resolve().parents[3]
+    repo = Path(__file__).resolve().parents[5]
     require(not out.is_relative_to(repo), 'Write results outside the published repository')
     out.mkdir(mode=0o700, parents=True, exist_ok=False)  # Refuse existing evidence before any command.
     result = {'started_utc': datetime.datetime.now(datetime.timezone.utc).isoformat()}

@@ -46,7 +46,7 @@
 
 ## Reproducibility and safety
 
-The Python sources under `disaster-recovery-test/` are retained. Existing repositories were not edited. No dependencies were installed.
+The Python sources under `docs/testreports/disaster-recovery-test/` are retained. Existing repositories were not edited. No dependencies were installed.
 The mock runner uses only disposable fixtures and explicitly rejects live endpoints. The HTTPS fixture uses a disposable loopback listener.
 The capture script performs read-only live metadata queries and requires the existing trusted SSH access. It is not necessary to rerun it to read these results.
 SHA256SUMS paths are relative to the workspace root. The manifest excludes itself.

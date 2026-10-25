@@ -111,11 +111,11 @@ Keep three scopes separate in every slide: new local runtime tests; synthetic lo
 
 ## Existing repository evidence, kept historical
 
-- [Phase 10.2 report](../docs/testreports/PHASE10_2_REPORT.md): suggested slide “Previously documented DEV/STAGE/PROD PITR”. Say: “The repository reports three PITR exercises on 23 October; those were separate from today’s local tests.” Mention that the historical timing excludes rebuilding K3s/Proxmox, and physical backup availability was not reverified today. This is a document, not an original PITR execution screenshot.
+- [Phase 10.2 report](../PHASE10_2_REPORT.md): suggested slide “Previously documented DEV/STAGE/PROD PITR”. Say: “The repository reports three PITR exercises on 23 October; those were separate from today’s local tests.” Mention that the historical timing excludes rebuilding K3s/Proxmox, and physical backup availability was not reverified today. This is a document, not an original PITR execution screenshot.
 
-- [Historical NONPROD assurance screenshot](../docs/testreports/screenshots/grafana-operations/nonprod-assurance.png): suggested slide “Historical operational observability”. It shows original environment delivery/database readiness. Say: “This is an existing repository monitoring screenshot.” Its older backup panel explicitly says NOT INSTRUMENTED; do not present it as successful backup/restore evidence.
+- [Historical NONPROD assurance screenshot](../screenshots/grafana-operations/nonprod-assurance.png): suggested slide “Historical operational observability”. It shows original environment delivery/database readiness. Say: “This is an existing repository monitoring screenshot.” Its older backup panel explicitly says NOT INSTRUMENTED; do not present it as successful backup/restore evidence.
 
-- [Historical PROD operations screenshot](../docs/testreports/screenshots/grafana-operations/prod-operations.png): suggested slide “Historical production operations”. Shows original application/Argo/traffic panels. It also shows one critical alert; do not claim an all-green recovered environment or treat its charts as new local samples.
+- [Historical PROD operations screenshot](../screenshots/grafana-operations/prod-operations.png): suggested slide “Historical production operations”. Shows original application/Argo/traffic panels. It also shows one critical alert; do not claim an all-green recovered environment or treat its charts as new local samples.
 
 ## Suggested presentation sequence
 

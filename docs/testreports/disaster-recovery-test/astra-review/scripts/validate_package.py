@@ -11,7 +11,7 @@ from PIL import Image
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
-REPO = ROOT.parent
+REPO = ROOT.parents[2]
 REVIEW = ROOT/'astra-review'
 REAL = ROOT/'evidence/real/2026-10-24-local'
 
