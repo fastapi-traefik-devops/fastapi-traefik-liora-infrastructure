@@ -181,7 +181,7 @@ Preserve a complete stopped-controller home archive, mounted configuration,
 image/plugin pins, administrator profile and credential encryption material in
 the protected off-host recovery kit. Keep source archives immutable. Restore
 under an execution hold and verify administrator access and credential decryption
-before allowing jobs. Follow the [Jenkins state checklist](../runbooks/17-migrate-jenkins-ci.md#6-controller-backup-and-recovery-checklist).
+before allowing jobs. Follow the [controller backup and restore procedure](../runbooks/23-restore-jenkins-controller.md).
 
 The fresh foundation overlay creates a new home. An accepted controller must
 retain its selected PVC and matching configuration. Use
@@ -201,7 +201,7 @@ permissions. Recover the existing `fastapi-gitops` installation with access to
 both the application and infrastructure repositories, **Contents: Read and write**,
 **Pull requests: Read and write**, and **Metadata: Read-only**. Keep the CI App
 application-only with contents/PR read and commit-status write. Follow the
-[GitHub App setup and verification procedure](../runbooks/17-migrate-jenkins-ci.md#2-configure-delivery-identities)
+[GitHub App setup and verification procedure](../runbooks/17-install-operate-jenkins.md#2-configure-delivery-identities)
 and verify actual installation grants before
 resuming promotion; never place App private keys or installation tokens in Git.
 
@@ -275,13 +275,176 @@ after rebuilding clusters.
 
 ## Recovery kit checklist
 
-- [ ] Preserve `.env`, `recovery.yaml`, SSH identity, current K3s tokens and the DNS API token outside Git.
-- [ ] Preserve Grafana/Jenkins private platform records, GitHub App IDs/keys and Slack channel-bound webhooks separately from Git configuration.
-- [ ] Preserve infrastructure module state and provider settings; match them to the intended repository revision.
-- [ ] Preserve Jenkins home/encryption material as a complete controller archive; database backups do not include it.
-- [ ] Preserve generated coordinator access and its source configuration; after cluster replacement review CA/token changes before regenerating its access profile.
-- [ ] Match every database recovery point to the environment archive and credentials applicable at that point.
-- [ ] Keep original archived key/state copies while preparing working recovery copies.
+- [ ] Capture the files in the procedure below, then verify the encrypted
+      off-host copy. The archive helper includes **only untracked files under
+      `recovery/`**. Ignored Terraform state, Jenkins archives and platform
+      records elsewhere in the checkout are not included automatically.
+- [ ] Match every database recovery point to the environment archive and
+      credentials applicable at that point. R2 database data and etcd
+      snapshots remain outside this ZIP.
+
+### 1. Capture private inputs on VM 200
+
+- [ ] Work from the infrastructure repository root. Confirm that
+      `recovery/.env`, `recovery/recovery.yaml`, the SSH pair, current K3s
+      server tokens, `recovery/cloudflare-dns-token` and
+      `recovery/backup-coordinator.json` exist. Retain old coordinator profiles
+      and token generations when a selected backup needs them.
+- [ ] Preserve protected Grafana/Jenkins JSON records under
+      `.local-work/private/platform/`. Store the four Slack webhook URLs in
+      separate mode-0600 files under ignored `recovery/` after confirming
+      their channel bindings. The interactive Slack helper creates cluster
+      Secrets but does not write the input URLs to disk. If the current
+      `monitoring-slack-<cluster>` Secrets are the source, capture their two
+      keys without printing them:
+
+```sh
+cd "$HOME/fastapi-traefik-liora-infrastructure"
+umask 077
+for cluster in nonprod prod; do
+  if test "$cluster" = nonprod; then kubeconfig="$HOME/.kube/config-dev-stage";
+  else kubeconfig="$HOME/.kube/config-prod"; fi
+  kubectl --kubeconfig="$kubeconfig" -n monitoring get secret "monitoring-slack-$cluster" -o json |
+    python3 -c 'import base64,json,os,sys; from pathlib import Path
+cluster=sys.argv[1]; data=json.load(sys.stdin)["data"]
+for key in ("normal-webhook","testing-webhook"):
+    value=base64.b64decode(data[key],validate=True)
+    path=Path("recovery")/f"slack-{cluster}-{key}"
+    with os.fdopen(os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),"wb") as out: out.write(value)
+print("Protected webhook files captured for "+cluster)' "$cluster"
+done
+```
+
+Stop on a missing Secret, missing key or existing destination; keep any
+already captured files and inspect before retrying. Do not place webhook URLs
+in Git, logs or command arguments. The normal/testing URLs are bound to
+different Slack channels; verify those bindings using
+[Slack operations](../docs/operations/SLACK_ALERTING.md).
+- [ ] Create a consistent stopped Jenkins home archive using
+      [runbook 23, section 2](../runbooks/23-restore-jenkins-controller.md#2-create-a-current-stopped-home-backup-when-needed),
+      or select an existing complete archive with its `manifest.json`,
+      `home.tar.gz` and matching Deployment/ConfigMaps. Keep the source
+      immutable. Preserve GitHub App installation permissions outside Git;
+      the Jenkins home contains credential encryption material, while private
+      platform records supply the helper login.
+- [ ] Capture the three local Terraform module states, any state backups,
+      private tfvars, provider lock files, platform records and the complete
+      stopped Jenkins backup under a new ignored `recovery/kit-*` directory:
+
+```sh
+cd "$HOME/fastapi-traefik-liora-infrastructure"
+umask 077
+read -r -p 'Absolute stopped Jenkins backup directory: ' JENKINS_BACKUP
+kit_name="kit-$(date -u +%Y%m%dT%H%M%SZ)"
+python3 scripts/recovery/capture-recovery-kit.py \
+  --jenkins-backup "$JENKINS_BACKUP" --name "$kit_name"
+python3 scripts/recovery/capture-recovery-kit.py --verify "recovery/$kit_name"
+```
+
+The helper stops if required inputs are missing, a source is a symlink, or the
+target exists. It removes a partial new kit on failure. Its checksum manifest
+lists the copied files without secret values. Do not run another capture into
+an existing kit. Before archiving, inspect `recovery/` for extra old or partial
+material; the ZIP helper includes **all** untracked regular files there.
+
+### 2. Encrypt and copy off-host
+
+- [ ] Install the pinned AES ZIP dependencies if the helper requests them.
+      Run the existing interactive archive helper. Enter the password at its
+      terminal prompts; store the password separately from the ZIP:
+
+```sh
+bash recovery/make_recovery_backup.sh
+```
+
+- [ ] Record the printed absolute archive path in `archive_path`. Create a
+      checksum and copy both files to the approved protected off-host location.
+      Enter its SSH destination interactively; do not put credentials in the
+      command line:
+
+```sh
+read -r -p 'Absolute archive path printed by the helper: ' archive_path
+test -s "$archive_path"
+(cd "$(dirname "$archive_path")" && sha256sum "$(basename "$archive_path")" > "$(basename "$archive_path").sha256")
+read -r -p 'Protected off-host SSH destination (user@host:/directory/): ' destination
+scp -- "$archive_path" "$archive_path.sha256" "$destination"
+```
+
+**Stop:** A failed archive check or transfer is not a completed off-host kit.
+Keep the local inputs and retry from a new archive. Do not delete the originals.
+
+### 3. Retrieve, check and place on the replacement VM
+
+- [ ] On the trusted laptop, retrieve the ZIP and its `.sha256` file from the
+      protected location into a new private directory. Verify the hash before
+      extracting. Obtain the ZIP password from its separate source:
+
+```sh
+umask 077
+mkdir -m 700 "$HOME/recovery-import"
+read -r -p 'Protected off-host ZIP URL (user@host:/path/file.zip): ' source_zip
+scp -- "$source_zip" "$HOME/recovery-import/"
+scp -- "$source_zip.sha256" "$HOME/recovery-import/"
+cd "$HOME/recovery-import"
+sha256sum -c "$(basename "$source_zip").sha256"
+```
+
+- [ ] Use [the laptop ZIP import](../runbooks/25-unpack-credentials-zip.md)
+      to place ignored `recovery/` files in the laptop checkout. Transfer them
+      to replacement VM 200 as in [runbook 06](../runbooks/06-bootstrap-management-checkout.md).
+- [ ] On VM 200, verify the extracted kit manifest and restore each copied
+      module's state to its **same** module only after reviewing existing
+      state and Terraform plans. Refuse an existing target instead of
+      overwriting it:
+
+```sh
+cd "$HOME/fastapi-traefik-liora-infrastructure"
+read -r -p 'Extracted kit directory name (kit-...): ' kit_name
+test -d "recovery/$kit_name"
+python3 scripts/recovery/capture-recovery-kit.py --verify "recovery/$kit_name"
+(
+set -e
+for module in edge/tailscale/terraform edge/haproxy/terraform infrastructure/k3s-cluster/terraform; do
+  source_state="recovery/$kit_name/$module/terraform.tfstate"
+  target_state="$module/terraform.tfstate"
+  test -s "$source_state" && test ! -e "$target_state" || {
+    echo "Stop and compare state for $module" >&2; exit 1;
+  }
+  install -m 600 "$source_state" "$target_state"
+done
+)
+```
+
+Copy additional state backups, private tfvars and provider locks only after
+reviewing their module and revision. Restore captured platform JSON records
+with mode `0600`, refusing existing files:
+
+```sh
+install -d -m 700 .local-work/private/platform
+(
+set -e
+for name in nonprod-monitoring.json prod-monitoring.json nonprod-jenkins.json; do
+  source_record="recovery/$kit_name/.local-work/private/platform/$name"
+  target_record=".local-work/private/platform/$name"
+  test -s "$source_record" && test ! -e "$target_record" || {
+    echo "Stop and compare platform record $name" >&2; exit 1;
+  }
+  install -m 600 "$source_record" "$target_record"
+done
+)
+```
+
+Confirm all three files were placed; a loop that stops on a conflict does not
+complete recovery. Point [runbook 23](../runbooks/23-restore-jenkins-controller.md)
+at `recovery/$kit_name/jenkins-backup`; it contains the captured `home.tar.gz`
+and matching manifest. Do not replace an existing PVC.
+Regenerate cluster-bound coordinator tokens with
+[runbook 26](../runbooks/26-rebuild-backup-coordinator-access.md) while preserving
+the old profile. Validate recovered credentials using the checker above.
+
+**Excluded by design:** R2 base backups and WAL, etcd snapshots, live PVCs,
+container caches, browser sessions, build workspaces and Git-tracked manifests.
+The archive is not proof that any database or controller has been restored.
 
 ## Private operator data
 
