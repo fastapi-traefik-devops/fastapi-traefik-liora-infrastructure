@@ -45,6 +45,10 @@ def write_private(path, value):
 
 
 def export(args):
+    identities_only = getattr(args, 'identities_only', False)
+    token_dir = getattr(args, 'token_dir', ROOT / 'recovery')
+    if not identities_only and args.output.resolve().is_relative_to((ROOT / 'recovery').resolve()):
+        raise ValueError('Snapshot files must be outside recovery/; use --identities-only for the private kit')
     if args.output.exists():
         raise ValueError('Choose a new output directory; preserve earlier recovery sets')
     args.output.mkdir(parents=True, mode=0o700)
@@ -61,7 +65,14 @@ def export(args):
             raise ValueError('Missing or invalid source server token')
         if token is None:
             token = current
-            manifest['token_sha256'] = write_private(args.output / 'server.token', current)
+            token_path = token_dir / ('k3s-' + args.cluster + '-server.token') if identities_only else args.output / 'server.token'
+            if token_path.exists():
+                if token_path.is_symlink() or token_path.read_bytes() != current:
+                    raise ValueError('Fixed token differs; preserve the previous token before replacing it')
+                token_path.chmod(0o600)
+                manifest['token_sha256'] = hashlib.sha256(current).hexdigest()
+            else:
+                manifest['token_sha256'] = write_private(token_path, current)
         elif current.strip() != token.strip():
             raise ValueError('Server tokens differ; preserve the partial set and investigate')
         password = remote(ssh, "from pathlib import Path; import sys; sys.stdout.buffer.write(Path('/etc/rancher/node/password').read_bytes())")
@@ -69,7 +80,14 @@ def export(args):
             raise ValueError('Missing or invalid node identity')
         digest = write_private(args.output / 'nodes' / name / 'password', password)
         manifest['nodes'].append({'name': name, 'address': address, 'password_sha256': digest})
-        if index == 0:
+        if index == 0 and identities_only:
+            meta = json.loads(remote(ssh, """
+import json, subprocess
+print(json.dumps({'k3s_version': subprocess.check_output(['/usr/local/bin/k3s','--version'], text=True).splitlines()[0],
+ 'cluster_uid': subprocess.check_output(['/usr/local/bin/k3s','kubectl','--request-timeout=20s','get','namespace','kube-system','-o','jsonpath={.metadata.uid}'], text=True)}))
+"""))
+            manifest.update(identities_only=True, k3s_version=meta['k3s_version'], cluster_uid=meta['cluster_uid'])
+        if index == 0 and not identities_only:
             meta = json.loads(remote(ssh, """
 from pathlib import Path
 import json, hashlib, subprocess
@@ -91,7 +109,7 @@ print(json.dumps({'snapshot': str(p), 'snapshot_sha256': hashlib.sha256(p.read_b
     manifest['complete'] = True
     write_private(args.output / 'manifest.json', (json.dumps(manifest, indent=2) + '\n').encode())
     print(json.dumps({'cluster': args.cluster, 'complete': True, 'directory': str(args.output),
-                      'snapshot': manifest['snapshot'], 'nodes': len(manifest['nodes'])}))
+                      'snapshot': manifest.get('snapshot'), 'nodes': len(manifest['nodes'])}))
 
 
 def main():
@@ -101,6 +119,7 @@ def main():
     parser.add_argument('--known-hosts', type=Path, required=True)
     parser.add_argument('--identity', type=Path, default=ROOT / 'recovery/LIORA-id_ed25519')
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--identities-only', action='store_true', help='Save the fixed server token and node identities, without copying snapshots')
     args = parser.parse_args()
     try:
         export(args)

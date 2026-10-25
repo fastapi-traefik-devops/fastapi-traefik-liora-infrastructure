@@ -312,6 +312,22 @@ class CredentialsTest(unittest.TestCase):
         self.write()
         self.run_check(expected=1)
 
+    def test_original_server_token_formats_permissions_and_redaction(self):
+        token = 'K10' + 'a' * 64 + '::server:' + secrets.token_urlsafe(32)
+        self.canaries = list(self.canaries) + [token]
+        for name in ['k3s-nonprod-server.token', 'k3s-prod-server.token']:
+            path = self.directory / name
+            path.write_text(token + '\n'); path.chmod(0o600)
+            self.run_check()
+            path.write_text(token + ' internal space:part\n')
+            self.run_check()
+            path.chmod(0o644)
+            self.assertIn(name, self.run_check(expected=1))
+            path.chmod(0o600)
+            path.write_text('FAKE_TOKEN_DO_NOT_USE\n')
+            self.assertIn(name, self.run_check(expected=1))
+            path.unlink()
+
     def test_optional_tokens_and_tailscale_scope(self):
         for name in ('k3s-dev-stage.token', 'k3s-prod.token'):
             path = self.directory / name

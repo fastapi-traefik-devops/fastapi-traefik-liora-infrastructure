@@ -297,40 +297,78 @@ before cleanup or moving the checkout:
 - [ ] Publish only sanitized results under `docs/testreports/`.
 
 
-## K3s snapshot recovery sets
+## K3s server tokens and recovery identities
 
-Keep complete sets under ignored `recovery/etcd/<cluster>-<capture-id>/`.
-Capture and restore them using [runbook 21](../runbooks/21-restore-k3s-etcd-snapshot.md).
-Each set contains an existing etcd snapshot, its SHA-256 manifest, the original
-server token and the three matching node-password files. All directories must
-be mode `0700`; files must be `0600`. These files contain cluster credentials.
-Do not display, commit or include them in ordinary diagnostic attachments.
+| Cluster | Current original server token |
+| --- | --- |
+| NONPROD | `recovery/k3s-nonprod-server.token` |
+| PROD | `recovery/k3s-prod-server.token` |
 
-`server.token` is the original K3s server token. It is not a newly generated
-bootstrap token. Do not replace the validator's optional provisioning-token
-files with this secure-token format. Hash checks verify copy integrity; only
-an isolated or incident restore verifies snapshot decryption and recovery.
+These files contain the actual secure token copied from
+`/var/lib/rancher/k3s/server/token`. They are Git-ignored, mode `0600`.
+Do not generate replacements to fill these files. The kubeconfig-fetch play saves
+the actual token during fresh setup and refuses to overwrite a different token.
+The recovery checker validates supplied secure-token files without printing them;
+absence is allowed before initial cluster creation.
 
-Store an encrypted copy outside the Proxmox host and retain its separate
-archive password. Local snapshots and this local export do not protect against
-host loss by themselves. Native K3s separately uploads compressed snapshots to
-`liora-backup/etcd/nonprod/` and `liora-backup/etcd/prod/`; see
-[etcd operations](../docs/operations/ETCD_BACKUPS.md). The local exporter does not
-configure that scheduler or copy PVC data.
+These tokens differ from optional Ansible provisioning files
+`k3s-dev-stage.token` / `k3s-prod.token`. Keep both contracts separate; do not put a
+secure `K10…` token into a raw provisioning-token file. The tracked `.example`
+files are visibly fake and cannot replace a captured token.
 
-The native S3 Secrets reuse the existing `database_backups` endpoint, region and
-bucket-scoped S3 pair. No additional recovery YAML fields are required. The
-Secret's non-secret configuration is reproduced by the standalone Ansible
-playbook; do not copy a Secret dump into Git. Keep the bucket private. Prefixes
-are not credential isolation.
+Keep node passwords, cluster UID, K3s version and token checksum in private
+`recovery/k3s-identities/<cluster>-<capture-id>/` metadata directories. Capture
+identities **without snapshots**:
 
-Before rotating a server token, preserve the old complete set for every retained
-snapshot encrypted with that token. After rotation or K3s upgrade, export a new
-set and update the encrypted off-host kit. Keep both sets until old snapshots
-expire or their retention decision permits removal. Never overwrite the old
-token with the new one. The R2 download helper's `--identity-set` option checks
-cluster/token metadata and builds a new runbook-21 set while preserving its
-source. This check does not prove restoration or decryption.
+```sh
+cluster=nonprod
+capture_id=$(date -u +%Y%m%dT%H%M%SZ)
+python3 scripts/recovery/export-k3s-recovery.py --cluster "$cluster" \
+  --known-hosts "$HOME/.ssh/known_hosts" --identities-only \
+  --output "$PWD/recovery/k3s-identities/$cluster-$capture_id"
+```
+
+Standalone tool: [export-k3s-recovery.py](../scripts/recovery/export-k3s-recovery.py).
+
+Repeat for PROD. Use the actual verified SSH host-key file. An existing matching
+fixed token is reused; a differing token is not overwritten. Directory modes are
+`0700`; file modes are `0600`. Tokens are not duplicated in metadata directories.
+
+Use your existing `recovery/make_recovery_backup.sh` workflow to create the
+encrypted archive, then keep a copy outside the host. It includes untracked
+fixed token files and identity metadata automatically. The archive password is
+entered through its terminal prompt; this setup adds no password file or new
+off-host destination. Keep the password separate from the archive.
+
+Before rotating a token, retain its current file under a dated historical name.
+After the remote token has been rotated, capture its new actual value at the
+fixed path. Keep the previous token and matching metadata while any retained
+snapshot needs it. For example, preserve NONPROD's old file before recapture:
+
+```sh
+stamp=$(date -u +%Y%m%dT%H%M%SZ)
+mv recovery/k3s-nonprod-server.token "recovery/k3s-nonprod-server.previous-$stamp.token"
+```
+
+Capture metadata into a new directory after token rotation or K3s upgrade. Update
+the encrypted archive. This capture procedure does not rotate a cluster token.
+
+Do **not** store etcd snapshot files in `recovery/`. Local snapshots stay on K3s
+nodes; native K3s uploads directly to `liora-backup/etcd/nonprod/` and
+`liora-backup/etcd/prod/`. Temporary download/check or manual restore work belongs
+in a private `.local-work/` directory. It is not part of the credentials archive.
+The download/export tools reject snapshot destinations inside `recovery/`.
+
+Native S3 configuration reuses the existing `database_backups` endpoint, region
+and bucket-scoped pair. No new YAML fields are needed. Prefixes separate data,
+not credential access. Keep the bucket private.
+
+[Etcd operations](../docs/operations/ETCD_BACKUPS.md) covers scheduling and checks.
+[Runbook 21](../runbooks/21-restore-k3s-etcd-snapshot.md) is the optional manual
+restore route. Its `--token-file` option selects a historical token when required.
+Routine verification does not copy a token per snapshot. Metadata/checksum checks
+do not prove restoration or bootstrap-data decryption. Etcd never backs up PVC
+file contents.
 
 ## Live PostgreSQL recovery selections
 

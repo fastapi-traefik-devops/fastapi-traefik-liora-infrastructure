@@ -47,9 +47,9 @@ kubernetes/gitops/argocd/      Independent nonprod/PROD GitOps bootstrap
 kubernetes/platform/          Cluster platform configuration and source history
 docs/testreports/              Implementation plans and phase reports
 runbooks/                      Operator instructions
-recovery/                      Credential examples and local, ignored secrets
+recovery/                      Ignored credentials/tokens/metadata; no etcd snapshots
 scripts/proxmox/               Proxmox host scripts
-.local-work/                   Ignored tools/cache and protected private operator data
+.local-work/                   Ignored tools/cache and private temporary recovery work
 ```
 
 Prepare management and operator tools using [runbook 11](runbooks/11-install-management-tools.md).

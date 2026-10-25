@@ -29,14 +29,14 @@ unknown snapshot integrity, or no plan for existing volume data. Do not run
 
 Routine scheduling, retention and failure response: [etcd backups](../docs/operations/ETCD_BACKUPS.md).
 
-**Where:** Trusted operator machine, infrastructure repository root.
+**Where:** Trusted operator machine, infrastructure repository root. Keep all snapshot work in private `.local-work/` directories, never `recovery/`.
 
 ### Select an R2 snapshot
 
 Choose this route for an off-host snapshot. Use one source route only; do not
 also overwrite it with the local export below.
 
-- [ ] Recover the matching complete token/node set from the encrypted private kit.
+- [ ] Recover the fixed original token and matching node-identity metadata from the encrypted private kit. NONPROD uses `recovery/k3s-nonprod-server.token`; PROD uses `recovery/k3s-prod-server.token`.
 - [ ] List this cluster's R2 snapshots:
 
 ```sh
@@ -50,8 +50,8 @@ Standalone tool: [etcd_r2.py](../scripts/backups/etcd_r2.py).
 
 ```sh
 read -r -p 'Exact R2 snapshot filename: ' snapshot
-read -r -p 'Matching complete token-set directory: ' identity_set
-recovery_set="$PWD/recovery/etcd/$cluster-incident-1"
+read -r -p 'Matching node-identity metadata directory: ' identity_set
+recovery_set="$PWD/.local-work/etcd-restore/$cluster-incident-1"
 bash scripts/local-python.sh scripts/backups/etcd_r2.py download \
   --cluster "$cluster" --snapshot "$snapshot" --identity-set "$identity_set" \
   --output "$recovery_set"
@@ -60,8 +60,10 @@ bash scripts/local-python.sh scripts/backups/etcd_r2.py download \
 Standalone tool: [etcd_r2.py](../scripts/backups/etcd_r2.py).
 
 **Expected:** Exit 0, ZIP/embedded-checksum success and a complete recovery set.
-The helper checks snapshot cluster/token metadata against the selected set before
-copying identities. It preserves the source kit and performs no restore.
+The helper uses the fixed token path for this cluster and checks it against the
+selected identity metadata and snapshot. It copies a token only into this
+incident restore bundle, not for routine backups. It preserves the source kit.
+For a rotated historical token, add `--token-file <preserved-token-path>`.
 
 **Stop:** Metadata or checksum mismatch. Keep the file private; select the token
 set that applied when the snapshot was created. Do not substitute a new token.
@@ -75,7 +77,7 @@ Continue at **Check and copy the selected set** below.
 ```sh
 umask 077
 cluster=nonprod
-recovery_set="$PWD/recovery/etcd/$cluster-incident-1"
+recovery_set="$PWD/.local-work/etcd-restore/$cluster-incident-1"
 known_hosts="$HOME/.ssh/known_hosts"
 python3 scripts/recovery/export-k3s-recovery.py \
   --cluster "$cluster" --known-hosts "$known_hosts" --output "$recovery_set"
@@ -93,11 +95,6 @@ verified host-key file for these nodes; do not disable host-key checks.
 **If export fails:** Keep the partial directory. Fix source access or token
 mismatch. Export to a new directory. A directory without a complete manifest
 is not a recovery set.
-
-### Alternative: use a complete archived set
-
-- [ ] Retrieve the matching complete set from the encrypted off-host recovery archive using [25](25-unpack-credentials-zip.md).
-- [ ] Use the **original** token associated with that snapshot. A new token cannot decrypt its bootstrap data.
 
 ### Check and copy the selected set
 
@@ -141,7 +138,7 @@ scp -i recovery/LIORA-id_ed25519 -o StrictHostKeyChecking=yes \
 
 Use `.202` and `.203` for NONPROD; `.212` and `.213` for PROD.
 Install only each node's own password in step 5.
-- [ ] Keep an encrypted copy of the complete set outside this host with the encrypted private kit described in [recovery inputs](../recovery/README.md). A local export is not an off-host backup.
+- [ ] Keep fixed tokens and node metadata in the existing encrypted recovery archive using [recovery inputs](../recovery/README.md#k3s-server-tokens-and-recovery-identities). Snapshots stay in native R2 storage. Do not add this incident snapshot bundle to `recovery/` or copy tokens for routine snapshots.
 
 ## 2. Stop every server and its workloads
 

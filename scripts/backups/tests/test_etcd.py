@@ -84,6 +84,16 @@ class EtcdTest(unittest.TestCase):
             self.assertIn(expected,str(stopped.exception))
             self.assertNotIn('FIXTURE_SECRET_NEVER_PRINT',str(stopped.exception))
 
+    def test_download_refuses_recovery_directory_before_writing(self):
+        values={'database_backups':{'bucket':'liora-backup','endpoint':'https://fixture','region':'auto','access_key_id':'fake','secret_access_key':'fake'}}
+        name='etcd-snapshot-k3s-1-01-1900000000.zip'
+        target=ROOT/'recovery/fixture-etcd-download-must-not-be-created'
+        argv=['etcd_r2.py','download','--cluster','nonprod','--snapshot',name,'--output',str(target)]
+        with patch.object(sys,'argv',argv),patch.object(Path,'read_text',return_value=''),patch.object(etcd_r2.yaml,'safe_load',return_value=values),patch.object(etcd_r2.boto3,'client'),patch.object(etcd_r2,'list_snapshots',return_value=[{'Key':'etcd/nonprod/'+name}]):
+            with self.assertRaises(SystemExit) as stopped:etcd_r2.main()
+        self.assertIn('Snapshots must not be stored in recovery/',str(stopped.exception))
+        self.assertFalse(target.exists())
+
     def test_native_rule_firing_first_error_stale_and_recovery(self):
         tool=ROOT/'.local-work/validation-tools/promtool'
         with tempfile.TemporaryDirectory(dir=ROOT/'.local-work') as tmp:

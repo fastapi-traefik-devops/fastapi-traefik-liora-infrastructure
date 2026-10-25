@@ -267,9 +267,12 @@ platform/configuration, restores application data, then verifies applications.
 Etcd restore is an optional manual route. Etcd snapshots recover Kubernetes
 metadata and Secrets, not PVC contents. PostgreSQL backups/WAL cover application
 database contents; Jenkins requires its stopped-home archive; other persistent
-volumes require separate protection. Original server tokens and node identities
-remain in the encrypted off-host recovery kit. Old tokens stay available for
-retained snapshots after rotation. [Etcd operations](operations/ETCD_BACKUPS.md)
+volumes require separate protection. Current original server tokens are saved once at `recovery/k3s-nonprod-server.token` and
+`recovery/k3s-prod-server.token`, mode `0600`. Node identities and capture
+metadata are stored separately under `recovery/k3s-identities/`. These inputs
+are included in the existing encrypted off-host recovery kit. Snapshot files stay on nodes and
+in R2; temporary downloads use private `.local-work/` directories, never
+`recovery/`. Old tokens stay available for retained snapshots after rotation. [Etcd operations](operations/ETCD_BACKUPS.md)
 defines configuration, retention and failure response.
 
 Recovery procedures cover application data, etcd, infrastructure state,

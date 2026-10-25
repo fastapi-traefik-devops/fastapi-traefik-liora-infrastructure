@@ -97,6 +97,31 @@ class ExportTest(unittest.TestCase):
             (args.output / 'server.token').write_bytes(b'altered')
             with self.assertRaises(ValueError): v.verify(args.output)
 
+    def test_identity_capture_saves_fixed_token_without_snapshot_or_token_duplicates(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            args=argparse.Namespace(output=root/'identities',cluster='nonprod',known_hosts=Path('hosts'),identity=Path('key'),identities_only=True,token_dir=root/'private')
+            def remote(ssh,code):
+                if 'server/token' in code:return b'FIXTURE_TOKEN'
+                if 'node/password' in code:return b'FIXTURE_NODE_PASSWORD'
+                self.assertNotIn('glob(',code)
+                return json.dumps({'k3s_version':'fixture','cluster_uid':'fixture-uid'}).encode()
+            with patch.object(e,'remote',side_effect=remote),contextlib.redirect_stdout(io.StringIO()):e.export(args)
+            token=args.token_dir/'k3s-nonprod-server.token'
+            self.assertEqual(token.read_bytes(),b'FIXTURE_TOKEN')
+            self.assertFalse((args.output/'server.token').exists())
+            self.assertFalse(list(args.output.glob('etcd-snapshot-*')))
+            self.assertTrue(v.verify(args.output,token)['identities_only'])
+
+    def test_fixed_token_is_not_overwritten_on_mismatch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);token=root/'k3s-prod-server.token';token.write_bytes(b'old-token');token.chmod(0o600)
+            args=argparse.Namespace(output=root/'identities',cluster='prod',known_hosts=Path('hosts'),identity=Path('key'),identities_only=True,token_dir=root)
+            with patch.object(e,'remote',return_value=b'new-token'):
+                with self.assertRaises(ValueError):e.export(args)
+            self.assertEqual(token.read_bytes(),b'old-token')
+            self.assertFalse((args.output/'manifest.json').exists())
+
     def test_token_mismatch_keeps_partial_set_without_complete_manifest(self):
         with tempfile.TemporaryDirectory() as tmp:
             args = argparse.Namespace(output=Path(tmp) / 'set', cluster='prod', known_hosts=Path('hosts'), identity=Path('key'))

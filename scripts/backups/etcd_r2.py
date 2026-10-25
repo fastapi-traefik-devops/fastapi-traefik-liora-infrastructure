@@ -59,17 +59,18 @@ def verify_snapshot(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
-def attach_identity(source, output, snapshot, digest, metadata, cluster):
-    checked = subprocess.run([sys.executable, str(ROOT / 'scripts/recovery/verify-k3s-recovery.py'), str(source)], capture_output=True, timeout=90)
+def attach_identity(source, output, snapshot, digest, metadata, cluster, token_file=None):
+    checked = subprocess.run([sys.executable, str(ROOT / 'scripts/recovery/verify-k3s-recovery.py'), str(source)] + (['--token-file', str(token_file)] if token_file else []), capture_output=True, timeout=90)
     if checked.returncode: raise EtcdError('Original recovery identity set failed verification')
     manifest = json.loads((source / 'manifest.json').read_text())
-    token = (source / 'server.token').read_text().strip()
+    token_path = token_file or (ROOT / 'recovery' / ('k3s-' + cluster + '-server.token') if manifest.get('identities_only') else source / 'server.token')
+    token = token_path.read_text().strip()
     password = token.split('::', 1)[1].split(':', 1)[1] if token.startswith('K10') else token
     token_hash = hashlib.sha256(password.encode()).hexdigest()[:12]
     if (manifest['cluster'] != cluster or metadata.get('k3s-cluster-id') != manifest['cluster_uid']
             or metadata.get('k3s-token-hash') != token_hash):
         raise EtcdError('Snapshot metadata does not match the selected token/cluster')
-    shutil.copyfile(source / 'server.token', output / 'server.token')
+    shutil.copyfile(token_path, output / 'server.token')
     (output / 'server.token').chmod(0o600)
     for node in manifest['nodes']:
         target = output / 'nodes' / node['name']
@@ -77,6 +78,7 @@ def attach_identity(source, output, snapshot, digest, metadata, cluster):
         (output / 'nodes').chmod(0o700)
         shutil.copyfile(source / 'nodes' / node['name'] / 'password', target / 'password')
         (target / 'password').chmod(0o600)
+    manifest.pop('identities_only', None)
     manifest.update(snapshot=snapshot, snapshot_sha256=digest,
                     captured_at=dt.datetime.now(dt.timezone.utc).isoformat(),
                     source_r2_key='etcd/' + cluster + '/' + snapshot)
@@ -92,6 +94,7 @@ def main():
     p.add_argument('--recovery-dir', type=Path, default=ROOT / 'recovery')
     p.add_argument('--snapshot')
     p.add_argument('--output', type=Path)
+    p.add_argument('--token-file', type=Path, help='Explicit historical token for a rotated-token recovery')
     p.add_argument('--identity-set', type=Path, help='Matching complete token/node recovery set; build a runbook-21 recovery set')
     args = p.parse_args()
     try:
@@ -107,6 +110,8 @@ def main():
             raise EtcdError('Download needs an exact snapshot name and new output directory')
         key = 'etcd/' + args.cluster + '/' + args.snapshot
         if key not in [o['Key'] for o in objects]: raise EtcdError('Selected snapshot is absent')
+        if args.output.resolve().is_relative_to((ROOT / 'recovery').resolve()):
+            raise EtcdError('Snapshots must not be stored in recovery/; select a private workspace')
         if args.output.exists(): raise EtcdError('Output directory exists; choose a new one')
         args.output.mkdir(parents=True, exist_ok=False, mode=0o700)
         path = args.output / args.snapshot
@@ -118,7 +123,7 @@ def main():
         finally: body.close()
         sha = verify_snapshot(path)
         if args.identity_set:
-            attach_identity(args.identity_set, args.output, args.snapshot, sha, response.get('Metadata', {}), args.cluster)
+            attach_identity(args.identity_set, args.output, args.snapshot, sha, response.get('Metadata', {}), args.cluster, args.token_file)
         print(json.dumps({'key': key, 'download': str(path), 'sha256': sha, 'zip_crc_and_etcd_sha256': True, 'restoration_performed': False}))
     except Exception as error:
         reason = str(error) if isinstance(error, EtcdError) else type(error).__name__ + '; inspect privately'

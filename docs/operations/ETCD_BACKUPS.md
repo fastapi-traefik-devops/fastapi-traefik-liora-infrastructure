@@ -42,7 +42,7 @@ or transport etcd snapshots. PostgreSQL backups start independently at 02:00 UTC
 - [ ] Validate `recovery/recovery.yaml`. Reuse its bucket-scoped `database_backups` S3 pair; no new recovery fields are required.
 - [ ] Confirm the bucket is private in Cloudflare: **R2 → liora-backup → Settings → Public access**. Require the managed public URL disabled and no enabled public custom domains. Do not change unrelated buckets or domains.
 - [ ] Confirm all three nodes in the selected cluster are Ready.
-- [ ] Preserve the matching token/node recovery set outside the Proxmox host before planned node maintenance; use the [capture procedure](../../runbooks/21-restore-k3s-etcd-snapshot.md#alternative-capture-from-reachable-servers) only. Do not run its restore steps.
+- [ ] Preserve the matching token/node recovery set outside the Proxmox host before planned node maintenance; use the [identity capture procedure](../../recovery/README.md#k3s-server-tokens-and-recovery-identities) only. Do not run its restore steps.
 - [ ] Set a verified SSH host-key file. Do not use `site.yml` for this change.
 
 ### Apply one cluster
@@ -111,7 +111,7 @@ Standalone tool: [etcd_r2.py](../../scripts/backups/etcd_r2.py).
 
 ```sh
 read -r -p 'Exact snapshot filename: ' snapshot
-output="$PWD/recovery/etcd-download-$cluster-incident-1"
+output="$PWD/.local-work/etcd-download-$cluster-incident-1"
 bash scripts/local-python.sh scripts/backups/etcd_r2.py download \
   --cluster "$cluster" --snapshot "$snapshot" --output "$output"
 ```
@@ -162,10 +162,11 @@ kubectl --kubeconfig="$kubeconfig" apply -k "kubernetes/platform/$cluster/backup
 
 ## Preserve tokens and recovery inputs
 
-- [ ] Keep each original server token, matching node identities, version and capture manifest in the encrypted off-host recovery kit. Use [recovery sets](../../recovery/README.md#k3s-snapshot-recovery-sets).
+- [ ] Keep the current original tokens at `recovery/k3s-nonprod-server.token` and `recovery/k3s-prod-server.token`, mode `0600`. Include these and matching node metadata in your existing encrypted recovery archive; keep the archive off-host. Use [recovery sets](../../recovery/README.md#k3s-server-tokens-and-recovery-identities).
 - [ ] Before rotating a server token, retain its old set for every snapshot that still needs it.
-- [ ] After rotation or K3s upgrade, [export a new complete set](../../runbooks/21-restore-k3s-etcd-snapshot.md#alternative-capture-from-reachable-servers). Create and inspect new R2 snapshots, then update the encrypted kit before retiring any old token.
-- [ ] Keep the encryption password separate from the kit. Do not store raw tokens in the R2 snapshot prefixes or Git.
+- [ ] After rotation or K3s upgrade, [capture new identity metadata](../../recovery/README.md#k3s-server-tokens-and-recovery-identities). Create and inspect new R2 snapshots, then update the encrypted kit before retiring any old token.
+- [ ] Use the existing `recovery/make_recovery_backup.sh` workflow. Keep its password separate from the kit. Do not copy a token for every snapshot or store raw tokens in R2/Git.
+- [ ] Keep snapshots on the nodes and in native R2 prefixes. Use private `.local-work/` directories for disposable downloads; never use `recovery/` for snapshot files.
 - [ ] During optional recovery, use the token that matches the selected snapshot, not a newly generated bootstrap token. The download helper can check the snapshot's cluster/token metadata when assembling the recovery set; this is not a restore/decryption exercise.
 
 ## Reference

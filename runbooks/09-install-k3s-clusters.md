@@ -38,6 +38,25 @@ Preserve these ignored token files with future datastore backups.
    ansible-inventory -i infrastructure/k3s-cluster/ansible/inventory-prod.yml --graph
    ```
 
+### If building a replacement cluster from archived inputs
+
+Use this step only when creating a **new** cluster. Do not move current tokens
+for an upgrade or kubeconfig-only fetch. Keep the failed cluster's token for its
+retained snapshots before the new cluster creates its own token.
+
+- [ ] Preserve the fixed token for the selected replacement cluster:
+
+```sh
+cluster=nonprod  # Use prod only when rebuilding PROD.
+case "$cluster" in nonprod|prod) ;; *) exit 1 ;; esac
+token="recovery/k3s-$cluster-server.token"
+history="recovery/k3s-$cluster-server.previous-$(date -u +%Y%m%dT%H%M%SZ).token"
+test ! -e "$token" || mv -n "$token" "$history"
+```
+
+Repeat only for another cluster that is also being rebuilt. Do not overwrite a
+historical token. The normal setup's fetch play will save the new actual token.
+
 ### If VMs were recreated at the same IPs
 
 > [!NOTE]
@@ -136,6 +155,27 @@ The merge playbook checks both identities and API VIPs before writing `~/.kube/c
    ```
 
 Expect contexts `dev-stage` and `prod`, users `admin-dev-stage` and `admin-prod`, and default context `dev-stage`. Specify `--context` for commands targeting a particular cluster.
+
+## Preserve original server tokens and node identities
+
+The kubeconfig-fetch play saves each running cluster's actual server token at
+`recovery/k3s-nonprod-server.token` or `recovery/k3s-prod-server.token`. It creates
+no replacement token and refuses to overwrite a differing previous value.
+
+- [ ] Check both fixed files without displaying their contents:
+
+```sh
+stat -c '%a %n' recovery/k3s-nonprod-server.token recovery/k3s-prod-server.token
+```
+
+**Expected:** Both files exist with mode `600`. If capture refuses a differing
+file, preserve that previous token for its snapshots before recapturing the new
+cluster's actual token. Do not delete an old token to make the play pass.
+
+- [ ] Capture node identities and archive the fixed tokens using the
+      [private recovery procedure](../recovery/README.md#k3s-server-tokens-and-recovery-identities).
+- [ ] Do not copy snapshots into `recovery/`. Configure native R2 upload through
+      [etcd operations](../docs/operations/ETCD_BACKUPS.md#configure-or-reapply-native-backups).
 
 **Done when:** Both inventories complete, all six nodes are Ready in their
 respective clusters, the two API VIPs answer independently, and VM 200 has
