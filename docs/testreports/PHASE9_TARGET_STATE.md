@@ -148,10 +148,6 @@ without copying anything from the running cluster. Changes (infrastructure branc
 | `acceptance/` overlay render | OK |
 | Unit tests: `test-deploy-jenkins-observer.py` (6), `test-jenkins-publisher-source.py` (8, incl. manifest pin guard), `test-deploy-jenkins-agents.py` (6) | all passed |
 
-The installer was not run against the live controller on purpose: it requires the execution
-hold, and the running observer already uses the same bundle and Secret format. The end-to-end
-run belongs to the planned controller restore checkpoint ([runbook 23](../../runbooks/23-restore-jenkins-controller.md)).
-
 ### Summary
 
 | Area | Result |
@@ -163,18 +159,3 @@ run belongs to the planned controller restore checkpoint ([runbook 23](../../run
 | PROD rollback by re-release | passed, ~8 min |
 | Nightly `full` run | passed (#24) |
 | Observer bundle reproducible from Git | passed (hash equal to live) |
-
-## Observations and open items
-
-- Not yet tested: re-release of a version
-  that PROD already runs (expected `unchanged`), PROD refusal of a SHA without acceptance, a live
-  failed-acceptance drill (requires disabling Argo auto-sync for `app-stage`), a controller
-  restart.
-- PROD deploy time is dominated by Argo CD polling (about 3–7 min after the merge).
-- `/api/v1/utils/health-check/` returns `true` without a database, so neither STAGE acceptance
-  nor the PROD check proves database connectivity (Phase 9 item 8).
-- The startup quiet-mode hook still needs *Cancel Shutdown* after every controller restart.
-- Cluster notes for the infrastructure owner: a stale Pod `backend-59b9bb8fdf-tgmnw`
-  (`ContainerStatusUnknown`) remained in `app-prod`; DEV `liora-db-1` showed 3 restarts.
-- Removal of the obsolete application paths is prepared in app PR #78
-  ([cleanup report](APPLICATION_REPOSITORY_CLEANUP.md)) and not merged yet.
