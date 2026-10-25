@@ -99,15 +99,14 @@ kubectl --kubeconfig="$kubeconfig" -n "$namespace" exec "$primary" -c postgres -
 
 ## Database maintenance
 
-- [ ] Record the current image pair, Argo policies and Jenkins job/trigger settings before work.
-- [ ] Block new conflicting deployments and allow active CI/publisher work to finish.
-- [ ] Pause root reconciliation before application children; use reviewed declarative maintenance settings.
-- [ ] Wait for the database/operator rollout to finish.
-- [ ] For backend images requiring connection-pool refresh, change the backend rollout annotation declaratively while retaining its image digest; wait for rollout completion.
-- [ ] Require actual login and CRUD after the restart. Readiness probes alone do not check authenticated database use.
-- [ ] Restore child policies before root policies and restore the recorded Jenkins settings.
+- [ ] Use the [database maintenance procedure](28-database-maintenance.md)
+      to record exact Argo/Jenkins settings, hold writes, publish a declarative
+      backend reconnect annotation without changing image digests, verify
+      login/disposable CRUD and restore the recorded settings.
 
-**Stop:** On failed database, replication, login or CRUD checks, keep conflicting deployment activity held and retain diagnostics. Do not reset databases or delete PVCs to clear readiness errors.
+**Stop:** On failed database, replication, login or CRUD checks, keep
+conflicting deployment activity held and retain diagnostics. Do not reset
+databases or delete PVCs to clear readiness errors.
 
 ## Related procedures
 
