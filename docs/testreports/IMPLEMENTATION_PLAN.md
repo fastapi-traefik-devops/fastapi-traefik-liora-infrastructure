@@ -1199,3 +1199,32 @@ It does not replace PITR verification or complete pending Phase 9 work.
 
 These remaining capabilities are not inferred from successful isolated PITR,
 controller migration, or local recovery-tool validation.
+
+
+### Native embedded-etcd snapshots to R2 — 2026-10-25
+
+- [x] Reuse native K3s snapshot/S3 support, existing bucket-scoped access and
+      separate `etcd/nonprod/` / `etcd/prod/` destinations.
+- [x] Configure all six servers sequentially: staggered 03:xx/15:xx UTC schedules,
+      five local files per node and 42 R2 files per cluster prefix, with native ZIP.
+- [x] Verify controlled uploads, downloads, ZIP/etcd checksums and matching
+      cluster/token metadata without restoring any datastore.
+- [x] Reuse VM 250 bucket telemetry and existing Alertmanager delivery for native
+      failure and 14-hour R2-freshness alerts; preserve PostgreSQL/WAL operation.
+- [x] Keep etcd restore outside the required standard DR sequence; document data
+      coverage, count-based retention and token rotation independently.
+- [x] Observe all six native recurring uploads at 15:00/02/04 and 15:10/12/14 UTC
+      and ingest their R2 freshness into healthy live alerts.
+- [x] Save actual current tokens at `recovery/k3s-nonprod-server.token` and
+      `recovery/k3s-prod-server.token` (Git-ignored, `0600`); include capture in
+      fresh setup and retain snapshot-free node metadata.
+- [x] Remove only identified local snapshot/verification copies from `recovery/`
+      after preserving tokens/identities; keep node/R2 snapshots unchanged.
+- [x] Update validation and fake examples for fixed secure-token files; leave
+      the owner's existing encrypted-archive helper unchanged.
+- [ ] Owner: create the updated archive with `recovery/make_recovery_backup.sh`
+      and keep its copy outside the host. No separate destination/password file
+      is part of this implementation.
+
+Evidence: [etcd R2 implementation report](ETCD_R2_BACKUPS_2026-10-25.md).
+Upload/integrity checks do not complete an etcd restore or full-system DR exercise.
