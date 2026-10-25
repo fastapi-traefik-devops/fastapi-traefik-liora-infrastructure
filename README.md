@@ -33,6 +33,7 @@ empty database initialization from data restoration and isolated PITR exercises.
 - [Monitoring operations](docs/operations/SLACK_ALERTING.md): alert response and notification delivery.
 - [Recovery input schema](recovery/README.md): credentials, keys and generated access profiles.
 - [Implementation reports](docs/testreports/README.md): phase status, migration history, evidence and remaining capabilities.
+- [CI/CD](docs/CI_CD.md): Jenkins → GHCR → GitOps pipeline, setup from zero, daily use and troubleshooting.
 
 ## Repository layout
 

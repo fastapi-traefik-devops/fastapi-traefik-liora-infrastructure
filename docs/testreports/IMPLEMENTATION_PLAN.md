@@ -640,6 +640,7 @@ confirmed external Tailscale browser access and passwords; Phase 8 is closed.
 
 Status: **in progress; automatic STAGE acceptance, restored gate profiles and manual DEV
 deployment live since 2026-10-24; manual PROD release implemented, first release pending**.
+User guide and setup from zero: [CI/CD](../CI_CD.md).
 The current state and how it works are in [Current CI/CD state](#current-cicd-state--2026-10-25);
 the text that follows it is the historical record of the migration.
 Legacy Jenkins state is restored to a separate NONPROD home, preserving the
@@ -905,9 +906,11 @@ current state above):
    promotions remove the previous receipt (fixture-tested). Open: a live failed-acceptance drill.
 4. [x] **Manual DEV promotion.** Job `dev-build`, `ACTION=dev` (application PRs #70, #71, #73;
    infrastructure PR #10); first DEV deployment `90ec738` for `cce22bf`.
-5. [ ] **Manual PROD promotion.** Implemented and fixture/rehearsal-tested in application branch
-   `ci/prod-promotion` with publisher pin `ci/publisher-pin-9c2084c`. Open: merge, first release
-   `v1.0.0` of an accepted SHA, PROD verification.
+5. [x] **Manual PROD promotion — implemented.** `ACTION=prod` in `trusted/publish`, release by
+   `vX.Y.Z` tag of an accepted SHA, review branch per release, rollback by re-release
+   (application branch `ci/prod-promotion`, publisher pin `ci/publisher-pin-9c2084c`; 93 CI unit
+   tests including release → release → rollback; rehearsal against copies of both repositories).
+   [ ] **First live release** `v1.0.0` and PROD verification: pending the merge of both branches.
 6. [ ] **Rollback and obsolete paths.** Rollback by re-release is implemented (redeploy branches,
    `unchanged`). Open: live drill `v1.0.1` → `v1.0.0`; review of the obsolete application paths
    (`deploy/`, `argocd/`, `monitoring/`, `k8s/`, `infra/`).
