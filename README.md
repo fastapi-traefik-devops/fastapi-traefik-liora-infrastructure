@@ -26,6 +26,7 @@ Use the [operator procedure index](runbooks/README.md) to select fresh deploymen
 disaster recovery or routine backup/recovery operations. The manuals separate
 empty database initialization from data restoration and isolated PITR exercises.
 
+- [Infrastructure cost estimate](INFRASTRUCTURE_COST_ESTIMATE.md): European hosting comparison, paid services and three operating budgets.
 - [Architecture](docs/ARCHITECTURE.md): desired topology, ownership and delivery policy.
 - [Infrastructure diagrams](docs/project-schemes.drawio): editable topology, cluster, traffic, CI/CD, backup, monitoring and recovery views.
 - [PostgreSQL backup operations](runbooks/19-cnpg-r2-backup-pitr.md): scheduled/manual cycles and failure recovery.
