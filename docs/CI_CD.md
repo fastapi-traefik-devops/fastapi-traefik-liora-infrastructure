@@ -96,14 +96,13 @@ Run everything from management VM 200 in the infrastructure checkout, NONPROD ku
    over a restored home.
 3. **Credentials** in Jenkins ([runbook 17 §2](../runbooks/17-migrate-jenkins-ci.md)):
    `github-ci-app` (CI scope), `gitops-app` and `ghcr-write` (trusted scope only).
-4. **Agents and nodes** ([runbook 22](../runbooks/22-install-fresh-jenkins-agents.md)). The three
-   inbound nodes `host-ci`, `registry-publisher`, `stage-observer` (one executor each, matching
-   labels, remote root `/home/jenkins/agent`) must be declared in
-   `agents/controller-config.yaml` (JCasC replaces the node list on every start). Create each
-   agent's connection Secret; the observer's is `stage-observer-connection`, key `agent-secret`.
-5. **Helper bundles** (§5 below), then apply the agent overlays:
-   `kubectl apply -k kubernetes/platform/nonprod/jenkins/initial-cycle` and
-   `kubectl apply -k kubernetes/platform/nonprod/jenkins/acceptance`.
+4. **Agents and nodes** ([runbook 22](../runbooks/22-install-fresh-jenkins-agents.md)).
+   Use the agent helper for both fresh and restored homes. It preserves the selected
+   PVC, configures `host-ci` and `registry-publisher`, and leaves jobs held.
+   Do not apply `agents/` or `initial-cycle/` directly to a fresh controller.
+5. **Helper bundles** (§5 below). Keep publisher definitions and helper pins matched.
+   Install the separate acceptance workload only as part of its approved activation;
+   connecting the two build/publication workers does not enable the observer or PROD.
 6. **Jobs:**
    - `app-ci`: Multibranch Pipeline, GitHub source `fastapi-traefik-liora-application` with
      `github-ci-app`; discover branches and PRs (merge with target); filter `main PR-*`;

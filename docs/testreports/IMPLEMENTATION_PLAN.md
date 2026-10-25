@@ -1304,7 +1304,8 @@ It does not replace PITR verification or complete pending Phase 9 work.
 - [x] Remove historical status/educational framing from operational runbooks and desired architecture.
 - [x] Provide live CNPG recovery preparation and etcd snapshot recovery procedures with protected inputs, source archive separation, workload holds and resumable local tooling. See [recovery runbook implementation](RECOVERY_RUNBOOKS_2026-10-25.md).
 - [ ] Exercise live CNPG restore/cutover and the three-server etcd restore route in a separate recovery checkpoint. Verify the selected target, stable endpoint, ownership, post-recovery archive, original-token decryption and application checks; local checks are not a live recovery exercise.
-- [ ] Complete generic current-K3s Jenkins stopped-home backup/restore and a reproducible fresh agent/job bootstrap independent of one-time transfer markers.
+- [x] Adapt current-K3s Jenkins stopped-home backup/restore and two-worker connection helpers to preserve the archived administrator and selected home without migration receipts. Add runbooks 22/23 and local safety checks. See [Jenkins recovery procedures](JENKINS_RECOVERY_RUNBOOKS_2026-10-25.md).
+- [ ] Perform the isolated held-controller runtime restore checkpoint: verify login, credential decryption, retained history and agent connectivity without CI/publication/deployment. Complete the separate reproducible job bootstrap and acceptance activation work under Phase 9.
 - [ ] Complete project-specific off-host etcd/state/private-kit capture/retrieval and a full-system disaster recovery exercise.
 - [ ] Record monitoring history coverage explicitly; PostgreSQL R2 backups do not restore Prometheus/Alertmanager volume data.
 

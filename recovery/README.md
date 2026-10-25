@@ -186,7 +186,15 @@ before allowing jobs. Follow the [Jenkins state checklist](../runbooks/17-migrat
 The fresh foundation overlay creates a new home. An accepted controller must
 retain its selected PVC and matching configuration. Use
 [the controller restore runbook](../runbooks/23-restore-jenkins-controller.md)
-before starting a restored controller.
+before starting a restored controller. The restore keeps the administrator and
+credential encryption keys from the selected archive; do not substitute a fresh
+administrator profile. Keep the matching `jenkins-foundation-login` Secret in
+the private recovery kit for operator-helper authentication.
+
+To create a stopped-home archive, use [runbook 23, section 2](../runbooks/23-restore-jenkins-controller.md#2-create-a-current-stopped-home-backup-when-needed).
+It stores the complete home, matching Deployment and mounted ConfigMaps.
+Preserve referenced Secrets and external GitHub App settings separately; the
+home archive does not export Kubernetes Secrets.
 
 Restoring a GitHub App key does not restore its repository selection or granted
 permissions. Recover the existing `fastapi-gitops` installation with access to
