@@ -25,6 +25,7 @@ import boto3
 from botocore.config import Config
 from playwright.sync_api import sync_playwright, expect
 import yaml
+from archive import parameters, location, wal_prefix
 
 ROOT=Path(__file__).resolve().parents[2]
 PLUGIN='barman-cloud.cloudnative-pg.io'
@@ -61,7 +62,7 @@ def make_restore(source, store, namespace, backup_id, target_time, environment):
           'postgresql':copy.deepcopy(source['spec']['postgresql']),
           'bootstrap':{'recovery':{'source':'source','recoveryTarget':{'backupID':backup_id,'targetTime':target_time}}},
           'externalClusters':[{'name':'source','plugin':{'name':PLUGIN,'parameters':{
-              'barmanObjectName':'source-archive','serverName':'liora-'+environment}}}]}}
+              'barmanObjectName':'source-archive','serverName':parameters(source)['serverName']}}}]}}
     assert 'plugins' not in cluster['spec'] and 'retentionPolicy' not in store['spec']
     return cluster,store
 
@@ -207,6 +208,8 @@ def run(args):
             existing=kube(Path.home()/'.kube'/('config-'+cluster),['get','clusters.postgresql.cnpg.io','-A','-o','json'])['items']
             if any(c['metadata']['namespace'].startswith('pitr-') for c in existing):raise RuntimeError('Previous isolated restore exists; inspect before creating another')
         source=kube(cfg,['-n',live,'get','cluster','liora-db','-o','json']);primary=source['status']['currentPrimary']
+        original_store=kube(cfg,['-n',live,'get','objectstore',parameters(source)['barmanObjectName'],'-o','json'])
+        archive=location(source,original_store);record['source_archive']=archive
         backup=kube(cfg,['-n',live,'get','backup',args.backup,'-o','json']);assert backup['status']['phase']=='completed';assert backup['spec']['method']=='plugin'
         backup_id=backup['status'].get('backupId')
         if not backup_id:raise RuntimeError('Completed backup has no physical backup ID')
@@ -228,8 +231,8 @@ def run(args):
         for _ in range(120):
             keys=[]
             for wal in record['required_wal_segments']:
-                prefix=env+'/liora-'+env+'/wals/'+wal[:16]+'/'+wal
-                response=s3.list_objects_v2(Bucket='liora-backup',Prefix=prefix)
+                prefix=wal_prefix(archive,wal)
+                response=s3.list_objects_v2(Bucket=archive['bucket'],Prefix=prefix)
                 keys.extend(x['Key'] for x in response.get('Contents',[]) if x['Key'].endswith(wal+'.lz4'))
             if len(keys)==len(record['required_wal_segments']):break
             time.sleep(2)
@@ -241,7 +244,6 @@ def run(args):
         record['namespace_uid']=created['metadata']['uid'];save()
         for name in ['r2-backup','cnpg-app','cnpg-superuser','backend-secrets','ghcr-pull-secret']:
             secret=kube(cfg,['-n',live,'get','secret',name,'-o','json']);secret['metadata']={'name':name,'namespace':ns};create(cfg,secret)
-        original_store=kube(cfg,['-n',live,'get','objectstore','r2-backup','-o','json'])
         cluster,store=make_restore(source,original_store,ns,backup_id,target,env)
         (directory/'restore-cluster.json').write_text(json.dumps(cluster,indent=2))
         create(cfg,store);create(cfg,cluster)

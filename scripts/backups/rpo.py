@@ -14,6 +14,7 @@ import boto3
 from botocore.config import Config
 import yaml
 from pitr import kube, sql, ROOT
+from archive import parameters, location, wal_prefix
 
 
 def cleanup_marker(config, namespace, primary, state):
@@ -27,6 +28,8 @@ def cleanup_marker(config, namespace, primary, state):
 def run(args):
     cfg=Path.home()/'.kube'/('config-prod' if args.environment=='prod' else 'config-dev-stage');ns='app-'+args.environment
     cluster=kube(cfg,['-n',ns,'get','cluster','liora-db','-o','json']);primary=cluster['status']['currentPrimary']
+    store=kube(cfg,['-n',ns,'get','objectstore',parameters(cluster)['barmanObjectName'],'-o','json'])
+    archive=location(cluster,store)
     if args.action=='start':
         assert not args.record.exists()
         table='rpo_probe_'+uuid.uuid4().hex[:12]
@@ -35,17 +38,18 @@ def run(args):
         sql(cfg,ns,primary,'SELECT pg_switch_wal();')
         sql(cfg,ns,primary,'INSERT INTO public.'+table+' VALUES (1);')
         state=json.loads(sql(cfg,ns,primary,"SELECT json_build_object('acknowledged_at',clock_timestamp(),'wal',pg_walfile_name(pg_current_wal_insert_lsn()),'table_oid','public."+table+"'::regclass::oid,'archive_timeout',current_setting('archive_timeout'));"))
-        state.update(environment=args.environment,table=table,archived=False,manual_switch_after_marker=False,
+        state.update(environment=args.environment,table=table,source_archive=archive,archived=False,manual_switch_after_marker=False,
                      rpo_objective_seconds=900 if args.environment=='prod' else 3600)
         args.record.parent.mkdir(parents=True,exist_ok=True);args.record.write_text(json.dumps(state,indent=2));args.record.chmod(0o600);print(json.dumps(state));return
     state=json.loads(args.record.read_text());assert state['environment']==args.environment
+    assert state.get('source_archive',archive)==archive, 'Archive changed during measurement'
     assert re.fullmatch('rpo_probe_[a-f0-9]{12}',state['table'])
     creds=yaml.safe_load((args.recovery_dir/'recovery.yaml').read_text())['database_backups']
     client=boto3.client('s3',endpoint_url=creds['endpoint'],region_name='auto',aws_access_key_id=creds['access_key_id'],aws_secret_access_key=creds['secret_access_key'],config=Config(connect_timeout=10,read_timeout=20,retries={'max_attempts':0}))
     committed=dt.datetime.fromisoformat(state['acknowledged_at']);deadline=committed.timestamp()+state['rpo_objective_seconds']
     while True:
-        wal=state['wal'];prefix=args.environment+'/liora-'+args.environment+'/wals/'+wal[:16]+'/'+wal
-        response=client.list_objects_v2(Bucket='liora-backup',Prefix=prefix)
+        wal=state['wal'];prefix=wal_prefix(archive,wal)
+        response=client.list_objects_v2(Bucket=archive['bucket'],Prefix=prefix)
         objects=[x for x in response.get('Contents',[]) if x['Key'].endswith(wal+'.lz4')]
         if objects:
             obj=objects[0];elapsed=(obj['LastModified']-committed).total_seconds();state.update(archived=True,wal_object=obj['Key'],archived_at=obj['LastModified'].isoformat(),observed_delivery_seconds=elapsed,observed_rpo_within_objective=0<=elapsed<=state['rpo_objective_seconds'])
