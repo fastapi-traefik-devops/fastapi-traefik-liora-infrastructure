@@ -20,7 +20,19 @@
 > [!NOTE]
 > Use the [new-host example](../edge/nftables/custom77-nat.nft.example). It forwards TCP `22200` to `192.168.77.200:22` without embedding the public IP.
 
-- [ ] On a new host without the table, adapt the public interface and install the example as `/etc/nftables.d/custom77-nat.nft`. On an existing host, add only the missing rule to that file:
+- [ ] On a new host without the table, copy the
+      [nftables example](../edge/nftables/custom77-nat.nft.example)
+      from the laptop checkout. Use the provider's root SSH access:
+
+   ```sh
+   read -r -p 'Current Proxmox public IPv4: ' PROXMOX_PUBLIC_IP
+   scp edge/nftables/custom77-nat.nft.example \
+     root@"$PROXMOX_PUBLIC_IP":/etc/nftables.d/custom77-nat.nft
+   ```
+
+- [ ] On Proxmox, check the public interface in the copied file. If it is
+      not `vmbr0`, edit `iifname` to match the active public interface.
+      If the table already exists, add only the missing VM 200 rule:
 
    ```nft
    # Proxmox VE 9 example for a new host. Adapt the public-facing interface.
@@ -51,7 +63,16 @@
 > [!NOTE]
 > Install [custom77-nat.service.example](../edge/nftables/custom77-nat.service.example) as `/etc/systemd/system/custom77-nat.service`.
 
-- [ ] Only on a host without a loader, install and enable the service:
+- [ ] Only on a host without a loader, copy the
+      [service example](../edge/nftables/custom77-nat.service.example)
+      from the laptop checkout:
+
+   ```sh
+   scp edge/nftables/custom77-nat.service.example \
+     root@"$PROXMOX_PUBLIC_IP":/etc/systemd/system/custom77-nat.service
+   ```
+
+   Then check that the file matches this unit:
 
    ```ini
    [Unit]
@@ -79,7 +100,13 @@
 
 ## Verify external access
 
-- [ ] On the trusted client, set `PROXMOX_PUBLIC_IP` to the host's current public IPv4 address. Test from an external connection with `ssh -p 22200 root-admin@"$PROXMOX_PUBLIC_IP"`.
+- [ ] From the trusted PC/laptop with the repository checkout, test the
+      external path with the prepared administrator private key:
+
+```sh
+read -r -p 'Current Proxmox public IPv4: ' PROXMOX_PUBLIC_IP
+ssh -i recovery/LIORA-id_ed25519 -p 22200 root-admin@"$PROXMOX_PUBLIC_IP"
+```
 - [ ] Verify the rule survives a controlled reboot when one is scheduled; a syntax check alone does not prove persistence.
 
 ### If the external SSH test fails

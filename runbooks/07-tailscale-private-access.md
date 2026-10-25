@@ -2,7 +2,14 @@
 
 **Where:** Management VM 200, from the repository checkout. Install the client and test VPN connectivity on your PC/laptop.
 
-This procedure clones Debian 13 template **9013** into VM **250** (`192.168.77.250/24`) on `vnet77`, then advertises `192.168.77.0/24` through Tailscale. Step 7 already placed the local, Git-ignored credentials in `recovery/` and [installed Ansible and Terraform](11-install-management-tools.md) on VM 200. Terraform reads the public key from that directory; Ansible uses its matching private key. The private key is never installed on VM 250.
+Terraform clones template **9013** into VM **250** at
+`192.168.77.250/24` on `vnet77`. Ansible configures VM 250 as a
+Tailscale router for `192.168.77.0/24`.
+
+First complete the VM 200 checkout, [tool installation](11-install-management-tools.md),
+recovery input transfer, and [Proxmox API access](12-create-proxmox-api-token.md).
+Terraform reads the SSH public key from the ignored `recovery/` directory.
+Ansible uses the matching private key on VM 200. VM 250 receives no private key.
 
 ## 1. Prepare infrastructure inputs
 
@@ -14,9 +21,14 @@ From the repository root on VM 200, load the prepared environment:
 source recovery/.env
 ```
 
-- [ ] Run `bash recovery/check_credentials.sh --tailscale` after restoring credentials. It makes a read-only Proxmox API request to check token access to template 9013. Keep the current API endpoint and node name in `recovery/.env`.
+- [ ] Run `bash recovery/check_credentials.sh --tailscale` after you transfer
+      the credentials. The checker reads template 9013 through the Proxmox API.
+      Keep the current API endpoint and node name in `recovery/.env`.
 - [ ] Confirm VM ID **250** and `192.168.77.250` are free before a new installation. Keep Terraform state in a restricted location.
-- [ ] Use the VM image storage selected when [creating template 9013](03-create-debian13-template.md). Set its ID once as `DISK_STORAGE` in `recovery/.env`; that file exports `TF_VAR_cloud_init_datastore_id` for Terraform. The current host uses `vmdata`.
+- [ ] Use the storage ID selected for
+      [template 9013](03-create-debian13-template.md). Set `DISK_STORAGE`
+      in `recovery/.env`. That file exports
+      `TF_VAR_cloud_init_datastore_id` for Terraform.
 
 ### If restoring an incomplete credential bundle
 
@@ -27,6 +39,24 @@ source recovery/.env
 
 > [!WARNING]
 > Inspect it and reconcile recovered Terraform state before applying. Do not create a second VM with the same ID. On a replacement host, update `DISK_STORAGE` after the template storage preflight.
+
+### If restoring Terraform state
+
+- [ ] From the repository root on VM 200, load the protected inputs and
+      compare the recovered module state with the replacement host:
+
+```sh
+source recovery/.env
+terraform -chdir=edge/tailscale/terraform init
+terraform -chdir=edge/tailscale/terraform state list
+ssh -i recovery/LIORA-id_ed25519 root@192.168.77.1 'qm status 250; qm config 250'
+terraform -chdir=edge/tailscale/terraform plan
+```
+
+> [!WARNING]
+> A state entry does not prove that VM 250 exists on the replacement host.
+> Review any proposed replacement of the Tailscale key, tailnet policy or
+> other surviving resources before applying a new plan.
 
 ## 2. Create the router VM and one-use Tailscale key
 

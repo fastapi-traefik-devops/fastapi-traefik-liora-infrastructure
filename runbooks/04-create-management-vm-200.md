@@ -1,6 +1,8 @@
 # Create management VM 200
 
 **Where:** Proxmox VE 9 host. VM 200 is created directly on Proxmox.
+The `/root/LIORA-id_ed25519.pub` path below is on the Proxmox host.
+All later repository commands run as `root-admin` in VM 200.
 
 ## Preflight
 
@@ -14,12 +16,13 @@
 ## Clone and configure VM 200
 
 - [ ] On a new host, make a full clone: `qm clone 9013 200 --name k3s-mgmt --full`.
-- [ ] Set the VM's Cloud-Init network and identity with a matching public-key file on the Proxmox host:
+- [ ] Set the VM's Cloud-Init network and identity with the public key copied
+      in [the SSH identity step](02-prepare-ssh-identity.md):
 
    ```bash
    qm set 200 --cores 2 --memory 2048
    qm set 200 --ipconfig0 ip=192.168.77.200/24,gw=192.168.77.1 --nameserver 1.1.1.1
-   qm set 200 --ciuser root-admin --sshkeys /path/to/admin-key.pub
+   qm set 200 --ciuser root-admin --sshkeys /root/LIORA-id_ed25519.pub
    qm cloudinit update 200
    ```
 

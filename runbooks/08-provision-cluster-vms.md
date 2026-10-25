@@ -13,8 +13,13 @@ Proxmox to inspect existing VMs and storage.
 ## Preflight
 
 - [ ] Confirm template `9013`, `vnet77`, gateway `192.168.77.1`, and VM disk storage from [the template runbook](03-create-debian13-template.md).
-- [ ] Check that `recovery/.env` contains the current Proxmox API endpoint, node, token, and `DISK_STORAGE`. Confirm that `recovery/LIORA-id_ed25519.pub` is the intended public key for every node.
-- [ ] Check any local `infrastructure/k3s-cluster/terraform/terraform.tfvars` overrides. Set `memory_mb = 8192` (maximum) and `memory_min_mb = 2048` (minimum) if those values are present; local values override the defaults.
+- [ ] Check the current Proxmox API endpoint, node, token, and
+      `DISK_STORAGE` in `recovery/.env`.
+- [ ] Confirm `recovery/LIORA-id_ed25519.pub` is the SSH public key for
+      all six nodes.
+- [ ] Check local `infrastructure/k3s-cluster/terraform/terraform.tfvars`.
+      If it overrides memory, use `memory_mb = 8192` for the maximum and
+      `memory_min_mb = 2048` for the minimum.
 - [ ] Inspect VMs `201`–`203` and `211`–`213` in Proxmox before planning. VM `200` is reserved for management and is not part of either cluster.
 
 ## Initialize Terraform and reconcile state
@@ -33,7 +38,9 @@ Proxmox to inspect existing VMs and storage.
 ### If a VM already exists outside Terraform state
 
 > [!WARNING]
-> Import each existing VM **before** planning an apply. Run only the commands for VMs present in Proxmox but absent from `terraform state list`. Keep the existing state file; do not start with an empty state to work around a conflict.
+> Import each existing VM before you apply a plan. Run only the import
+> commands for VMs that exist in Proxmox and are absent from
+> `terraform state list`. Keep the existing state file.
 
 - [ ] Import only the VMs that meet that condition:
 
@@ -50,7 +57,12 @@ The provider's [VM import format](https://github.com/bpg/terraform-provider-prox
 
 ## Review and apply the plan
 
-- [ ] Create and inspect the plan. On an empty host and state it should propose **six additions** with IDs `201`–`203` and `211`–`213`, template `9013`, bridge `vnet77`, selected Cloud-Init storage, matching static IPs, `root-admin`, the recovery public key, and ballooned memory with a 2 GiB minimum and 8 GiB maximum. Inspect every update or replacement of imported VMs.
+- [ ] Create and inspect the plan. On an empty host and state, require six
+      additions: VMs `201`–`203` and `211`–`213`.
+- [ ] Check template `9013`, bridge `vnet77`, selected Cloud-Init storage,
+      static IPs, user `root-admin`, and the recovery public key.
+- [ ] Check ballooned memory: 2 GiB minimum and 8 GiB maximum.
+      Inspect every update or replacement of an imported VM.
 
    ```sh
    terraform plan -out=k3s.tfplan

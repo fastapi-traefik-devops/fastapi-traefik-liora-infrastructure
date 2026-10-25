@@ -9,7 +9,8 @@
 ### If the host runs Proxmox VE 8
 
 > [!WARNING]
-> Complete the [official 8-to-9 upgrade procedure](https://pve.proxmox.com/wiki/Upgrade_from_8_to_9) before continuing. Recheck `pveversion` afterward. This runbook does not replace the upgrade procedure.
+> Use the [official 8-to-9 upgrade procedure](https://pve.proxmox.com/wiki/Upgrade_from_8_to_9).
+> When it is complete, run `pveversion` again. Continue only on version 9.
 
 ## Check nftables
 
@@ -22,6 +23,8 @@
 
 ## Project NAT scope
 
-- [ ] Use nftables for this project's custom DNAT. Keep Proxmox packages and the host's existing firewall ruleset intact. Apply the [project examples](../edge/nftables/README.md) through the [VM 200 SSH runbook](05-configure-vm200-ssh-dnat.md).
+- [ ] Use nftables for the project's custom DNAT. Preserve existing
+      Proxmox firewall rules. Apply the [project example](../edge/nftables/README.md)
+      during [VM 200 SSH setup](05-configure-vm200-ssh-dnat.md).
 
 **Done when:** Proxmox reports version 9 and `nft --version` succeeds.

@@ -2,7 +2,11 @@
 
 **Where:** Connect from management VM 200 to the Proxmox host over SSH; test the API from VM 200.
 
-The Tailscale and K3s Terraform modules read `TF_VAR_pm_endpoint`, `TF_VAR_pm_node`, and `TF_VAR_pm_api_token` from the local, Git-ignored `recovery/.env`. The token must be able to read template **9013**, clone/configure VMs **250**, **201–203**, and **211–213**, allocate VM disk space on the selected storage, and use `vnet77`.
+The Tailscale and K3s Terraform modules read `TF_VAR_pm_endpoint`,
+`TF_VAR_pm_node`, and `TF_VAR_pm_api_token` from ignored
+`recovery/.env`. The token needs access to template **9013**, VM IDs
+**250**, **201–203**, and **211–213**, the selected VM storage, and
+`vnet77`.
 
 ## Connect to Proxmox
 
@@ -33,37 +37,45 @@ Run on the Proxmox host:
 pveum user token add root@pam mytoken --privsep 0
 ```
 
-This token inherits `root@pam` permissions. Record the resulting secret as `TF_VAR_pm_api_token='root@pam!mytoken=<secret>'` in VM 200's `recovery/.env`. Use this option only when full Proxmox administration is intended for the automation token.
+This token inherits `root@pam` permissions. Record the secret as
+`TF_VAR_pm_api_token='root@pam!mytoken=<secret>'` in VM 200's
+`recovery/.env`. Use this option only if automation needs full
+Proxmox administration.
 
 ### Dedicated privilege-separated token
 
-Run on the Proxmox host. This example limits VM administration to the VM tree and disk allocation to the current `vmdata` storage. Replace `vmdata` with the actual VM disk storage ID if the provider differs.
-
-#### If VM disk storage is not `vmdata`
-
-> [!IMPORTANT]
-> Replace `/storage/vmdata` in the commands below with `/storage/<DISK_STORAGE>` from the template storage preflight before creating ACLs.
+Run on the Proxmox host. Use the storage ID selected for template 9013.
+The commands grant VM administration, VM disk allocation, and VNet use.
 
 #### Create the dedicated token and ACLs
 
 - [ ] Create the dedicated user and privilege-separated token, then inspect effective permissions:
 
 ```sh
+read -r -p 'VM disk storage ID used for template 9013: ' selected_storage
+[[ "$selected_storage" =~ ^[A-Za-z][A-Za-z0-9_.-]*[A-Za-z0-9]$ ]] || { echo 'Invalid storage ID' >&2; exit 1; }
+pvesm status --storage "$selected_storage" || exit 1
 pveum user add api-user@pve
 pveum acl modify / -user api-user@pve -role PVEAuditor
 pveum acl modify /vms -user api-user@pve -role PVEVMAdmin
-pveum acl modify /storage/vmdata -user api-user@pve -role PVEDatastoreAdmin
+pveum acl modify "/storage/$selected_storage" -user api-user@pve -role PVEDatastoreAdmin
 pveum acl modify /sdn/zones -user api-user@pve -role PVESDNUser
 pveum user token add api-user@pve automation-token --privsep 1
 pveum acl modify / -token 'api-user@pve!automation-token' -role PVEAuditor
 pveum acl modify /vms -token 'api-user@pve!automation-token' -role PVEVMAdmin
-pveum acl modify /storage/vmdata -token 'api-user@pve!automation-token' -role PVEDatastoreAdmin
+pveum acl modify "/storage/$selected_storage" -token 'api-user@pve!automation-token' -role PVEDatastoreAdmin
 pveum acl modify /sdn/zones -token 'api-user@pve!automation-token' -role PVESDNUser
 pveum user permissions api-user@pve
 pveum user token permissions api-user@pve automation-token
 ```
 
-Record the resulting secret as `TF_VAR_pm_api_token='api-user@pve!automation-token=<secret>'` in VM 200's `recovery/.env`. The example `pveum acl modify / -token 'api-user@pve!automation-token' -role PVEVMAdmin` is syntactically valid, but **alone** it grants no effective privilege to a separated token whose owning user has none; `PVEVMAdmin` also does not supply storage allocation or SDN access. The VM, storage, and SDN grants above address those separate paths. Check the final effective permissions before running Terraform. [Proxmox user/token permissions](https://github.com/proxmox/pve-docs/blob/master/pveum.adoc), [bpg Proxmox provider guidance](https://github.com/bpg/terraform-provider-proxmox/blob/main/docs/index.md).
+Record the secret as
+`TF_VAR_pm_api_token='api-user@pve!automation-token=<secret>'`
+in VM 200's `recovery/.env`. Check effective user and token permissions
+before Terraform. A separated token cannot exceed its owner's permissions.
+The ACLs above grant VM, storage, and SDN access separately.
+See [Proxmox permissions](https://github.com/proxmox/pve-docs/blob/master/pveum.adoc)
+and [provider guidance](https://github.com/bpg/terraform-provider-proxmox/blob/main/docs/index.md).
 
 ## Test the token from VM 200
 
@@ -79,7 +91,10 @@ printf 'Authorization: PVEAPIToken=%s\n' "$TF_VAR_pm_api_token" | \
     "${TF_VAR_pm_endpoint%/}/api2/json/nodes/${TF_VAR_pm_node}/qemu/9013/config"
 ```
 
-`HTTP 200` confirms that the token is accepted and can read template 9013. The `--insecure` flag matches this repository's default for a self-signed Proxmox certificate; remove it when the host certificate is trusted. The Terraform plan and live apply check VM cloning and disk allocation.
+`HTTP 200` confirms that the token can read template 9013. The
+`--insecure` flag permits the host's self-signed certificate. Remove
+the flag when the certificate is trusted. Terraform checks VM clone and
+disk allocation permissions during apply.
 
 ### If the API request does not return `HTTP 200`
 

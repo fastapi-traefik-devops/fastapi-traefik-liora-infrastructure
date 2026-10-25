@@ -26,8 +26,9 @@ Preserve these ignored token files with future datastore backups.
 
 ### If restoring an etcd snapshot
 
-> [!IMPORTANT]
-> A fresh cluster build does not restore application data. Use the original K3s server token and a separate [snapshot restore procedure](https://docs.k3s.io/datastore/backup-restore); a new token cannot decrypt the snapshot.
+- [ ] Use [the K3s etcd snapshot restore runbook](21-restore-k3s-etcd-snapshot.md)
+      with the matching snapshot and original server token. Do not run the
+      fresh bootstrap commands below for that cluster.
 
 - [ ] Install the playbook dependency and inspect each target list. Use the administrator private key restored to `recovery/LIORA-id_ed25519` on VM 200.
 
@@ -135,3 +136,7 @@ The merge playbook checks both identities and API VIPs before writing `~/.kube/c
    ```
 
 Expect contexts `dev-stage` and `prod`, users `admin-dev-stage` and `admin-prod`, and default context `dev-stage`. Specify `--context` for commands targeting a particular cluster.
+
+**Done when:** Both inventories complete, all six nodes are Ready in their
+respective clusters, the two API VIPs answer independently, and VM 200 has
+readable `config-dev-stage`, `config-prod`, and merged named contexts.

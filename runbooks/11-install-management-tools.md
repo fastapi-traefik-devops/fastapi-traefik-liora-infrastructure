@@ -1,8 +1,9 @@
 # Install management and operator tools
 
-**Where:** Management VM 200, Debian 13.
+**Where:** Management VM 200, Debian 13, infrastructure repository root.
 
-Terraform is the default command in the remaining runbooks. Install Terraform or OpenTofu; use `tofu` in place of `terraform` throughout if choosing OpenTofu.
+Install Terraform by default. If you select OpenTofu, use `tofu` in place
+of `terraform` in all later commands.
 
 ## Ansible
 
@@ -54,6 +55,57 @@ tofu version
 
 The installer method follows the [official OpenTofu Debian instructions](https://opentofu.org/docs/intro/install/deb/).
 
+## kubectl
+
+The inventories pin K3s `v1.36.5+k3s1`; use the matching Kubernetes client
+minor version. Recheck both inventory pins before changing this version.
+
+- [ ] Download the client and its checksum, verify them, and install the
+      client on VM 200:
+
+```sh
+(
+set -e
+umask 077
+kubectl_version=v1.36.5
+kubectl_arch="$(dpkg --print-architecture)"
+case "$kubectl_arch" in amd64|arm64) ;; *) echo 'Unsupported architecture' >&2; exit 1 ;; esac
+mkdir -p .local-work/tools
+curl -fL "https://dl.k8s.io/release/$kubectl_version/bin/linux/$kubectl_arch/kubectl" -o .local-work/tools/kubectl
+curl -fL "https://dl.k8s.io/release/$kubectl_version/bin/linux/$kubectl_arch/kubectl.sha256" -o .local-work/tools/kubectl.sha256
+(cd .local-work/tools && echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check)
+sudo install -o root -g root -m 0755 .local-work/tools/kubectl /usr/local/bin/kubectl
+kubectl version --client
+)
+```
+
+The download and checksum method follows the [official Kubernetes Linux installation guide](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/).
+
+## Helm
+
+- [ ] Install Helm from its Debian APT repository and check the version. Verify
+      the signing-key fingerprint before adding the repository:
+
+```sh
+(
+set -e
+umask 022
+sudo apt-get update
+sudo apt-get install -y curl gpg
+curl -fsSL https://packages.buildkite.com/helm-linux/helm-debian/gpgkey -o /tmp/liora-helm.asc
+helm_key_fingerprint="$(gpg --import --import-options=show-only --with-colons /tmp/liora-helm.asc | awk -F: '$1 == "fpr" {print $10}' | head -n 1)"
+test "$helm_key_fingerprint" = DDF78C3E6EBB2D2CC223C95C62BA89D07698DBC6
+sudo install -m 0644 -Dt /etc/apt/keyrings/ /tmp/liora-helm.asc
+printf 'Types: deb\nURIs: https://packages.buildkite.com/helm-linux/helm-debian/any/\nSuites: any\nComponents: main\nSigned-By: /etc/apt/keyrings/liora-helm.asc\n' |
+  sudo tee /etc/apt/sources.list.d/liora-helm.sources > /dev/null
+sudo apt-get update
+sudo apt-get install -y helm
+helm version
+)
+```
+
+The repository and fingerprint follow the [official Helm Debian installation guide](https://helm.sh/docs/intro/install/).
+
 ## Operator Python and browser tools
 
 - [ ] Work from the infrastructure repository root on the operator machine.
@@ -95,9 +147,11 @@ script that creates resources or performs application writes.
 
 ### Additional validation binaries
 
-- [ ] Install Helm, kubectl and the validation binaries required by the selected procedure, using its pinned source/version/checksum records.
+- [ ] Install any additional validation binaries required by the selected procedure using its pinned source/version/checksum records.
 - [ ] Keep local binaries under `.local-work/tools/` or another operator-owned path and pass their explicit paths to validators.
 - [ ] Install Gitleaks separately when a credential scan is required; it is not a Python dependency. Target source paths, enable redaction and exclude private operator data.
 - [ ] Recreate disposable tools/cache from their pins; preserve required private data through the recovery kit procedure.
 
-**Done when:** Ansible and Terraform/OpenTofu are available, the Python dependency check succeeds, Chromium dependencies are installed, and the wrapper imports the required operator packages.
+**Done when:** Ansible, Terraform/OpenTofu, kubectl and Helm report versions;
+the Python dependency check succeeds, Chromium dependencies are installed, and
+the wrapper imports the required operator packages.
