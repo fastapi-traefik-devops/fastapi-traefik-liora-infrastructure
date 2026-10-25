@@ -73,11 +73,21 @@ Do not delete entire `infra/` or `ci/` directories by pattern.
    initialization. `ci/test_phase1.py` copies it into fixtures, and
    `scripts/generate-client.sh` reads its Node image. Move the lock to an
    application-owned CI path and update all three consumers atomically. Preserve
-   pinned digests; this is not a tool upgrade.
+   pinned digests; this is not a tool upgrade. Use the flat path
+   `ci/images.lock.json` (implemented), or a path outside `ci/`. Never introduce
+   `ci/locks/images.lock.json`: the publisher bundle builder enumerates all
+   `ci/` entries and rejects nested names using `[A-Za-z0-9_.-]+`. A flat lock
+   is harmless bundle data within the 900 KiB limit. `registry.py` imports
+   `phase1`, but reading this lock occurs only during CI initialization.
 2. The runner invokes `ci/validate_phase1.py` and `ci/validate-platform.sh`.
    The former reads old JCasC, plugin/image locks and Docker Compose; the latter
    explicitly validates `argocd/`, `infra/kind/` and `monitoring/`. Removing these
    trees without adapting the callers breaks CI even though deployments use K3s.
+   `config` runs in all profiles, including `release` and `dev`; breaking
+   `validate_phase1.py` therefore also stops main publication and manual DEV.
+   `validate-platform.sh` runs only in `gitops` (`full`). It can be deleted
+   entirely with those legacy trees: separate `ci/validate.sh` retains strict
+   infrastructure-overlay and CRD validation.
 3. `.github/dependabot.yml` still includes `/infra/jenkins-host`. Update it when
    those Dockerfiles leave; preserve backend/frontend and Actions updates.
 4. Keep `Jenkinsfile`, `Jenkinsfile.dev`, `Jenkinsfile.promote`, `ci/phase1.py`,
@@ -94,6 +104,19 @@ Do not delete entire `infra/` or `ci/` directories by pattern.
    sources before retiring the latter: an initial historical import alone does
    not prove that later tool/image changes are preserved.
 
+7. Preserve both historical path-scoped allowlists in `.gitleaks.toml`.
+   `secret_scan()` invokes `gitleaks git` across history, where the deleted
+   `infra/jenkins-host/plugins.lock.txt`, old SealedSecret files and
+   `infra/kind/secrets/...` still exist. These are not dead-path exclusions.
+   Keep their existing path-plus-line-format restrictions; do not broaden or
+   delete them. The cleanup branch leaves `.gitleaks.toml` unchanged.
+8. Concrete migration-entrypoint consumer:
+   `scripts/kubernetes/manual-jenkins-ci.py::prepare()` reads the application's
+   current HEAD and runs `git show <HEAD>:Jenkinsfile.migration`. Removing the
+   file breaks this helper even when the installed job is disabled. Its test is
+   `scripts/kubernetes/tests/test-manual-jenkins-ci.py`; `docs/CI_CD.md` also
+   documents `migration-ci`. Retirement requires a paired infrastructure PR.
+
 ## Proposed cleanup commits and order
 
 All application cleanup commits go on `chore/remove-legacy-infrastructure` and
@@ -101,13 +124,14 @@ are reviewed through a PR. No direct main push, merge, deployment or job change
 is part of this plan. Each commit requires a concise explanatory body.
 
 1. **`refactor(ci): decouple checks from legacy infrastructure`**
-   Move the active image lock; adapt runner, fixtures, client generation and
+   Move the active image lock to flat `ci/images.lock.json`; adapt runner, fixtures, client generation and
    local validators. Preserve current functional/security gates and real
    infrastructure-overlay validation. Keep legacy trees until this commit passes.
 2. **`chore(repo): remove retired deployment and kind sources`**
    Remove approved `deploy/`, `argocd/`, `monitoring/`, `k8s/`, `infra/kind/`
    and obsolete host files after prerequisite comparison. Include affected
-   dependency configuration and reference fixes. If review is too large, split
+   dependency configuration and reference fixes. Preserve historical Gitleaks
+   allowlists unchanged. If review is too large, split
    application deployment copies and legacy platform sources into separate commits.
 3. **`docs(app): point operations to infrastructure runbooks`**
    Consolidate guides; archive unique execution history under infrastructure
@@ -117,10 +141,22 @@ is part of this plan. Each commit requires a concise explanatory body.
 4. **`chore(ci): retire the migration-only entrypoint`** — optional later commit.
    Perform only after confirming installed callers no longer need it. Do not
    silently remove the functional candidate contract or enable disabled jobs.
+   Prepare a paired infrastructure PR to retire or adapt
+   `manual-jenkins-ci.py`, its test and `docs/CI_CD.md`. Update the
+   `Jenkinsfile.promote` source-job choices, `PUBLISH_MODE`, compatibility tests
+   and documentation together. Because `trusted/publish` is an inline job,
+   source changes alone do not activate it: a separately approved Jenkins
+   checkpoint must install the reviewed definition and handle script approval.
+   Keep this entire retirement outside the present cleanup.
 
 Keep SQLAlchemy PR work, PROD promotion work and other open feature commits out
 of the cleanup branch unless they have already merged into the approved base.
 Do not rewrite imported history or use history filtering to remove these paths.
+After cleanup merges, owners of open branches that edit `phase1.py` or
+`test_phase1.py` must update from main and resolve the image-lock path before
+rerunning PR checks. Prefer merging main to preserve published history; any
+rebase of an existing PR requires its owner's explicit agreement. Do not rebase
+SQLAlchemy or PROD branches as an automatic cleanup action.
 
 ## Approval and execution checklist
 
@@ -242,3 +278,43 @@ An authorized infrastructure writer must publish that documentation branch.
   conditional cleanup review. Keep it disabled meanwhile.
 - Live CI after a future merge must follow the existing approved pipeline;
   this cleanup does not authorize changing jobs, schedules or helper pins.
+
+## Follow-up dependency review — 2026-10-25
+
+The owner identified three constraints requiring explicit plan wording. Checked
+the current source and recorded them above: historical Gitleaks allowlists, flat
+publisher-bundle paths and the concrete infrastructure migration-helper caller.
+The implemented branch already preserves both allowlists, uses flat
+`ci/images.lock.json` and retains `Jenkinsfile.migration` and its publisher
+compatibility. No corrective application source change is required for these
+three points.
+
+The local branch/ref table near the top is an initial-review snapshot, not a
+required current main position. The execution base is the fetched remote SHA
+recorded in execution results; always refresh refs before subsequent work.
+
+The differing `check-github-apps.sh` and `jobs.groovy` contain the new application
+repository name; upstream retains the old name. Current nonhistorical reference
+search found only the upstream historical README mentioning that diagnostic
+script. Its corrected tracked source is preserved in the reports archive. No
+current runbook or runtime installation was changed to use the old copy. If the
+diagnostic is made operational again, promote the corrected source into a
+focused infrastructure helper and update its paths and instructions first.
+
+### Additional history-scan evidence
+
+With the unchanged application `.gitleaks.toml` and the gate's redaction and
+ignore-comment options, Gitleaks scanned cleanup `HEAD` history explicitly
+(`--log-opts=HEAD`): **883 commits, no findings**.
+
+The default all-ref scan of this operator checkout scanned 917 commits and
+returned seven `generic-api-key` findings from commit
+`0d7d91dfd5fa51edca91b53e3a18389829d43abb`, reachable only from local
+`origin/docs/backend-api-evidence`, not from cleanup HEAD. The affected paths
+are `docs/backend-api-evidence-2026-10-24/evidence/provenance.json` and four
+`evidence/results/*.json` files. Findings have not been classified as real
+credentials or false positives. No values are recorded here. This is an
+existing separate-branch finding, not a cleanup regression. A full all-ref
+scan in a checkout containing that branch currently fails and needs separate
+triage; do not suppress findings or delete refs to make the check pass.
+Redacted reports and logs remain in ignored `.local-work/application-cleanup/`.
