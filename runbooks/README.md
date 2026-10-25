@@ -8,6 +8,12 @@
 | Disaster recovery | [Recovery checklist](../01-Disaster_recovery.md) | Restore matching data, credentials and configuration before resuming writes. |
 | Routine backup/recovery operations | [Backup operations](19-cnpg-r2-backup-pitr.md) | Preserve live endpoints; use guarded isolated exercises. |
 
+Each scenario file is the progress checklist. Mark a linked action complete
+only after its runbook's final check passes. On resumption, identify the last
+checked action and compare the next runbook's preflight with actual resources;
+do not rerun a create/apply/delete command merely because its checkbox is open.
+Use the runbook's **Where** line to decide which machine runs each command.
+
 ## Procedure map
 
 | Procedure | Purpose |
@@ -24,6 +30,12 @@
 | [17](17-migrate-jenkins-ci.md) | Jenkins installation, operation and state preservation |
 | [18](18-cloudnative-pg.md) | Fresh CNPG database installation and maintenance |
 | [19](19-cnpg-r2-backup-pitr.md) | R2 backup setup and cycle recovery |
+| [20](20-restore-live-postgresql.md) | Live PostgreSQL restore |
+| [21](21-restore-k3s-etcd-snapshot.md) | K3s datastore restore |
+| [22](22-install-fresh-jenkins-agents.md) | Fresh Jenkins agent installation |
+| [23](23-restore-jenkins-controller.md) | Jenkins controller-home restore |
+| [24](24-hold-surviving-automation.md) | Hold old Argo and Jenkins automation during recovery |
+| [25](25-unpack-credentials-zip.md) | Unpack protected credentials on the laptop |
 
 ## Operating rules
 

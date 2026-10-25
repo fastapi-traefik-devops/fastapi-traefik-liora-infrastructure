@@ -51,7 +51,7 @@ scripts/proxmox/               Proxmox host scripts
 .local-work/                   Ignored tools/cache and protected private operator data
 ```
 
-Prepare operator tools using [runbook 11](runbooks/11-install-management-tools.md#operator-python-and-browser-tools).
+Prepare management and operator tools using [runbook 11](runbooks/11-install-management-tools.md).
 `.local-work/` contains disposable tools/cache **and private recovery inputs**;
 classify and preserve private data using [the recovery checklist](recovery/README.md#private-operator-data) before cleanup.
 

@@ -1,14 +1,30 @@
 # Disaster recovery
 
-**Where:** Trusted administrator workstation, then replacement VM 200.
+**Where:** Trusted administrator laptop, then replacement VM 200.
 **Data rule:** Preserve recovery sources. Do not replace data restoration with empty initialization.
+
+**Resume after an interruption:** Find the last completed checkbox, then read
+the next linked procedure from its preflight. Compare its completion checks
+with live state before continuing. Do not rerun provisioning, initialization
+or deletion commands just because a previous operator checked a box.
 
 ## 1. Contain and select scope
 
+- [ ] Use a trusted laptop with Internet access and an infrastructure
+      repository checkout.
+- [ ] Obtain root SSH or console access to the preconfigured replacement
+      Proxmox host. Record its current public IPv4 address. Step 1 below
+      checks the Proxmox version and upgrades it if necessary.
+- [ ] Obtain the encrypted credentials archive and its separately stored
+      password. Keep the source archive and password separate.
+- [ ] [Unpack the credentials ZIP](runbooks/25-unpack-credentials-zip.md)
+      into the laptop checkout's ignored `recovery/` directory.
 - [ ] Identify failed infrastructure and protect any surviving hosts, PVCs and archives from deletion.
-- [ ] Block conflicting application promotion, Jenkins scheduling and Argo reconciliation.
+- [ ] [Hold automation on surviving clusters](runbooks/24-hold-surviving-automation.md).
+      Record each component that is unreachable.
 - [ ] Record incident start, selected infrastructure revision, application digest pairs and recovery targets.
-- [ ] Obtain provider console access and the replacement host's current public IPv4.
+- [ ] Identify the selected repository revision, Terraform state, and backup
+      set before changing the replacement host.
 - [ ] [Prepare recovery inputs](runbooks/10-prepare-recovery-inputs.md).
 
 ## 2. Select recovery artifacts
@@ -30,57 +46,136 @@
 
 ## 3. Rebuild the infrastructure
 
-- [ ] [Check Proxmox](runbooks/00-check-proxmox-9.md) and [recreate the VNet](runbooks/01-create-private-vnet.md).
-- [ ] [Restore the existing SSH identity](runbooks/02-prepare-ssh-identity.md); do not regenerate it as an incidental rebuild action.
-- [ ] [Recreate template 9013](runbooks/03-create-debian13-template.md), [VM 200](runbooks/04-create-management-vm-200.md) and its [SSH access](runbooks/05-configure-vm200-ssh-dnat.md).
-- [ ] [Restore the management checkout/private inputs](runbooks/06-bootstrap-management-checkout.md), [tools](runbooks/11-install-management-tools.md) and [Proxmox API access](runbooks/12-create-proxmox-api-token.md).
-- [ ] Reconcile recovered Terraform state against the replacement host before creating resources. Preserve Cloudflare state independently of replaced Proxmox resources.
-- [ ] [Restore Tailscale access](runbooks/07-tailscale-private-access.md).
-- [ ] [Provision cluster VMs](runbooks/08-provision-cluster-vms.md).
-- [ ] For the fresh-control-plane route, [install K3s](runbooks/09-install-k3s-clusters.md). For datastore recovery, use the matching snapshot/token procedure instead; do not mix the two routes.
+### Steps 1–6 — Work from your workstation
+
+The replacement VM 200 does not exist yet. Use the provider console or root
+access to the replacement Proxmox host.
+
+1. **Confirm the replacement host.** Require Proxmox VE 9 and nftables before
+   recreating private networking or host NAT.
+   - [ ] [Check Proxmox VE 9](runbooks/00-check-proxmox-9.md).
+2. **Recreate the private network.** Keep `vnet77`,
+   `192.168.77.0/24` and gateway `192.168.77.1` so restored VM addresses match.
+   - [ ] [Create the private VNet](runbooks/01-create-private-vnet.md).
+3. **Restore the administrator SSH identity.** Reuse the existing key pair
+   from the recovery archive; do not generate a different identity as part of
+   the rebuild.
+   - [ ] [Prepare the existing SSH key](runbooks/02-prepare-ssh-identity.md).
+4. **Recreate the Debian 13 template.** VM `9013` is the source for the
+   management and cluster VMs; choose storage available on the replacement host.
+   - [ ] [Create template 9013](runbooks/03-create-debian13-template.md).
+5. **Recreate the management VM.** Clone the template to VM `200` at
+   `192.168.77.200` with the restored administrator public key.
+   - [ ] [Create VM 200](runbooks/04-create-management-vm-200.md).
+6. **Restore the SSH entry point.** Forward public TCP `22200` to
+   `192.168.77.200:22`; the replacement host's public IP may differ.
+   - [ ] [Configure VM 200 SSH DNAT](runbooks/05-configure-vm200-ssh-dnat.md).
+
+### Continue on management VM 200
+
+> [!IMPORTANT]
+> Run the remaining infrastructure commands from VM 200. Use your workstation
+> as the SSH client; a linked procedure identifies any checks that run elsewhere.
+
+7. **Restore the control machine.** Connect to VM `200`. Clone infrastructure
+   into `~/fastapi-traefik-liora-infrastructure`, select the recorded revision,
+   and transfer the ignored `recovery/` files from the laptop.
+   - [ ] [Bootstrap the management checkout](runbooks/06-bootstrap-management-checkout.md).
+8. **Install the operator tools.** VM `200` needs Ansible, Terraform and
+   the tools used to inspect both Kubernetes clusters.
+   - [ ] [Install management tools](runbooks/11-install-management-tools.md).
+9. **Restore Proxmox API access.** Use a valid token for the replacement host
+   before any Terraform plan or apply.
+   - [ ] [Create or verify the Proxmox API token](runbooks/12-create-proxmox-api-token.md).
+10. **Reconcile infrastructure state.** Compare recovered Terraform state
+    with the replacement host before provisioning. Keep Cloudflare state
+    separate from Proxmox VM state.
+    - [ ] [Inspect router state and VM 250](runbooks/07-tailscale-private-access.md#if-restoring-terraform-state).
+    - [ ] [Inspect cluster VM state and existing IDs](runbooks/08-provision-cluster-vms.md#initialize-terraform-and-reconcile-state).
+11. **Restore private access.** Recreate VM `250` and reapprove the
+    `192.168.77.0/24` subnet route when required.
+    - [ ] [Provision the Tailscale router](runbooks/07-tailscale-private-access.md).
+12. **Restore the cluster VMs.** Reconcile or create VMs `201–203` and
+    `211–213` without replacing surviving data by accident.
+    - [ ] [Provision both VM groups](runbooks/08-provision-cluster-vms.md).
+13. **Choose the control-plane recovery route.** A fresh K3s bootstrap and
+    an etcd snapshot restore are different procedures; use the snapshot's
+    original server token only for the latter.
+    - [ ] For a fresh control plane, [install both K3s clusters](runbooks/09-install-k3s-clusters.md).
+    - [ ] For datastore recovery, [restore the matching etcd snapshot](runbooks/21-restore-k3s-etcd-snapshot.md).
 
 ## 4. Prepare recovery dependencies without starting the application
 
-- [ ] Create the environment namespaces on their assigned clusters. Restore application/database/registry credentials from matching private inputs; keep namespace and role identities unchanged.
-- [ ] Provision `cnpg-app` and `cnpg-superuser` from those restored values before creating recovery Clusters. Physical recovery retains database role passwords; match them to the selected recovery point.
-- [ ] Install CNPG, cert-manager and Barman using runbooks [18](runbooks/18-cloudnative-pg.md#1-install-the-operator) and [19](runbooks/19-cnpg-r2-backup-pitr.md#1-install-backup-dependencies-and-access).
-- [ ] Restore R2 access. Confirm the selected physical backup, source archive identity and required WAL.
-- [ ] Keep application reconciliation and prestart initialization held. Do not apply the fresh `initdb` Cluster as a substitute for a recovery bootstrap.
-- [ ] Restore edge/DNS/issuers using [runbook 15](runbooks/15-publish-application.md). Change only the three application hostnames and their challenge records.
+**Where:** VM 200 for Kubernetes commands; use the protected recovery kit for
+secrets and backup selection. Keep application writes, prestart and Argo
+automation held throughout this section.
+
+14. **Re-establish operator dependencies.** Use explicit kubeconfigs for both
+    clusters and the recovered credentials for each environment.
+    - [ ] [Prepare the operator tools](runbooks/11-install-management-tools.md#operator-python-and-browser-tools).
+    - [ ] [Validate the recovered private inputs](recovery/README.md#verification).
+15. **Install platform operators.** CNPG, cert-manager and Barman must exist
+    before recovery custom resources are applied; no empty database is created.
+    - [ ] [Install CNPG in both clusters](runbooks/18-cloudnative-pg.md#1-install-the-operator).
+    - [ ] [Install cert-manager and Barman only](runbooks/19-cnpg-r2-backup-pitr.md#install-platform-operators-in-either-scenario).
+16. **Prepare the original database identities.** Restore the matching
+    application, registry, R2 and database credentials. Keep the original
+    `app_owner` and `postgres` passwords associated with the selected backup.
+    - [ ] [Match the backup and credential inputs](runbooks/10-prepare-recovery-inputs.md#select-the-recovery-route).
+17. **Restore the edge prerequisites.** Use the replacement public IP for the
+    application DNS records; prepare the edge and issuers without serving an
+    unverified application.
+    - [ ] [Provision edge VM 240](runbooks/15-publish-application.md#1-inspect-and-provision-the-edge).
+    - [ ] [Update only the application DNS records](runbooks/15-publish-application.md#2-dns-and-certificate-prerequisites).
+    - [ ] [Provision certificate issuers](runbooks/15-publish-application.md#3-provision-cluster-local-certificate-management).
 
 ## 5. Restore application data and state
 
-- [ ] Render the environment's Cluster from its overlay without applying the fresh database group.
-- [ ] Keep Cluster name `liora-db`, database image/storage/resources and environment instance count; remove `bootstrap.initdb` and the source-archive WAL archiver entry from the recovery manifest.
-- [ ] Create a separate `source-archive` ObjectStore referencing the original environment destination and R2 Secret; omit its `retentionPolicy`.
-- [ ] Add an `externalClusters` source using `barman-cloud.cloudnative-pg.io`, `barmanObjectName: source-archive` and the original archive `serverName`.
-- [ ] Set `bootstrap.recovery.source` to that external source and `recoveryTarget.backupID` / `targetTime` to the selected physical backup ID and UTC target.
-- [ ] Apply the read-source ObjectStore before the recovery Cluster. Wait for Cluster Ready and every requested instance before applying application workloads.
-- [ ] Keep restore reads isolated from source archive writing/retention. Configure a distinct post-recovery archive server identity and record it in Git, recovery inputs and the coordinator/monitoring recovery record before enabling new archiving. Preserve the source archive for further recovery.
-- [ ] Require database readiness, owner `app_owner`, database `app`, expected extensions and migration state.
-- [ ] Reconcile the stable `db:5432` Service selector with `cnpg.io/cluster: liora-db` and `role: primary`; confirm its endpoints resolve to the restored primary.
-- [ ] Commit the recovery-bootstrap and archive configuration to the environment GitOps definition before releasing Argo self-healing. Require a diff with no database replacement, empty initialization or source-archive writer.
-- [ ] Deploy the preserved frontend/backend digest pair. Run only the migration/initialization actions compatible with the restored schema and selected images.
-- [ ] Verify existing administrator login and recovered business data; perform and remove a disposable CRUD item.
-- [ ] Verify private-edge HTTPS, then canonical public access from an external browser.
-
-**Stop:** Do not use `scripts/backups/pitr.py` to perform live recovery. It is an isolated exercise that creates disposable markers/resources and removes them. Keep the application held if the selected recovery target, required WAL or matching credentials are missing.
+- [ ] Restore DEV data and confirm its selected recovery point:
+      [live PostgreSQL restore](runbooks/20-restore-live-postgresql.md).
+- [ ] Restore STAGE data and confirm its selected recovery point:
+      [live PostgreSQL restore](runbooks/20-restore-live-postgresql.md).
+- [ ] Restore PROD data and confirm its selected recovery point:
+      [live PostgreSQL restore](runbooks/20-restore-live-postgresql.md).
+- [ ] After each restore, check the preserved frontend/backend image pair,
+      recovered data, login, and HTTPS through the canonical hostname.
 
 ## 6. Restore platform state
 
-- [ ] Recover Jenkins using the [controller state checklist](runbooks/17-migrate-jenkins-ci.md#6-controller-backup-and-recovery-checklist) and the matching home/configuration archive. Start under an execution hold.
-- [ ] Verify administrator access, credential decryption, retained users/jobs/history and pinned helpers before allowing builds.
-- [ ] Recreate monitoring and private access using [runbook 16](runbooks/16-private-platform-access.md); restore private Grafana and Slack credentials.
-- [ ] Restore GitOps roots/children using [runbook 14](runbooks/14-install-argocd.md), with automation disabled until resource diffs match the recovery state.
-- [ ] Reinstall the VM 250 coordinator from [runbook 19](runbooks/19-cnpg-r2-backup-pitr.md#2-install-the-coordinator-on-vm-250). Inspect retained intent before enabling a schedule.
+Continue here only after the restored application passes the checks in section 5.
+Keep Jenkins scheduling and GitOps automation disabled while comparing state.
+
+18. **Restore private administration and monitoring.** Use the recovered
+    Grafana and notification credentials on the correct cluster.
+    - [ ] [Configure Admin VIPs and monitoring](runbooks/16-private-platform-access.md).
+19. **Restore Jenkins state.** Match the stopped controller-home archive with
+    its mounted configuration. Start under an execution hold and verify users,
+    history and credential decryption before allowing builds.
+    - [ ] [Restore the Jenkins controller home](runbooks/23-restore-jenkins-controller.md).
+20. **Restore GitOps ownership.** Compare child and root Application diffs
+    against the recovered database and application revision before automation.
+    - [ ] [Install Argo CD and reconcile resources](runbooks/14-install-argocd.md).
+21. **Restore backup coordination.** Reinstall on VM `250`; inspect retained
+    cycle intent and the global fence before enabling the timer.
+    - [ ] [Install and inspect the coordinator](runbooks/19-cnpg-r2-backup-pitr.md#2-install-the-coordinator-on-vm-250).
 
 ## 7. Release operation
 
-- [ ] Require source/running image agreement, recovered data checks, HTTPS/login/CRUD and correct Argo ownership.
-- [ ] Require PROD standby placement and asynchronous streaming health.
-- [ ] Verify WAL archiving to the selected post-recovery destination and a coordinated base-backup cycle.
-- [ ] Restore child Argo policies before roots and restore the recorded Jenkins allowlist/triggers.
-- [ ] Restore the single VM 250 timer only after its fence/state is understood.
-- [ ] Record recovery time, recovered point, data loss, retained evidence and release decision in the incident record.
+22. **Prove the recovered service.** Confirm source/running image agreement,
+    recovered data, HTTPS/login/CRUD and correct Argo ownership on all three
+    environments; require PROD standby placement and asynchronous replication.
+    - [ ] [Check application access](runbooks/13-deploy-application-manifests.md#5-check-application-access).
+    - [ ] [Check PROD database replication](runbooks/18-cloudnative-pg.md#4-verify-database-and-application).
+23. **Prove backup protection.** Check WAL archiving to the new destination
+    and a completed coordinated base-backup cycle before restoring schedules.
+    - [ ] [Run and inspect the backup coordinator](runbooks/19-cnpg-r2-backup-pitr.md#2-install-the-coordinator-on-vm-250).
+24. **Release automation deliberately.** Restore child Argo policies before
+    roots, the recorded Jenkins allowlist/triggers and the single VM `250`
+    timer only after its retained state is understood.
+    - [ ] [Review Argo automation](runbooks/14-install-argocd.md#4-adopt-manually-then-review-automation).
+    - [ ] [Activate approved Jenkins delivery](runbooks/17-migrate-jenkins-ci.md#4-activate-delivery).
+    - [ ] [Enable the backup timer](runbooks/19-cnpg-r2-backup-pitr.md#2-install-the-coordinator-on-vm-250).
+25. **Record the recovery result.** Record recovery time, recovered point,
+    data loss, retained evidence and release decision in the incident record.
 
 **Done when:** Recovered data and platform identities are usable, application checks pass, backup protection is restored, and only approved automation has resumed.
