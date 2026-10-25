@@ -32,8 +32,8 @@ Use the runbook's **Where** line to decide which machine runs each command.
 | [19](19-cnpg-r2-backup-pitr.md) | R2 backup setup and cycle recovery |
 | [20](20-restore-live-postgresql.md) | Live PostgreSQL restore |
 | [21](21-restore-k3s-etcd-snapshot.md) | Optional manual K3s datastore restore |
-| [22](22-install-fresh-jenkins-agents.md) | Fresh Jenkins agent installation |
-| [23](23-restore-jenkins-controller.md) | Jenkins controller-home restore |
+| [22](22-install-fresh-jenkins-agents.md) | Jenkins agent connection for fresh or restored homes |
+| [23](23-restore-jenkins-controller.md) | Stopped Jenkins backup and controller-home restore |
 | [24](24-hold-surviving-automation.md) | Hold old Argo and Jenkins automation during recovery |
 | [25](25-unpack-credentials-zip.md) | Unpack protected credentials on the laptop |
 

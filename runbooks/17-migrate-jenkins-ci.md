@@ -62,8 +62,8 @@ Never place publishing credentials on `host-ci`.
 
 ## 3. Prepare pinned agents and jobs
 
-- [ ] For a new controller home, complete
-      [fresh agent installation](22-install-fresh-jenkins-agents.md) first.
+- [ ] For either a fresh or restored home, complete
+      [agent connection](22-install-fresh-jenkins-agents.md) first.
 
 - [ ] Review the controller, agent images and resource settings under [Jenkins manifests](../kubernetes/platform/nonprod/jenkins/).
 - [ ] Prepare matching immutable trusted helper bundles from the helper's pinned application revision:

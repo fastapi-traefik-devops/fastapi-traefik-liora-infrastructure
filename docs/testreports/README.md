@@ -40,3 +40,5 @@ required for a fresh deployment or disaster recovery.
 
 - [Cilium alternative discussion](NETWORKING_CILIUM_ALTERNATIVE.md): historical design context; the platform retains Flannel and the embedded K3s policy controller.
 - [Workspace consolidation](LOCAL_WORKSPACE_REPORT.md): migration-specific tool/evidence locations. Current operator setup is in [runbook 11](../../runbooks/11-install-management-tools.md#operator-python-and-browser-tools).
+
+- [Jenkins recovery and agent procedures](JENKINS_RECOVERY_RUNBOOKS_2026-10-25.md) — runbooks 22/23, reusable helpers and local checks.

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Deploy bounded NONPROD CI workers while preserving the restored execution hold."""
+"""Connect bounded NONPROD CI workers while preserving the selected controller home."""
 
 import argparse
 import base64
+import copy
 import datetime
 import hashlib
 import http.cookiejar
@@ -83,13 +84,31 @@ println JsonOutput.toJson([quiet: j.isQuietingDown(), executors: j.numExecutors,
     return request
 
 
+def configure_controller(resources, deployment):
+    # Preserve the selected home, image, resources and existing startup checks.
+    controller = next(r for r in resources if r['kind'] == 'Deployment' and r['metadata']['namespace'] == 'jenkins')
+    controller['spec'] = copy.deepcopy(deployment['spec'])
+    config_volume = next(v for v in controller['spec']['template']['spec']['volumes'] if v['name'] == 'config')
+    config_name = config_volume['configMap']['name']
+    config = next(r for r in resources if r['kind'] == 'ConfigMap' and r['metadata']['name'] == 'jenkins-migration-hold')
+    config['metadata']['name'] = config_name
+    config['data']['agent-hold.groovy'] = 'jenkins.model.Jenkins.get().doQuietDown(false, 0, "Agent setup hold", false)\n'
+    mounts = controller['spec']['template']['spec']['containers'][0]['volumeMounts']
+    mounts[:] = [m for m in mounts if m.get('subPath') != 'agent-hold.groovy']
+    mounts.append({'name': 'config', 'mountPath': '/var/jenkins_home/init.groovy.d/01-agent-hold.groovy',
+                   'subPath': 'agent-hold.groovy', 'readOnly': True})
+    # Do not apply another copy of the same ConfigMap earlier in the resource list.
+    resources = [r for r in resources if not (r is not config and r['kind'] == 'ConfigMap' and r['metadata']['name'] == config_name)]
+    resources = [r for r in resources if not (r['kind'] == 'PersistentVolumeClaim' and r['metadata']['namespace'] == 'jenkins')]
+    return resources, config_name
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('restore_directory', type=Path, help='Accepted state-restore receipt directory')
+    parser.add_argument('restore_directory', type=Path, nargs='?',
+                        help='Optional historical receipt directory; not required for installation')
     args = parser.parse_args()
     os.umask(0o077)
-    if not (args.restore_directory / 'runtime-acceptance.json').is_file():
-        raise RuntimeError('Complete the held state acceptance first')
     rendered = run(['kustomize', str(ROOT / 'kubernetes/platform/nonprod/jenkins/agents')])
     resources = list(yaml.safe_load_all(rendered))
     for resource in resources:
@@ -101,16 +120,12 @@ def main():
     resources.append(bundle['prepare'](ROOT.parent / 'fastapi-traefik-liora-application'))
     held_request()
     deployment = json.loads(run(['-n', 'jenkins', 'get', 'deployment', 'jenkins', '-o', 'json']))
-    volumes = deployment['spec']['template']['spec']['volumes']
-    if not any(v.get('persistentVolumeClaim', {}).get('claimName') == 'jenkins-home-migrated' for v in volumes):
-        raise RuntimeError('Expected the accepted migrated controller home')
+    resources, config_name = configure_controller(resources, deployment)
     directory = ROOT / '.local-work/private/phase9' / ('agents-' + datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ'))
     directory.mkdir(mode=0o700, parents=True)
     save(directory / 'controller-before.json', json.dumps(deployment).encode())
-    save(directory / 'configuration-before.json', run(['-n', 'jenkins', 'get', 'configmap', 'jenkins-migration-hold', '-o', 'json']))
-    for name in ('expected-files.json', 'current-admin.xml'):
-        save(directory / name, (args.restore_directory / name).read_bytes())
-    save(directory / 'desired.yaml', rendered)
+    save(directory / 'configuration-before.json', run(['-n', 'jenkins', 'get', 'configmap', config_name, '-o', 'json']))
+    save(directory / 'desired.yaml', yaml.safe_dump_all(resources).encode())
     save(directory / 'publisher-source.json', json.dumps(resources[-1], indent=2).encode())
     namespaces = [r for r in resources if r['kind'] == 'Namespace' and r['metadata']['name'] != 'jenkins']
     for namespace in namespaces:
@@ -130,6 +145,7 @@ def main():
         if resource['kind'] != 'Deployment':
             apply(resource)
     controller = next(r for r in resources if r['kind'] == 'Deployment' and r['metadata']['namespace'] == 'jenkins')
+    controller['spec']['template'].setdefault('metadata', {}).setdefault('annotations', {})['liora.aprt.info/agent-configuration'] = directory.name
     apply(controller)
     run(['-n', 'jenkins', 'rollout', 'status', 'deployment/jenkins', '--timeout=900s'])
     request = held_request()

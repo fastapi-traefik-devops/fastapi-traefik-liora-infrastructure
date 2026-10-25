@@ -1,4 +1,16 @@
-# Jenkins controller foundation
+# Jenkins configuration
+
+For a fresh controller, follow [runbook 17](../../../../runbooks/17-migrate-jenkins-ci.md).
+Connect the two workers with [runbook 22](../../../../runbooks/22-install-fresh-jenkins-agents.md).
+The agent helper preserves the selected controller PVC and does not require a
+migration receipt. Do not apply `agents/` or `initial-cycle/` directly over a
+fresh home. Use [runbook 23](../../../../runbooks/23-restore-jenkins-controller.md)
+for stopped-home backup and restoration to a new PVC with the archived administrator.
+
+The configuration history below describes the existing overlays and pins;
+operator procedures take precedence over historical execution steps.
+
+# Configuration history
 
 The default overlay remains the Phase 8 foundation for fresh bootstrap. The
 current Phase 9 controller uses the [`agents/`](agents/kustomization.yaml) overlay,
