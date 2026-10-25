@@ -126,8 +126,9 @@ Slack message was sent; unrelated Slack behavior was not investigated.
 - Both Ansible inventory syntax checks pass. Changed Python parses; operator
   shell blocks and installer syntax pass. Documentation links/anchors pass.
 - Before/after comparison retained the same protected application/database/Jenkins
-  Pod/controller/PVC UIDs, images and Secret hashes. Running containers started
-  before this maintenance. Database contents were not modified by this task.
+  Pod/controller/PVC UIDs, images and Secret hashes at the backup-rollout
+  checkpoint, before the later concurrent STAGE promotions. Running containers
+  started before this maintenance. Database contents were not modified by this task.
 - HTTPS through private edge `.240`, with each canonical hostname and certificate
   validation, returned 200 for DEV, STAGE and PROD. Direct public-IP access from
   this operator host returned connection refused; external public reachability
@@ -156,7 +157,8 @@ The owner's final decision superseded the proposed separate off-host destination
 and password-file request. The existing `recovery/make_recovery_backup.sh`
 workflow owns encrypted archive creation; the owner keeps its copy outside the
 host. No new destination, password file or archive service was configured. The
-owner-provided helper was inspected and left unchanged and untracked.
+owner-provided helper was inspected and left unchanged. It was committed
+independently during this task as `85e02f4`.
 
 The current actual server tokens were read from all three nodes of each cluster
 without generation or rotation. Matching values are stored once at:
@@ -206,3 +208,15 @@ host using the existing helper. Snapshot creation/upload, normal recurring
 operation, integrity checks and alert configuration are complete. Restoration
 was not performed. Full-system DR and the separately planned recovery exercises
 remain separate work; checksum success is not restoration evidence.
+
+
+## Concurrent repository changes
+
+While this work ran, upstream advanced with Jenkins publisher pinning, Phase 9
+status updates, DR evidence relocation and STAGE promotions for application
+`bad88a611b5c`. Those commits were preserved through a normal merge of upstream
+`46fddd1`; no history was rebased, squashed or force-pushed. The later STAGE image
+changes belong to that concurrent CI/CD work, not this backup task. The merged
+application overlays and Jenkins definitions retain the upstream versions.
+The owner also independently committed the unchanged encrypted-archive helper
+as `85e02f4`; its source hash remained unchanged during this backup work.
