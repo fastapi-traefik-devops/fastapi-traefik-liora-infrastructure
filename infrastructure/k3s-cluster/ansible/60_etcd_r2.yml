@@ -37,7 +37,9 @@
       changed_when: false
     - name: Require original node name
       ansible.builtin.assert:
-        that: actual_hostname.stdout == inventory_hostname
+        that:
+          - actual_hostname.stdout == inventory_hostname
+          - inventory_hostname is match('^k3s-' + ('1' if backup_cluster == 'nonprod' else '2') + '-0[123]$')
     - name: Check the native snapshot implementation version
       ansible.builtin.command: /usr/local/bin/k3s --version
       register: actual_version

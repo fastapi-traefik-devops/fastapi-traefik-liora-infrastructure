@@ -76,6 +76,14 @@ class EtcdTest(unittest.TestCase):
             self.assertEqual(json.loads((output/'manifest.json').read_text())['snapshot_sha256'],'fixture-sha')
             self.assertEqual((output/'server.token').stat().st_mode & 0o777,0o600)
 
+    def test_cli_explains_safe_refusals_without_external_secret_text(self):
+        values={'database_backups':{'bucket':'liora-backup','endpoint':'https://fixture','region':'auto','access_key_id':'fake','secret_access_key':'fake'}}
+        for error,expected in [(etcd_r2.EtcdError('Selected snapshot is absent'),'Selected snapshot is absent'),(RuntimeError('FIXTURE_SECRET_NEVER_PRINT'),'RuntimeError')]:
+            with patch.object(sys,'argv',['etcd_r2.py','list','--cluster','nonprod']), patch.object(Path,'read_text',return_value=''), patch.object(etcd_r2.yaml,'safe_load',return_value=values), patch.object(etcd_r2.boto3,'client'), patch.object(etcd_r2,'list_snapshots',side_effect=error):
+                with self.assertRaises(SystemExit) as stopped:etcd_r2.main()
+            self.assertIn(expected,str(stopped.exception))
+            self.assertNotIn('FIXTURE_SECRET_NEVER_PRINT',str(stopped.exception))
+
     def test_native_rule_firing_first_error_stale_and_recovery(self):
         tool=ROOT/'.local-work/validation-tools/promtool'
         with tempfile.TemporaryDirectory(dir=ROOT/'.local-work') as tmp:

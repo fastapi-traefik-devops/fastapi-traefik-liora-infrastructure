@@ -17,6 +17,10 @@ import boto3
 from botocore.config import Config
 import yaml
 
+class EtcdError(ValueError):
+    """A fixed operator-safe refusal; external exception text stays private."""
+
+
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -34,7 +38,7 @@ def list_snapshots(client, bucket, cluster):
         result.extend(o for o in page.get('Contents', []) if snapshot_name(cluster, o['Key'].removeprefix(prefix)) and o['Size'] > 0)
         if not page.get('IsTruncated'): return sorted(result, key=lambda o: o['LastModified'], reverse=True)
         following = page.get('NextContinuationToken')
-        if not following or following == token: raise ValueError('Invalid pagination')
+        if not following or following == token: raise EtcdError('Invalid pagination')
         token = following
 
 
@@ -44,27 +48,27 @@ def verify_snapshot(path):
     with zipfile.ZipFile(path) as archive:
         members = archive.infolist()
         if len(members) != 1 or members[0].filename != path.name.removesuffix('.zip'):
-            raise ValueError('Unexpected snapshot archive contents')
+            raise EtcdError('Unexpected snapshot archive contents')
         digest = hashlib.sha256(); tail = b''; size = 0
         with archive.open(members[0]) as stream:
             while chunk := stream.read(1024 * 1024):
                 size += len(chunk); chunk = tail + chunk
                 digest.update(chunk[:-32]); tail = chunk[-32:]
-        if size <= 32 or digest.digest() != tail: raise ValueError('Etcd snapshot checksum mismatch')
+        if size <= 32 or digest.digest() != tail: raise EtcdError('Etcd snapshot checksum mismatch')
     with path.open('rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
 def attach_identity(source, output, snapshot, digest, metadata, cluster):
     checked = subprocess.run([sys.executable, str(ROOT / 'scripts/recovery/verify-k3s-recovery.py'), str(source)], capture_output=True, timeout=90)
-    if checked.returncode: raise ValueError('Original recovery identity set failed verification')
+    if checked.returncode: raise EtcdError('Original recovery identity set failed verification')
     manifest = json.loads((source / 'manifest.json').read_text())
     token = (source / 'server.token').read_text().strip()
     password = token.split('::', 1)[1].split(':', 1)[1] if token.startswith('K10') else token
     token_hash = hashlib.sha256(password.encode()).hexdigest()[:12]
     if (manifest['cluster'] != cluster or metadata.get('k3s-cluster-id') != manifest['cluster_uid']
             or metadata.get('k3s-token-hash') != token_hash):
-        raise ValueError('Snapshot metadata does not match the selected token/cluster')
+        raise EtcdError('Snapshot metadata does not match the selected token/cluster')
     shutil.copyfile(source / 'server.token', output / 'server.token')
     (output / 'server.token').chmod(0o600)
     for node in manifest['nodes']:
@@ -92,7 +96,7 @@ def main():
     args = p.parse_args()
     try:
         value = yaml.safe_load((args.recovery_dir / 'recovery.yaml').read_text())['database_backups']
-        if value['bucket'] != 'liora-backup': raise ValueError('Unexpected bucket')
+        if value['bucket'] != 'liora-backup': raise EtcdError('Unexpected bucket')
         client = boto3.client('s3', endpoint_url=value['endpoint'], region_name=value['region'],
             aws_access_key_id=value['access_key_id'], aws_secret_access_key=value['secret_access_key'],
             config=Config(connect_timeout=10, read_timeout=20, retries={'max_attempts': 0}))
@@ -100,9 +104,10 @@ def main():
         if args.action == 'list':
             print(json.dumps([{'name': Path(o['Key']).name, 'key': o['Key'], 'bytes': o['Size'], 'uploaded_at': o['LastModified'].isoformat()} for o in objects], indent=2)); return
         if not args.snapshot or not snapshot_name(args.cluster, args.snapshot) or args.output is None:
-            raise ValueError('Download needs an exact snapshot name and new output directory')
+            raise EtcdError('Download needs an exact snapshot name and new output directory')
         key = 'etcd/' + args.cluster + '/' + args.snapshot
-        if key not in [o['Key'] for o in objects]: raise ValueError('Selected snapshot is absent')
+        if key not in [o['Key'] for o in objects]: raise EtcdError('Selected snapshot is absent')
+        if args.output.exists(): raise EtcdError('Output directory exists; choose a new one')
         args.output.mkdir(parents=True, exist_ok=False, mode=0o700)
         path = args.output / args.snapshot
         response = client.get_object(Bucket=value['bucket'], Key=key)
@@ -116,7 +121,8 @@ def main():
             attach_identity(args.identity_set, args.output, args.snapshot, sha, response.get('Metadata', {}), args.cluster)
         print(json.dumps({'key': key, 'download': str(path), 'sha256': sha, 'zip_crc_and_etcd_sha256': True, 'restoration_performed': False}))
     except Exception as error:
-        raise SystemExit('Etcd R2 operation stopped (' + type(error).__name__ + '); preserve files and inspect privately')
+        reason = str(error) if isinstance(error, EtcdError) else type(error).__name__ + '; inspect privately'
+        raise SystemExit('Etcd R2 operation stopped: ' + reason + '; preserve files')
 
 
 if __name__ == '__main__': main()
