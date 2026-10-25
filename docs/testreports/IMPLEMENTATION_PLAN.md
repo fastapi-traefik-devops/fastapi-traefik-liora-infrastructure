@@ -639,7 +639,8 @@ confirmed external Tailscale browser access and passwords; Phase 8 is closed.
 ## Phase 9 — Move promotion and CI ownership
 
 Status: **in progress; automatic STAGE acceptance, restored gate profiles and manual DEV
-deployment live since 2026-10-24; manual PROD release implemented, first release pending**.
+deployment live since 2026-10-24; first PROD release `v1.0.0` and rollback drill done on
+2026-10-25**. Target-state test report: [PHASE9_TARGET_STATE](PHASE9_TARGET_STATE.md).
 User guide and setup from zero: [CI/CD](../CI_CD.md).
 The current state and how it works are in [Current CI/CD state](#current-cicd-state--2026-10-25);
 the text that follows it is the historical record of the migration.
@@ -797,8 +798,15 @@ Older ConfigMaps stay in the cluster for rollback. Live bundle on 2026-10-25:
 | `f96cb41` (PR #70) | publisher with DEV support, STAGE unchanged | `e509095`, `54fd02a` accepted |
 | `5243708` (PR #71) | `dev` = `release` gates | `9cbcfae`, `8f4d266` accepted |
 | `cce22bf` (PR #73) | STAGE and first DEV deployment from Jenkins | `68c90bc`, `5d4a9fb` accepted; DEV `90ec738` |
+| `9bd6f60` (PR #58 head) | `dev-build`, DEV deployment | DEV `698889e` |
+| `2a6e05a` (PR #58) | target-state STAGE cycle | `289f323`, `004b90e` accepted |
+| `48b443f` (`v1.0.0`) | first PROD release | `e8c303f`, PR #15 `da4704a` |
+| `2a6e05a` (`v1.0.1`) | second PROD release | `120abb7`, PR #16 `2026117` |
+| `48b443f` (`v1.0.0`) | PROD rollback by re-release | `6e097f4`, PR #17 `a32e4db` |
 
-Full-profile PR runs: PR #69 passed all 18 gates and `gitops` after the triage fixes below.
+Full-profile PR runs: PR #69 passed all 18 gates and `gitops` after the triage fixes below;
+PR #58 passed again after pull requests returned to `full`. Details and timings:
+[target-state test report](PHASE9_TARGET_STATE.md).
 
 #### Incidents and fixes, 2026-10-23 to 2026-10-25
 
@@ -908,10 +916,14 @@ current state above):
    `vX.Y.Z` tag of an accepted SHA, review branch per release, rollback by re-release
    (application branch `ci/prod-promotion`, publisher pin `ci/publisher-pin-9c2084c`; 93 CI unit
    tests including release → release → rollback; rehearsal against copies of both repositories).
-   [ ] **First live release** `v1.0.0` and PROD verification: pending the merge of both branches.
-6. [ ] **Rollback and obsolete paths.** Rollback by re-release is implemented (redeploy branches,
-   `unchanged`). Open: live drill `v1.0.1` → `v1.0.0`; review of the obsolete application paths
-   (`deploy/`, `argocd/`, `monitoring/`, `k8s/`, `infra/`).
+   **First live release** `v1.0.0` done on 2026-10-25: infrastructure PR #15, Argo PROD
+   Synced/Healthy ~7 min after the merge, 2 + 2 Pods on the released digests, site and health
+   check OK; `v1.0.1` followed (PR #16). See [target-state report](PHASE9_TARGET_STATE.md).
+6. [ ] **Rollback and obsolete paths.** Rollback by re-release is implemented and drilled live:
+   `v1.0.1` → `v1.0.0` through `promotion/prod/v1.0.0-redeploy-2026117` (infrastructure PR #17),
+   ~8 min to a working site, no rebuild. The obsolete application paths are reviewed
+   ([cleanup report](APPLICATION_REPOSITORY_CLEANUP.md)). Open: merge application PR #78; check
+   the `unchanged` re-release live.
 7. [x] **Return pull requests to `full`.** The temporary `pr` profile (2026-10-24/25) is removed;
    pull requests run all 18 gates again (application branch `ci/restore-full-pr-checks`).
 8. [ ] **Acceptance database check** (close the health-check gap above).
