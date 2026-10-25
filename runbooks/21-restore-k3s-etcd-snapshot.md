@@ -466,7 +466,7 @@ Cluster/PVC objects and does not retire them automatically.
 Recheck the list. Keep the controller stopped if the selected resource changes
 or the patch fails. Compare the recovered revision with remote Git before release.
 - [ ] Restore Argo components, then compare diffs and release child policies before roots using [14](14-install-argocd.md#4-adopt-manually-then-review-automation).
-- [ ] Review each saved Job/CronJob before restoring its recorded suspend state. Leave obsolete work suspended. Restore only approved Jenkins triggers using [17](17-migrate-jenkins-ci.md#4-activate-delivery).
+- [ ] Review each saved Job/CronJob before restoring its recorded suspend state. Leave obsolete work suspended. Restore only approved Jenkins triggers using [17](17-install-operate-jenkins.md#4-activate-delivery).
 - [ ] Check the backup coordinator fence and recovered Backup objects before resuming its timer using [19](19-cnpg-r2-backup-pitr.md#2-install-the-coordinator-on-vm-250).
 
 ## 8. Close the datastore recovery

@@ -115,7 +115,7 @@ automation held throughout this section.
 14. **Re-establish operator dependencies.** Use explicit kubeconfigs for both
     clusters and the recovered credentials for each environment.
     - [ ] [Prepare the operator tools](runbooks/11-install-management-tools.md#operator-python-and-browser-tools).
-    - [ ] [Validate the recovered private inputs](recovery/README.md#verification).
+    - [ ] [Validate the recovered private inputs](recovery/README.md#recovery-inputs-and-validation).
 15. **Install platform operators.** CNPG, cert-manager and Barman must exist
     before recovery custom resources are applied; no empty database is created.
     - [ ] [Install CNPG in both clusters](runbooks/18-cloudnative-pg.md#1-install-the-operator).
@@ -140,7 +140,9 @@ automation held throughout this section.
 - [ ] Restore PROD data and confirm its selected recovery point:
       [live PostgreSQL restore](runbooks/20-restore-live-postgresql.md).
 - [ ] After each restore, check the preserved frontend/backend image pair,
-      recovered data, login, and HTTPS through the canonical hostname.
+      recovered data and login. Issue its `app-tls` certificate, publish its
+      edge route, then check HTTPS through the canonical hostname using
+      [runbook 15, sections 4–6](runbooks/15-publish-application.md#4-issue-monitor-and-renew-application-certificates).
 
 ## 6. Restore platform state
 
@@ -154,12 +156,14 @@ Keep Jenkins scheduling and GitOps automation disabled while comparing state.
     its mounted configuration. Start under an execution hold and verify users,
     history and credential decryption before allowing builds.
     - [ ] [Restore the Jenkins controller home](runbooks/23-restore-jenkins-controller.md).
+    - [ ] [Check restored jobs, credentials and observer gate](runbooks/27-configure-jenkins-jobs.md).
 20. **Restore GitOps ownership.** Compare child and root Application diffs
     against the recovered database and application revision before automation.
     - [ ] [Install Argo CD and reconcile resources](runbooks/14-install-argocd.md).
 21. **Restore backup coordination.** Reinstall on VM `250`; inspect retained
     cycle intent and the global fence before enabling the timer.
-    - [ ] [Install and inspect the coordinator](runbooks/19-cnpg-r2-backup-pitr.md#2-install-the-coordinator-on-vm-250).
+    - [ ] [Preserve and replace cluster-bound coordinator access](runbooks/26-rebuild-backup-coordinator-access.md).
+    - [ ] [Install and inspect the coordinator without a cycle](runbooks/19-cnpg-r2-backup-pitr.md#install-without-starting-a-cycle).
     - [ ] [Configure independent native etcd backups](docs/operations/ETCD_BACKUPS.md#configure-or-reapply-native-backups).
 
 ## 7. Release operation
@@ -171,13 +175,13 @@ Keep Jenkins scheduling and GitOps automation disabled while comparing state.
     - [ ] [Check PROD database replication](runbooks/18-cloudnative-pg.md#4-verify-database-and-application).
 23. **Prove backup protection.** Check WAL archiving to the new destination
     and a completed coordinated base-backup cycle before restoring schedules.
-    - [ ] [Run and inspect the backup coordinator](runbooks/19-cnpg-r2-backup-pitr.md#2-install-the-coordinator-on-vm-250).
+    - [ ] [Run and inspect the backup coordinator](runbooks/19-cnpg-r2-backup-pitr.md#run-a-cycle-after-database-acceptance).
 24. **Release automation deliberately.** Restore child Argo policies before
     roots, the recorded Jenkins allowlist/triggers and the single VM `250`
     timer only after its retained state is understood.
     - [ ] [Review Argo automation](runbooks/14-install-argocd.md#4-adopt-manually-then-review-automation).
-    - [ ] [Activate approved Jenkins delivery](runbooks/17-migrate-jenkins-ci.md#4-activate-delivery).
-    - [ ] [Enable the backup timer](runbooks/19-cnpg-r2-backup-pitr.md#2-install-the-coordinator-on-vm-250).
+    - [ ] [Activate approved Jenkins delivery](runbooks/17-install-operate-jenkins.md#4-activate-delivery).
+    - [ ] [Enable the backup timer](runbooks/19-cnpg-r2-backup-pitr.md#enable-the-timer-after-reviewing-retained-state).
 25. **Record the recovery result.** Record recovery time, recovered point,
     data loss, retained evidence and release decision in the incident record.
 

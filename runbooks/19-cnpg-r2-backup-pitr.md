@@ -65,12 +65,19 @@ bash scripts/local-python.sh scripts/backups/provision.py
 Standalone script: [provision.py](../scripts/backups/provision.py).
 
 - [ ] Preserve generated `recovery/backup-coordinator.json` privately. On rebuilt clusters, retain the old profile and replace it only after reviewing the new cluster CA/token identities.
+- [ ] After either cluster is rebuilt, follow [rebuild backup coordinator access](26-rebuild-backup-coordinator-access.md). It recreates RBAC and cluster-bound tokens without initializing a database.
 - [ ] Check the intended archive destination before initializing a new database. Stop if it contains another database's archive; preserve existing backups and select the recovery procedure instead.
 - [ ] Apply each environment's ObjectStore before its Cluster through the selected deployment procedure.
 - [ ] Require CNPG Ready and `ContinuousArchiving` healthy; inspect backup sidecar events/logs on failure.
-- [ ] After database rolls, complete the reconnect/login/CRUD checks in [runbook 18](18-cloudnative-pg.md#database-maintenance), then restore the recorded automation.
+- [ ] After database rolls, complete the exact hold, declarative reconnect,
+      login/CRUD and policy restoration in
+      [database maintenance](28-database-maintenance.md).
 
 ## 2. Install the coordinator on VM 250
+
+**Recovery prerequisite:** Complete [coordinator access replacement](26-rebuild-backup-coordinator-access.md#1-preserve-the-old-profile) before this section. Preserve the existing VM 250 profile and cycle state before running the installer. During recovery, defer `coordinator.py run` and timer activation below until the restored databases and new WAL destinations have passed their checks.
+
+### Install without starting a cycle
 
 - [ ] Confirm Tailscale routing is active and the VM 250 SSH host key is trusted.
 - [ ] From VM 200, collect VM 250's SSH host key:
@@ -104,7 +111,10 @@ The installer starts metrics and preserves Tailscale/forwarding. It does not
 enable the backup timer. Coordinator API access is limited to Backup creation/
 observation and its named global coordination Lease.
 
-- [ ] On VM 250, inspect state and run one coordinated cycle:
+### Run a cycle after database acceptance
+
+- [ ] On VM 250, inspect state. Start a coordinated cycle only after the
+      selected databases and writable ObjectStores are ready:
 
 ```sh
 sudo -u liora-backups /opt/liora-backups/venv/bin/python /opt/liora-backups/coordinator.py inspect
@@ -115,7 +125,11 @@ Standalone script: [coordinator.py](../scripts/backups/coordinator.py).
 
 - [ ] Require strict PROD → STAGE → DEV order; inspect each terminal result and physical backup ID.
 - [ ] Confirm the backup verification record for the installed mechanism using [backup verification](../docs/operations/POSTGRESQL_BACKUP_VERIFICATION.md).
-- [ ] Enable the sole recurring schedule on VM 250:
+
+### Enable the timer after reviewing retained state
+
+- [ ] Enable the sole recurring schedule on VM 250 only after reviewing its
+      recorded prior state and completed cycle:
 
 ```sh
 sudo systemctl enable --now liora-backup.timer

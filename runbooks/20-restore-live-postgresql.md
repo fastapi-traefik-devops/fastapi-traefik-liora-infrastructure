@@ -6,7 +6,9 @@
 
 ## Preconditions
 
-- [ ] Complete the infrastructure/platform portion of [disaster recovery](../01-Disaster_recovery.md). Install CNPG, cert-manager and Barman using [18](18-cloudnative-pg.md) and [19](19-cnpg-r2-backup-pitr.md#1-install-backup-dependencies-and-access).
+- [ ] Complete recovery navigator steps 1–17. Install CNPG, cert-manager and
+      Barman using [18](18-cloudnative-pg.md) and [19](19-cnpg-r2-backup-pitr.md#install-platform-operators-in-either-scenario).
+      Prepare the edge, application DNS and issuers with [15, sections 1–3](15-publish-application.md#1-inspect-and-provision-the-edge).
 - [ ] Recover the matching private application/database credentials, GHCR access and R2 inputs using [recovery documentation](../recovery/README.md). Use credentials valid at the selected recovery point.
 - [ ] Recover the application revision and immutable frontend/backend image pair compatible with that database's Alembic revision. Keep the previous pair in the incident record.
 - [ ] Hold Jenkins publication/promotion and Argo reconciliation using [24](24-hold-surviving-automation.md). On replacement clusters, leave application root/child Applications uninstalled or disabled. Finish in-flight work first.
@@ -117,6 +119,10 @@ kubectl --kubeconfig="$kubeconfig" -n "$namespace" wait \
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" get cluster,pods,pvc -o wide
 ```
 
+`maintenance.yaml` includes the environment Certificate; DNS-01 issuance may
+start while application Deployments remain at zero. Do not publish the edge
+route or accept HTTPS until the restored application is running and checked.
+
 - [ ] If the restore cannot reach its target, retain resources, logs and the source archive. Keep writers, prestart and reconciliation off. Do not remove the recovery target, substitute `initdb`, or silently accept an earlier point.
 - [ ] Verify the primary, database and restored schema:
 
@@ -171,23 +177,48 @@ kubectl --kubeconfig="$kubeconfig" -n "$namespace" wait \
 kubectl --kubeconfig="$kubeconfig" apply -f "$restore_dir/application.yaml"
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" rollout status deployment/backend --timeout=10m
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" rollout status deployment/frontend --timeout=10m
-curl --fail --show-error --max-time 30 "https://$hostname/"
 ```
 
-- [ ] Log in using the recovered application credentials. Create, read, update and delete one disposable record through the application. Confirm HTTPS and actual Pod image IDs, not only readiness probes. Keep diagnostic output private.
-- [ ] Compare live resources with the published recovery overlay; then restore the exact prior approved Argo/Jenkins policies using [14, Argo policy release](14-install-argocd.md#4-adopt-manually-then-review-automation) and [17, Jenkins activation](17-migrate-jenkins-ci.md#4-activate-delivery). Require Argo `Synced/Healthy`. During full disaster recovery, keep these holds until the navigator reaches its release step. Leave unrelated jobs disabled and PROD image promotion blocked by its acceptance gate.
+- [ ] After the application Pods are ready, follow [certificate issuance and HTTPS publication](15-publish-application.md#4-issue-monitor-and-renew-application-certificates)
+      for this environment. Wait for `app-tls`, check the served certificate,
+      then enable its edge route. Keep unrelated domains and certificates intact.
+- [ ] Verify the canonical HTTPS URL, then log in using the recovered
+      application credentials. Create, read, update and delete one disposable
+      record. Confirm actual Pod image IDs, not only readiness probes. Keep
+      diagnostic output private:
 
-## 5. Restore backup operations and close the incident
+```sh
+curl --fail --show-error --max-time 30 "https://$hostname/"
+```
+- [ ] Compare live resources with the published recovery overlay. During full
+      disaster recovery, keep Argo/Jenkins held until the navigator reaches
+      its release step. Restore the recorded policies only through
+      [Argo adoption](14-install-argocd.md#4-adopt-manually-then-review-automation)
+      and [Jenkins activation](17-install-operate-jenkins.md#4-activate-delivery)
+      after all environments pass acceptance. Keep PROD promotion blocked.
 
-- [ ] Follow [19](19-cnpg-r2-backup-pitr.md): verify new WAL objects, perform a coordinated base backup, verify monitoring and the VM 250 timer. Do not start an overlapping backup cycle.
-- [ ] Confirm backup/PITR tools select the active ObjectStore and archive server after handover.
+## 5. Record the restored environment
+
+- [ ] Confirm the Cluster references the new writable ObjectStore and archive
+      server in the rendered recovery overlay. Read and record the CNPG
+      `ContinuousArchiving` condition:
+
+```sh
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" get cluster.postgresql.cnpg.io liora-db \
+  -o jsonpath='{range .status.conditions[*]}{.type}{"="}{.status}{" "}{.reason}{"\n"}{end}'
+```
+
+The recovery navigator verifies new R2 WAL objects and a completed coordinated
+base backup after all environments are restored. Do not start a coordinator
+cycle while other environments remain unrestored.
 - [ ] Add the new archive identity, Git commit, image pair, recovery point, database/app checks and elapsed recovery time to the incident report and private recovery kit.
 - [ ] Preserve the source archive and fenced original resources until the incident owner authorizes retirement. Do not delete unrelated PVCs, namespaces or Secrets.
 
 **Complete:** Restored data and ownership match the selected recovery point;
-application login/CRUD and HTTPS work; PROD replication is healthy; GitOps owns
-the recovered configuration; approved automation and backup operations are
-restored. The [isolated PITR exercise](../docs/operations/POSTGRESQL_BACKUP_VERIFICATION.md)
+application login/CRUD and HTTPS work; PROD replication is healthy. Return to
+the [recovery navigator](../01-Disaster_recovery.md) for the next environment,
+GitOps adoption, coordinator activation and policy release. The
+[isolated PITR exercise](../docs/operations/POSTGRESQL_BACKUP_VERIFICATION.md)
 is a separate verification procedure and never switches live endpoints.
 
 ## References

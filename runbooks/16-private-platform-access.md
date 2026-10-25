@@ -73,7 +73,36 @@ sha256sum .local-work/charts/kube-prometheus-stack-92.2.0.tgz
 ```
 
 - [ ] Stop on a checksum mismatch.
-- [ ] Restore protected Grafana credentials for recovery; for a new installation use the credential bootstrap:
+- [ ] On recovery, first retrieve the protected
+      `.local-work/private/platform/<cluster>-monitoring.json` record from the
+      encrypted kit using [the placement procedure](../recovery/README.md#3-retrieve-check-and-place-on-the-replacement-vm).
+      Confirm its `username` and `password` fields without
+      printing them. Install it at the same path with parent mode `0700` and
+      file mode `0600` **before** running the bootstrap helper:
+
+```sh
+cd "$HOME/fastapi-traefik-liora-infrastructure"
+record=".local-work/private/platform/$cluster-monitoring.json"
+test -s "$record" || { echo "Missing protected Grafana record: $record" >&2; false; }
+test "$(stat -c %a "$record")" = 600
+python3 - "$record" <<'PY'
+import json, sys
+from pathlib import Path
+entry = json.loads(Path(sys.argv[1]).read_text())
+assert isinstance(entry.get('username'), str) and entry['username']
+assert isinstance(entry.get('password'), str) and len(entry['password']) >= 32
+print('Protected Grafana record has the required fields.')
+PY
+kubectl --kubeconfig="$kubeconfig" -n monitoring get secret monitoring-grafana-admin --ignore-not-found -o name
+```
+
+**Stop on recovery:** If the record is missing, do not run the helper. It
+generates a new password when both the Secret and record are absent. If the
+Secret already exists, the helper preserves it; compare the recovered login
+through Grafana before deciding whether any rotation is needed.
+
+- [ ] For a new installation, or recovery with the original record in place,
+      create the missing Secret with the existing bootstrap helper:
 
 ```sh
 bash scripts/local-python.sh scripts/kubernetes/bootstrap-platform-secrets.py --cluster "$cluster" --component monitoring
@@ -83,6 +112,10 @@ Standalone script: [bootstrap-platform-secrets.py](../scripts/kubernetes/bootstr
 
 The helper preserves existing Secrets. New private platform records go to
 `.local-work/private/platform/<cluster>-monitoring.json`; preserve them off-host.
+It creates `monitoring/monitoring-grafana-admin` from that record when the
+Secret is absent. Confirm the Secret exists, then authenticate to the private
+Grafana URL in the address table with the recovered login. Do not print the
+password or replace a working Secret with a new one.
 
 - [ ] For initial installation, submit the chart without waiting so its Prometheus resource exists for Slack credential provisioning:
 
@@ -121,7 +154,7 @@ Standalone script: [show_passwords.py](../recovery/show_passwords.py).
 - [ ] Use replacement Argo credentials after password rotation; the initial Secret does not contain a rotated password.
 - [ ] Log in to Argo CD, Grafana and Adminer from a Tailscale client.
 - [ ] Check Prometheus `/targets`, `/rules` and Alertmanager routing/active alerts.
-- [ ] Install Jenkins through [runbook 17](17-migrate-jenkins-ci.md).
+- [ ] Install Jenkins through [runbook 17](17-install-operate-jenkins.md).
 
 ## 4. Completion checks
 

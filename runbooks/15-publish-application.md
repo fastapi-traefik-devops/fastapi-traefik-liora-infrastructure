@@ -114,9 +114,14 @@ kubectl --kubeconfig="$HOME/.kube/config-prod" wait clusterissuer/letsencrypt-cl
 
 ## 4. Issue, monitor and renew application certificates
 
+- [ ] On disaster recovery, complete [database restore and workload startup](20-restore-live-postgresql.md#3-restore-the-database-with-application-writes-held)
+      for the selected environment first. That runbook returns here before
+      its HTTPS acceptance check. On fresh installation, complete workload
+      startup through [runbook 13](13-deploy-application-manifests.md).
 - [ ] Each application overlay includes its `certificate.yaml`. For a manual
       fresh deployment the render splitter places it in `config-storage.yaml`;
-      Argo CD manages it after application adoption. The Argo projects allow
+      the recovery `maintenance.yaml` also carries it while application
+      Deployments stay at zero. Argo CD manages it after application adoption. The Argo projects allow
       namespaced Certificate resources but do not grant cluster-wide writes.
 - [ ] For each environment, wait for its namespace-local Certificate:
 
@@ -168,8 +173,12 @@ do not replace verification of the certificate actually served.
 ## 5. Align HTTPS configuration and publish 443
 
 - [ ] Confirm each environment uses its canonical HTTPS origin/CORS, single-worker backend command and namespace-local `app-tls` reference.
-- [ ] Publish the reviewed infrastructure change and confirm Argo CD
-      reconciliation. Keep administrative Services private, with no ingress.
+- [ ] During fresh setup, keep the manually deployed overlay from
+      [runbook 13](13-deploy-application-manifests.md) until Argo adoption in
+      navigator step 21. During disaster recovery, use the reviewed manual overlay from
+      [runbook 20](20-restore-live-postgresql.md#4-reconcile-desired-state-before-opening-application-traffic)
+      while Argo remains held; defer Argo adoption to navigator step 20.
+      Keep administrative Services private, with no ingress.
 
 - [ ] Verify namespace TLS through cluster node addresses. After DEV/STAGE
       certificates exist, set `liora_tls_nonprod_enabled: true` in the

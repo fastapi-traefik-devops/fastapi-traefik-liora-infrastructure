@@ -270,7 +270,10 @@ database contents; Jenkins requires its stopped-home archive; other persistent
 volumes require separate protection. Current original server tokens are saved once at `recovery/k3s-nonprod-server.token` and
 `recovery/k3s-prod-server.token`, mode `0600`. Node identities and capture
 metadata are stored separately under `recovery/k3s-identities/`. These inputs
-are included in the existing encrypted off-host recovery kit. Snapshot files stay on nodes and
+are included in the encrypted off-host recovery kit. Terraform state, private
+platform records and the stopped Jenkins home are staged explicitly before
+encryption; ignored files outside `recovery/` are not captured automatically.
+Snapshot files stay on nodes and
 in R2; temporary downloads use private `.local-work/` directories, never
 `recovery/`. Old tokens stay available for retained snapshots after rotation. [Etcd operations](operations/ETCD_BACKUPS.md)
 defines configuration, retention and failure response.
@@ -313,15 +316,17 @@ The privileged build daemon's isolation does not provide a separate physical
 security boundary from its K3s node.
 
 The controller preserves operator identities, credential scopes and retained
-build history. Its startup configuration restores normal execution of the
-approved jobs and triggers. Agent images, plugins and tools are pinned;
+build history. Its startup hold requires an operator to inspect and release
+the recorded job and trigger policy after a restart. Agent images, plugins and tools are pinned;
 workspaces, Docker cache and controller state have separate storage lifecycles.
 
 ### Build and promotion policy
 
-Main SCM polling runs approximately every two minutes. Automation is limited
-to the agreed main pipeline and explicit promotion entrypoints; nightly
-schedules and recurring multibranch indexing are disabled.
+The approved delivery policy uses main SCM polling approximately every two
+minutes and a nightly main build. Pull-request builds and DEV/PROD releases
+are operator actions. A rebuilt controller starts held until the observer,
+publisher pin, jobs and credentials have been checked; it does not inherit
+live activation merely from these manifests.
 
 ```mermaid
 flowchart LR

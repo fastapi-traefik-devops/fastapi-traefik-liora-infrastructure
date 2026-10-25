@@ -7,7 +7,13 @@ open each Argo CD UI through Tailscale from an authorized browser.
 
 ## Preconditions
 
-- [ ] Complete application/database checks in [runbook 13](13-deploy-application-manifests.md).
+- [ ] For a fresh installation, complete application/database checks in
+      [runbook 13](13-deploy-application-manifests.md). For disaster recovery,
+      complete the data, image, HTTPS and login checks in
+      [runbook 20](20-restore-live-postgresql.md#4-reconcile-desired-state-before-opening-application-traffic)
+      before adopting recovered resources. Runbook 20 calls
+      [runbook 15](15-publish-application.md#4-issue-monitor-and-renew-application-certificates)
+      for certificate issuance and public HTTPS before this Argo step.
 - [ ] Confirm desired manifests are available on remote infrastructure `main`.
 - [ ] Use disabled automation for initial comparison; enable it after manual reconciliation.
 - [ ] Keep PROD and both root Applications' automatic pruning disabled.
@@ -189,8 +195,21 @@ kubectl --kubeconfig="$kubeconfig" -n argocd get applications,appprojects
 > bootstrap directory. Roots have no cascading-delete finalizer. Deleting
 > an Application is not rollback.
 
-- [ ] After correct reconciliation, publish reviewed automation settings:
-      `automated.enabled: true` and `selfHeal: true`.
+- [ ] Record the exact root and child `spec.syncPolicy` objects before
+      maintenance or recovery. For an existing cluster, save them privately:
+
+```sh
+mkdir -p .local-work/private/argocd-policy
+kubectl --kubeconfig="$kubeconfig" -n argocd get applications -o json > \
+  ".local-work/private/argocd-policy/$argocd_cluster-before.json"
+chmod 600 ".local-work/private/argocd-policy/$argocd_cluster-before.json"
+```
+
+- [ ] After correct reconciliation, restore the **recorded** child policies
+      before the root policy. If this is the first installation, publish only
+      the reviewed policy in the selected GitOps manifests, then confirm its
+      live `spec.syncPolicy` through `kubectl get application -o yaml`. Do not
+      infer that every recovered environment previously enabled auto-sync.
 - [ ] For nonprod, review managed resource inventory before enabling
       `prune: true`; retain `allowEmpty: false` and `PruneLast=true`.
       Keep PROD and root pruning disabled.

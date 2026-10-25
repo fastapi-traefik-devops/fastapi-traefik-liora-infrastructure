@@ -657,7 +657,7 @@ Only main SCM polling is active (`H/2 * * * *`); unrelated jobs, nightly schedul
 and recurring folder indexing remain disabled. Automatic acceptance and expanded
 manual promotion workflows remain open; PROD is explicitly blocked. See the
 [live execution evidence](PHASE9_LIVE_CYCLE.md), [worker acceptance](PHASE9_WORKERS.md),
-[Phase 9 report](PHASE9_REPORT.md) and [runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
+[Phase 9 report](PHASE9_REPORT.md) and [runbook 17](../../runbooks/17-install-operate-jenkins.md).
 
 The [pipeline review](PHASE9_PIPELINE_REVIEW.md) is complete as a technical
 inspection; the operator approved its CI-only proposal. It checked live disabled
@@ -1318,11 +1318,36 @@ It does not replace PITR verification or complete pending Phase 9 work.
 - [ ] Exercise live CNPG restore/cutover and the three-server etcd restore route in a separate recovery checkpoint. Verify the selected target, stable endpoint, ownership, post-recovery archive, original-token decryption and application checks; local checks are not a live recovery exercise.
 - [x] Adapt current-K3s Jenkins stopped-home backup/restore and two-worker connection helpers to preserve the archived administrator and selected home without migration receipts. Add runbooks 22/23 and local safety checks. See [Jenkins recovery procedures](JENKINS_RECOVERY_RUNBOOKS_2026-10-25.md).
 - [ ] Perform the isolated held-controller runtime restore checkpoint: verify login, credential decryption, retained history and agent connectivity without CI/publication/deployment. Complete the separate reproducible job bootstrap and acceptance activation work under Phase 9.
-- [ ] Complete project-specific off-host etcd/state/private-kit capture/retrieval and a full-system disaster recovery exercise.
+- [ ] Execute project-specific off-host etcd/state/private-kit retrieval and a
+      full-system disaster recovery exercise; local capture fixtures are not
+      an off-host restore.
 - [ ] Record monitoring history coverage explicitly; PostgreSQL R2 backups do not restore Prometheus/Alertmanager volume data.
 
 These remaining capabilities are not inferred from successful isolated PITR,
 controller migration, or local recovery-tool validation.
+
+### Operational runbook closure — 2026-10-25
+
+- [x] Document coordinator RBAC/token/CA replacement with old-profile
+      preservation and read-only inspection before any cycle.
+- [x] Put DNS/issuer preparation before recovery, then certificate issuance and
+      HTTPS publication after workload startup and before HTTPS acceptance.
+- [x] Consolidate Jenkins job settings, credential scopes, publisher pinning
+      and script approval in one operator procedure; keep migration history in
+      `docs/testreports/`.
+- [x] Document Grafana record placement, declarative database maintenance and
+      exact automation-policy restoration.
+- [x] Stage ignored Terraform state, platform records and a stopped Jenkins
+      archive explicitly for the existing AES ZIP flow. Validate selection and
+      integrity checks with synthetic fixtures.
+- [ ] Align the observer bundle pin with its manifest and the reviewed
+      publisher definition before activating it on a rebuilt controller. The
+      current manifest references `8b584055a83c`, while the bundle helper
+      selects `9c2084ceb24c`. Add the missing bounded installer for
+      `stage-observer-connection`; retain the approved live delivery policy.
+- [ ] Verify the reconstructed coordinator, Grafana login, Jenkins jobs and
+      observer on live replacement clusters in a separate approved exercise.
+      Local documentation and fixture tests do not prove recovery.
 
 
 ### Native embedded-etcd snapshots to R2 — 2026-10-25

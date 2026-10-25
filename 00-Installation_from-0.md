@@ -142,9 +142,10 @@ specifies VM 250 or a private browser session.
     - [ ] [Configure private access and monitoring](runbooks/16-private-platform-access.md).
 23. **Install fresh CI.** Create a new Jenkins controller home. Review the
     controller, agents, credentials, and job policy before enabling builds.
-    - [ ] [Install the Jenkins controller](runbooks/17-migrate-jenkins-ci.md#1-install-a-fresh-controller).
+    - [ ] [Install the Jenkins controller](runbooks/17-install-operate-jenkins.md#1-install-a-fresh-controller).
     - [ ] [Install agents for the fresh controller](runbooks/22-install-fresh-jenkins-agents.md).
-    - [ ] [Configure and check delivery](runbooks/17-migrate-jenkins-ci.md#2-configure-delivery-identities).
+    - [ ] [Configure jobs and prepare the STAGE observer](runbooks/27-configure-jenkins-jobs.md).
+    - [ ] [Release only the approved delivery policy](runbooks/17-install-operate-jenkins.md#4-activate-delivery).
 
 24. **Protect the databases.** Install the coordinator on VM `250`, run the
     first sequential backup cycle and verify an isolated restore before
@@ -155,6 +156,6 @@ specifies VM 250 or a private browser session.
 25. **Check operational handoff.** Confirm alert delivery and store the
     protected credentials, Terraform state and Jenkins configuration off-host.
     - [ ] [Verify FIRING and RESOLVED notifications](docs/operations/SLACK_ALERTING.md).
-    - [ ] [Check recovery-kit contents](recovery/README.md#recovery-kit-checklist).
+    - [ ] [Capture, encrypt and verify the off-host recovery kit](recovery/README.md#recovery-kit-checklist).
 
 **Done when:** All three applications pass HTTPS/login/CRUD, Argo ownership is correct, private interfaces work, backups/PITR complete, and only approved CI/deployment automation is active.

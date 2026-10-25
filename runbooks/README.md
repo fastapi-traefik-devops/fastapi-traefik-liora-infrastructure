@@ -27,7 +27,7 @@ Use the runbook's **Where** line to decide which machine runs each command.
 | [14](14-install-argocd.md) | Independent Argo CD installation and resource adoption |
 | [15](15-publish-application.md) | Edge, DNS and public certificate lifecycle |
 | [16](16-private-platform-access.md) | Private interfaces and monitoring |
-| [17](17-migrate-jenkins-ci.md) | Jenkins installation, operation and state preservation |
+| [17](17-install-operate-jenkins.md) | Jenkins installation, operation and state preservation |
 | [18](18-cloudnative-pg.md) | Fresh CNPG database installation and maintenance |
 | [19](19-cnpg-r2-backup-pitr.md) | R2 backup setup and cycle recovery |
 | [20](20-restore-live-postgresql.md) | Live PostgreSQL restore |
@@ -36,6 +36,9 @@ Use the runbook's **Where** line to decide which machine runs each command.
 | [23](23-restore-jenkins-controller.md) | Stopped Jenkins backup and controller-home restore |
 | [24](24-hold-surviving-automation.md) | Hold old Argo and Jenkins automation during recovery |
 | [25](25-unpack-credentials-zip.md) | Unpack protected credentials on the laptop |
+| [26](26-rebuild-backup-coordinator-access.md) | Replace cluster-bound coordinator access safely |
+| [27](27-configure-jenkins-jobs.md) | Configure Jenkins jobs and gate STAGE acceptance |
+| [28](28-database-maintenance.md) | Hold delivery and reconnect backends after database changes |
 
 ## Operating rules
 
