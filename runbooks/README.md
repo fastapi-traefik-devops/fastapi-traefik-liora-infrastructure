@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Fresh deployment | [Installation checklist](../00-Installation_from-0.md) | Initialize empty databases; do not import application data. |
 | Disaster recovery | [Recovery checklist](../01-Disaster_recovery.md) | Restore matching data, credentials and configuration before resuming writes. |
-| Routine backup/recovery operations | [Backup operations](19-cnpg-r2-backup-pitr.md) | Preserve live endpoints; use guarded isolated exercises. |
+| Routine backup/recovery operations | [PostgreSQL backups](19-cnpg-r2-backup-pitr.md), [etcd snapshots](../docs/operations/ETCD_BACKUPS.md) | Preserve live endpoints; use guarded isolated exercises. |
 
 Each scenario file is the progress checklist. Mark a linked action complete
 only after its runbook's final check passes. On resumption, identify the last
@@ -31,7 +31,7 @@ Use the runbook's **Where** line to decide which machine runs each command.
 | [18](18-cloudnative-pg.md) | Fresh CNPG database installation and maintenance |
 | [19](19-cnpg-r2-backup-pitr.md) | R2 backup setup and cycle recovery |
 | [20](20-restore-live-postgresql.md) | Live PostgreSQL restore |
-| [21](21-restore-k3s-etcd-snapshot.md) | K3s datastore restore |
+| [21](21-restore-k3s-etcd-snapshot.md) | Optional manual K3s datastore restore |
 | [22](22-install-fresh-jenkins-agents.md) | Fresh Jenkins agent installation |
 | [23](23-restore-jenkins-controller.md) | Jenkins controller-home restore |
 | [24](24-hold-surviving-automation.md) | Hold old Argo and Jenkins automation during recovery |

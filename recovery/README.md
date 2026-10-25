@@ -313,8 +313,24 @@ an isolated or incident restore verifies snapshot decryption and recovery.
 
 Store an encrypted copy outside the Proxmox host and retain its separate
 archive password. Local snapshots and this local export do not protect against
-host loss. The exporter reads existing local snapshots; it does not establish
-a recurring off-host snapshot schedule or copy PVC data.
+host loss by themselves. Native K3s separately uploads compressed snapshots to
+`liora-backup/etcd/nonprod/` and `liora-backup/etcd/prod/`; see
+[etcd operations](../docs/operations/ETCD_BACKUPS.md). The local exporter does not
+configure that scheduler or copy PVC data.
+
+The native S3 Secrets reuse the existing `database_backups` endpoint, region and
+bucket-scoped S3 pair. No additional recovery YAML fields are required. The
+Secret's non-secret configuration is reproduced by the standalone Ansible
+playbook; do not copy a Secret dump into Git. Keep the bucket private. Prefixes
+are not credential isolation.
+
+Before rotating a server token, preserve the old complete set for every retained
+snapshot encrypted with that token. After rotation or K3s upgrade, export a new
+set and update the encrypted off-host kit. Keep both sets until old snapshots
+expire or their retention decision permits removal. Never overwrite the old
+token with the new one. The R2 download helper's `--identity-set` option checks
+cluster/token metadata and builds a new runbook-21 set while preserving its
+source. This check does not prove restoration or decryption.
 
 ## Live PostgreSQL recovery selections
 

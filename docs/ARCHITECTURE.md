@@ -247,6 +247,31 @@ Restored test clusters cannot archive into or prune the source archive and
 never replace live endpoints. Operators repeat the exercise monthly and after
 significant backup changes; no automated weekly restore schedule is required.
 
+Native K3s embedded-etcd snapshots also upload directly from all six servers to
+`etcd/nonprod/` and `etcd/prod/` in the same private bucket. They use the existing
+bucket-scoped S3 pair through a cluster-local `kube-system` Secret. Node schedules
+are staggered twice daily in UTC: NONPROD 03:00, 03:02, 03:04 and
+15:00, 15:02, 15:04; PROD 03:10, 03:12, 03:14 and 15:10, 15:12, 15:14. This separates normal snapshot load from the
+02:00 PostgreSQL cycle. Local retention is five snapshots per node. R2 retention
+is 42 snapshot files per cluster prefix across its three servers, approximately
+seven days at the normal rate. Native ZIP compression and count-based pruning
+are independent of Barman recovery windows and never target PostgreSQL prefixes.
+
+Existing native metrics report snapshot creation/upload failures. VM 250's
+existing R2 listing supplies snapshot freshness; Prometheus alerts after 14 hours
+without a confirmed snapshot. Existing Alertmanager receivers provide failure
+and recovery notifications. No extra scheduler or notification service is used.
+
+The standard disaster-recovery sequence rebuilds infrastructure, deploys
+platform/configuration, restores application data, then verifies applications.
+Etcd restore is an optional manual route. Etcd snapshots recover Kubernetes
+metadata and Secrets, not PVC contents. PostgreSQL backups/WAL cover application
+database contents; Jenkins requires its stopped-home archive; other persistent
+volumes require separate protection. Original server tokens and node identities
+remain in the encrypted off-host recovery kit. Old tokens stay available for
+retained snapshots after rotation. [Etcd operations](operations/ETCD_BACKUPS.md)
+defines configuration, retention and failure response.
+
 Recovery procedures cover application data, etcd, infrastructure state,
 cluster credentials and the encryption material required by the retained backups. Backup copies and private recovery
 inputs stay outside Git.

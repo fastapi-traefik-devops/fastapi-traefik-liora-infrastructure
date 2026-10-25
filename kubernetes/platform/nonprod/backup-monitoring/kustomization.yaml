@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
 - monitors.yaml
 - rules.yaml
+- etcd-rules.yaml

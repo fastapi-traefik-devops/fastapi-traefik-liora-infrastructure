@@ -1,0 +1,47 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: nonprod-etcd-backups
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+  - name: nonprod-etcd-backups
+    rules:
+    - alert: K3sEtcdSnapshotFailed
+      expr: (max by (instance) ((increase(k3s_etcd_snapshot_save_duration_seconds_count{job="apiserver",status="error"}[30m])
+        > 0) or ((k3s_etcd_snapshot_save_duration_seconds_count{job="apiserver",status="error"}
+        > 0) unless k3s_etcd_snapshot_save_duration_seconds_count{job="apiserver",status="error"}
+        offset 30m))) or (max by (instance) ((increase(k3s_etcd_snapshot_save_s3_duration_seconds_count{job="apiserver",status="error"}[30m])
+        > 0) or ((k3s_etcd_snapshot_save_s3_duration_seconds_count{job="apiserver",status="error"}
+        > 0) unless k3s_etcd_snapshot_save_s3_duration_seconds_count{job="apiserver",status="error"}
+        offset 30m)))
+      for: 2m
+      labels:
+        cluster: nonprod
+        environment: PLATFORM
+        namespace: kube-system
+        severity: warning
+      annotations:
+        summary: K3s etcd snapshot creation or upload failed
+        description: A server reported a snapshot error within the last 30 minutes.
+          Inspect its local snapshot and S3 upload logs.
+        action: Follow the etcd backup failure checklist; do not restore or reset
+          etcd.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/ETCD_BACKUPS.md
+    - alert: K3sEtcdSnapshotR2Stale
+      expr: (time() - max(liora_etcd_r2_latest_snapshot_timestamp{cluster="nonprod"})
+        > 14 * 3600) or absent(liora_etcd_r2_latest_snapshot_timestamp{cluster="nonprod"})
+      for: 5m
+      labels:
+        cluster: nonprod
+        environment: PLATFORM
+        namespace: kube-system
+        severity: critical
+      annotations:
+        summary: No recent etcd snapshot can be confirmed in R2
+        description: The newest snapshot in this cluster R2 prefix is older than 14
+          hours, absent, or its freshness metric is missing.
+        action: Check VM 250 metrics, R2 listing and the native K3s snapshot schedule.
+        runbook_url: https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-infrastructure/blob/main/docs/operations/ETCD_BACKUPS.md

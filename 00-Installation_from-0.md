@@ -151,6 +151,7 @@ specifies VM 250 or a private browser session.
     enabling its sole daily timer.
     - [ ] [Install the coordinator and run a cycle](runbooks/19-cnpg-r2-backup-pitr.md#2-install-the-coordinator-on-vm-250).
     - [ ] [Verify backup recovery](docs/operations/POSTGRESQL_BACKUP_VERIFICATION.md).
+    - [ ] [Configure native etcd snapshots to R2](docs/operations/ETCD_BACKUPS.md#configure-or-reapply-native-backups).
 25. **Check operational handoff.** Confirm alert delivery and store the
     protected credentials, Terraform state and Jenkins configuration off-host.
     - [ ] [Verify FIRING and RESOLVED notifications](docs/operations/SLACK_ALERTING.md).

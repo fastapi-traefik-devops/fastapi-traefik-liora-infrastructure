@@ -7,8 +7,16 @@ identity="$repo_dir/recovery/LIORA-id_ed25519"
 config="$repo_dir/recovery/backup-coordinator.json"
 known="$repo_dir/.local-work/private/phase10-2/known_hosts"
 remote_host=root-admin@192.168.77.250
-ssh_args=(-i "$identity" -o BatchMode=yes -o ConnectTimeout=15 -o "UserKnownHostsFile=$known")
+ssh_args=(-i "$identity" -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15 -o "UserKnownHostsFile=$known")
 [[ -s "$config" && -s "$known" ]] || { echo 'Provision private credentials and verify the VM 250 host key first' >&2; exit 1; }
+if [[ "${1:-}" == --metrics-only && $# == 1 ]]; then
+  ssh "${ssh_args[@]}" "$remote_host" 'set -eu; sudo -n test -f /opt/liora-backups/.liora-managed; install -d -m 700 "$HOME/.liora-backup-install"'
+  scp "${ssh_args[@]}" scripts/backups/metrics.py "$remote_host:.liora-backup-install/metrics.py"
+  ssh "${ssh_args[@]}" "$remote_host" 'set -eu; sudo -n install -m 644 "$HOME/.liora-backup-install/metrics.py" /opt/liora-backups/metrics.py; sudo -n systemctl restart liora-backup-metrics.service; sudo -n systemctl is-active --quiet liora-backup-metrics.service; sudo -n systemctl is-active --quiet tailscaled'
+  printf 'Metrics updated; coordinator configuration, journal and timer unchanged.\n'
+  exit 0
+fi
+[[ $# == 0 ]] || { echo 'Usage: install-vm250.sh [--metrics-only]' >&2; exit 2; }
 ssh "${ssh_args[@]}" "$remote_host" 'install -d -m 700 "$HOME/.liora-backup-install"; sudo -n systemctl is-active --quiet tailscaled'
 scp "${ssh_args[@]}" scripts/backups/{coordinator.py,metrics.py,requirements.txt} infrastructure/backup-coordinator/liora-backup* "$config" "$remote_host:.liora-backup-install/"
 ssh "${ssh_args[@]}" "$remote_host" 'bash -s' <<'REMOTE'

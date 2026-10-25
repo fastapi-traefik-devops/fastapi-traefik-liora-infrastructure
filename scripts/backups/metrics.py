@@ -5,6 +5,7 @@ import datetime as dt
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
+import re
 from pathlib import Path
 import threading
 import time
@@ -20,8 +21,9 @@ def timestamp(value):
     return dt.datetime.fromisoformat(value.replace('Z', '+00:00')).timestamp()
 
 
-def usage(client, bucket, budget=120):
+def usage(client, bucket, budget=120, include_etcd=False):
     total = count = 0
+    latest = {"nonprod": 0, "prod": 0}
     token = None
     deadline = time.monotonic() + budget
     while True:
@@ -30,8 +32,14 @@ def usage(client, bucket, budget=120):
         response = client.list_objects_v2(Bucket=bucket, **({'ContinuationToken': token} if token else {}))
         total += sum(x['Size'] for x in response.get('Contents', []))
         count += len(response.get('Contents', []))
+        for obj in response.get('Contents', []):
+            match = re.fullmatch(r'etcd/(nonprod|prod)/etcd-snapshot-k3s-([12])-0[123]-([0-9]+)\.zip', obj.get('Key', ''))
+            if match and obj['Size'] > 0 and match[2] == ('1' if match[1] == 'nonprod' else '2'):
+                # Re-uploading an old snapshot must not make its contents recent.
+                created = min(float(match[3]), obj['LastModified'].timestamp())
+                latest[match[1]] = max(latest[match[1]], created)
         if not response.get('IsTruncated'):
-            return total, count
+            return (total, count, latest) if include_etcd else (total, count)
         following = response.get('NextContinuationToken')
         if not following or following == token:
             raise ValueError('Invalid object-list pagination')
@@ -40,7 +48,7 @@ def usage(client, bucket, budget=120):
 
 def collect(config, previous=None):
     now = time.time()
-    result = {'observed': now, 'environments': {}, 'usage': (previous or {}).get('usage', {})}
+    result = {'observed': now, 'environments': {}, 'usage': dict((previous or {}).get('usage', {})), 'etcd': dict((previous or {}).get('etcd', {}))}
     c = Coordinator(config)
     try:
         lease = c.lease()
@@ -70,7 +78,8 @@ def collect(config, previous=None):
         s3 = boto3.client('s3', endpoint_url=r['endpoint'], region_name='auto',
             aws_access_key_id=r['access_key_id'], aws_secret_access_key=r['secret_access_key'],
             config=Config(connect_timeout=10, read_timeout=20, retries={'max_attempts': 0}))
-        size, objects = usage(s3, r['bucket'])
+        size, objects, latest = usage(s3, r['bucket'], include_etcd=True)
+        result['etcd'] = latest
         result['usage'] = {'bytes': size, 'objects': objects, 'last_success': now, 'ok': 1}
     except Exception:
         result['usage']['ok'] = 0
@@ -86,6 +95,8 @@ def exposition(data, cluster):
         for suffix, key in [('last_success_timestamp','success'), ('last_failure_timestamp','failure'),
                             ('nonterminal_count','nonterminal'), ('telemetry_ok','ok')]:
             lines.append('liora_backup_' + suffix + '{' + labels + '} ' + str(v[key]))
+    if cluster in data.get('etcd', {}):
+        lines.append('liora_etcd_r2_latest_snapshot_timestamp{cluster="' + cluster + '"} ' + str(data['etcd'][cluster]))
     cycle = data.get('cycle', {})
     # The global cycle belongs to PROD; aggregate bucket usage is notified in NONPROD.
     if cluster == 'prod':

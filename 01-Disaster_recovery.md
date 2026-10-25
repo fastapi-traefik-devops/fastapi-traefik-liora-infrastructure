@@ -98,11 +98,13 @@ access to the replacement Proxmox host.
 12. **Restore the cluster VMs.** Reconcile or create VMs `201–203` and
     `211–213` without replacing surviving data by accident.
     - [ ] [Provision both VM groups](runbooks/08-provision-cluster-vms.md).
-13. **Choose the control-plane recovery route.** A fresh K3s bootstrap and
-    an etcd snapshot restore are different procedures; use the snapshot's
-    original server token only for the latter.
-    - [ ] For a fresh control plane, [install both K3s clusters](runbooks/09-install-k3s-clusters.md).
-    - [ ] For datastore recovery, [restore the matching etcd snapshot](runbooks/21-restore-k3s-etcd-snapshot.md).
+13. **Build the control planes.** The standard recovery route creates fresh
+    K3s clusters, deploys platform/configuration and restores application data.
+    - [ ] [Install both K3s clusters](runbooks/09-install-k3s-clusters.md).
+
+Etcd snapshots are also retained in R2. [Runbook 21](runbooks/21-restore-k3s-etcd-snapshot.md)
+is an optional manual datastore-recovery route, outside this sequence. It uses
+the selected snapshot's original token and does not restore PVC contents.
 
 ## 4. Prepare recovery dependencies without starting the application
 
@@ -158,6 +160,7 @@ Keep Jenkins scheduling and GitOps automation disabled while comparing state.
 21. **Restore backup coordination.** Reinstall on VM `250`; inspect retained
     cycle intent and the global fence before enabling the timer.
     - [ ] [Install and inspect the coordinator](runbooks/19-cnpg-r2-backup-pitr.md#2-install-the-coordinator-on-vm-250).
+    - [ ] [Configure independent native etcd backups](docs/operations/ETCD_BACKUPS.md#configure-or-reapply-native-backups).
 
 ## 7. Release operation
 

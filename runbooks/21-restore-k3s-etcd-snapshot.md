@@ -3,6 +3,7 @@
 **Tools:** Python 3, `jq`, SSH/SCP, curl and the pinned K3s binary.
 **Use for:** Recover one existing three-server K3s datastore.
 **Do not use for:** Fresh cluster bootstrap or application database recovery alone.
+**Standard route:** [Rebuild infrastructure and restore application data](../01-Disaster_recovery.md). This runbook is optional.
 **Effect:** Replaces Kubernetes metadata, Secrets and controller settings with snapshot state. It does not restore PVC files.
 
 ## Preconditions
@@ -26,9 +27,48 @@ unknown snapshot integrity, or no plan for existing volume data. Do not run
 
 ## 1. Prepare a recovery set
 
+Routine scheduling, retention and failure response: [etcd backups](../docs/operations/ETCD_BACKUPS.md).
+
 **Where:** Trusted operator machine, infrastructure repository root.
 
-### If servers are reachable
+### Select an R2 snapshot
+
+Choose this route for an off-host snapshot. Use one source route only; do not
+also overwrite it with the local export below.
+
+- [ ] Recover the matching complete token/node set from the encrypted private kit.
+- [ ] List this cluster's R2 snapshots:
+
+```sh
+cluster=nonprod
+bash scripts/local-python.sh scripts/backups/etcd_r2.py list --cluster "$cluster"
+```
+
+Standalone tool: [etcd_r2.py](../scripts/backups/etcd_r2.py).
+
+- [ ] Select the snapshot `name` field and matching private set. Use a new output directory:
+
+```sh
+read -r -p 'Exact R2 snapshot filename: ' snapshot
+read -r -p 'Matching complete token-set directory: ' identity_set
+recovery_set="$PWD/recovery/etcd/$cluster-incident-1"
+bash scripts/local-python.sh scripts/backups/etcd_r2.py download \
+  --cluster "$cluster" --snapshot "$snapshot" --identity-set "$identity_set" \
+  --output "$recovery_set"
+```
+
+Standalone tool: [etcd_r2.py](../scripts/backups/etcd_r2.py).
+
+**Expected:** Exit 0, ZIP/embedded-checksum success and a complete recovery set.
+The helper checks snapshot cluster/token metadata against the selected set before
+copying identities. It preserves the source kit and performs no restore.
+
+**Stop:** Metadata or checksum mismatch. Keep the file private; select the token
+set that applied when the snapshot was created. Do not substitute a new token.
+
+Continue at **Check and copy the selected set** below.
+
+### Alternative: capture from reachable servers
 
 - [ ] Select a new private output directory and a verified SSH host-key file:
 
@@ -54,7 +94,7 @@ verified host-key file for these nodes; do not disable host-key checks.
 mismatch. Export to a new directory. A directory without a complete manifest
 is not a recovery set.
 
-### If servers are lost
+### Alternative: use a complete archived set
 
 - [ ] Retrieve the matching complete set from the encrypted off-host recovery archive using [25](25-unpack-credentials-zip.md).
 - [ ] Use the **original** token associated with that snapshot. A new token cannot decrypt its bootstrap data.
@@ -77,6 +117,7 @@ file integrity; it does not decrypt the snapshot.
 
 ```sh
 first=192.168.77.201
+known_hosts="$HOME/.ssh/known_hosts"
 ssh -i recovery/LIORA-id_ed25519 -o StrictHostKeyChecking=yes \
   -o UserKnownHostsFile="$known_hosts" "root-admin@$first" \
   'install -d -m 700 "$HOME/k3s-recovery"'
@@ -168,6 +209,7 @@ For PROD use its copied set, `k3s-2-01`, `.211` and `.12`.
 - [ ] Preserve the current configuration and datastore before reset:
 
 ```sh
+test ! -e "/root/k3s-before-$incident/config" || { echo "Stop: preserved configuration exists" >&2; exit 1; }
 install -d -m 700 "/root/k3s-before-$incident"
 df -h /root /var/lib/rancher/k3s
 du -sh /var/lib/rancher/k3s/server/db
@@ -178,6 +220,13 @@ cp -a /var/lib/rancher/k3s/server/db "/root/k3s-before-$incident/db"
 On an empty replacement node, omit only a source path that does not exist.
 Require enough free disk space before copying. Keep previous evidence; use a new
 incident suffix if the destination already exists.
+
+- [ ] If native R2 backup configuration exists, move its drop-in into the preserved directory. This keeps the restore from uploading/pruning snapshots before release:
+
+```sh
+test ! -f /etc/rancher/k3s/config.yaml.d/90-etcd-r2.yaml || \
+  mv /etc/rancher/k3s/config.yaml.d/90-etcd-r2.yaml "/root/k3s-before-$incident/90-etcd-r2.yaml"
+```
 
 - [ ] Install the original token and this node's password:
 
@@ -199,6 +248,8 @@ token-file: /etc/rancher/k3s/recovery-server.token
 tls-san:
   - $api_vip
 disable-agent: true
+etcd-disable-snapshots: true
+etcd-s3: false
 EOF
 chmod 600 /etc/rancher/k3s/config.yaml
 ```
@@ -262,9 +313,7 @@ original settings. Copy it into the protected incident recovery archive.
 
 **Where:** Root shell on each peer, one at a time. First server stays running.
 
-- [ ] Preserve that peer's configuration as in step 3.
-- [ ] Install `server.token` and that peer's own saved node password, mode `0600`.
-- [ ] Set this peer's identity and install its restore configuration:
+- [ ] Set this peer's identity:
 
 ```sh
 set_dir=/home/root-admin/k3s-recovery/nonprod-incident-1
@@ -273,6 +322,24 @@ node_name=k3s-1-02
 node_ip=192.168.77.202
 first=192.168.77.201
 api_vip=192.168.77.11
+```
+
+- [ ] Preserve this peer's current configuration before changing it:
+
+```sh
+test ! -e "/root/k3s-before-$incident/config" || { echo "Stop: preserved configuration exists" >&2; exit 1; }
+install -d -m 700 "/root/k3s-before-$incident"
+cp -a /etc/rancher/k3s "/root/k3s-before-$incident/config"
+test ! -f /etc/rancher/k3s/config.yaml.d/90-etcd-r2.yaml || \
+  mv /etc/rancher/k3s/config.yaml.d/90-etcd-r2.yaml "/root/k3s-before-$incident/90-etcd-r2.yaml"
+```
+
+Stop if the incident directory already contains a preserved configuration. Use a
+new incident suffix; do not overwrite the earlier copy.
+
+- [ ] Install the original token, this peer's password and agentless configuration:
+
+```sh
 install -d -m 700 /etc/rancher/k3s /etc/rancher/node
 install -m 600 "$set_dir/server.token" /etc/rancher/k3s/recovery-server.token
 install -m 600 "$set_dir/nodes/$node_name/password" /etc/rancher/node/password
@@ -285,6 +352,8 @@ token-file: /etc/rancher/k3s/recovery-server.token
 tls-san:
   - $api_vip
 disable-agent: true
+etcd-disable-snapshots: true
+etcd-s3: false
 EOF
 ```
 
@@ -406,6 +475,7 @@ or the patch fails. Compare the recovered revision with remote Git before releas
 ## 8. Close the datastore recovery
 
 - [ ] Require all three nodes Ready, the API VIP usable and restored controllers healthy.
+- [ ] Reapply [native etcd backup configuration](../docs/operations/ETCD_BACKUPS.md#configure-or-reapply-native-backups) only after application/storage checks pass. Confirm new local and R2 snapshots before releasing backup operation.
 - [ ] Require application data/HTTPS/login/CRUD and backup checks complete.
 - [ ] Confirm unrelated jobs remain disabled and the PROD image-promotion acceptance gate remains enforced.
 - [ ] Keep the original recovery set, reset log, displaced datastore directories and hold-state file until incident retention permits removal.

@@ -210,5 +210,7 @@ stale telemetry, not a valid smaller total. The full-backup freshness margin is
 
 ## Related procedures
 
+- [Etcd snapshot operations](../docs/operations/ETCD_BACKUPS.md): independent native node scheduling and retention in separate R2 prefixes.
+
 - [Live disaster recovery](../01-Disaster_recovery.md): rebuild and restore application data.
 - [Backup verification](../docs/operations/POSTGRESQL_BACKUP_VERIFICATION.md): monthly isolated PITR, WAL delivery measurements and guarded cleanup.

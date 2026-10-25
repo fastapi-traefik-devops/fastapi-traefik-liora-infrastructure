@@ -28,7 +28,8 @@ empty database initialization from data restoration and isolated PITR exercises.
 
 - [Architecture](docs/ARCHITECTURE.md): desired topology, ownership and delivery policy.
 - [Infrastructure diagrams](docs/project-schemes.drawio): editable topology, cluster, traffic, CI/CD, backup, monitoring and recovery views.
-- [Backup operations](runbooks/19-cnpg-r2-backup-pitr.md): scheduled/manual cycles and failure recovery.
+- [PostgreSQL backup operations](runbooks/19-cnpg-r2-backup-pitr.md): scheduled/manual cycles and failure recovery.
+- [Etcd snapshot operations](docs/operations/ETCD_BACKUPS.md): native K3s snapshots, R2 retention and optional datastore recovery.
 - [Backup verification](docs/operations/POSTGRESQL_BACKUP_VERIFICATION.md): monthly isolated PITR and WAL-delivery measurements.
 - [Monitoring operations](docs/operations/SLACK_ALERTING.md): alert response and notification delivery.
 - [Recovery input schema](recovery/README.md): credentials, keys and generated access profiles.
