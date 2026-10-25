@@ -1,5 +1,7 @@
 # Operator procedures
 
+Documentation maintenance: [structure rules](../docs/docs-structure.md).
+
 ## Choose a scenario
 
 | Scenario | Start here | Data rule |

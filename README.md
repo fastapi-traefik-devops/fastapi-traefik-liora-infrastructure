@@ -23,6 +23,9 @@ Cloud-Init template is VM `9013`.
 
 ## Start here
 
+- [Documentation index](docs/README.md)
+- [Documentation structure and maintenance](docs/docs-structure.md)
+
 - [New installation](00-Installation_from-0.md)
 - [Infrastructure disaster recovery](01-Disaster_recovery.md)
 
