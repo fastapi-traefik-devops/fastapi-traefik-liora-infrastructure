@@ -295,3 +295,33 @@ before cleanup or moving the checkout:
 - [ ] Keep SSH identities and kubeconfigs in protected locations; do not put them into VM templates or ordinary source artifacts.
 - [ ] Keep browser sessions, traces, raw Secret responses and password-helper output out of public evidence.
 - [ ] Publish only sanitized results under `docs/testreports/`.
+
+
+## K3s snapshot recovery sets
+
+Keep complete sets under ignored `recovery/etcd/<cluster>-<capture-id>/`.
+Capture and restore them using [runbook 21](../runbooks/21-restore-k3s-etcd-snapshot.md).
+Each set contains an existing etcd snapshot, its SHA-256 manifest, the original
+server token and the three matching node-password files. All directories must
+be mode `0700`; files must be `0600`. These files contain cluster credentials.
+Do not display, commit or include them in ordinary diagnostic attachments.
+
+`server.token` is the original K3s server token. It is not a newly generated
+bootstrap token. Do not replace the validator's optional provisioning-token
+files with this secure-token format. Hash checks verify copy integrity; only
+an isolated or incident restore verifies snapshot decryption and recovery.
+
+Store an encrypted copy outside the Proxmox host and retain its separate
+archive password. Local snapshots and this local export do not protect against
+host loss. The exporter reads existing local snapshots; it does not establish
+a recurring off-host snapshot schedule or copy PVC data.
+
+## Live PostgreSQL recovery selections
+
+Keep generated bundles and incident selections under ignored
+`recovery/live-restore/`, mode `0700`, with files `0600`. Follow
+[runbook 20](../runbooks/20-restore-live-postgresql.md). Record the environment,
+physical backup ID, timezone-qualified target, application image pair, source
+archive and the new post-recovery destination/server identity. Recover the
+matching credentials from the protected kit; never substitute empty database
+initialization. Do not include credentials in GitOps recovery resources or patches.

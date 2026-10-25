@@ -15,6 +15,7 @@ point-in-time results; later decisions and reports supersede earlier status.
 - [Phase 9 Jenkins migration](PHASE9_REPORT.md), [live cycle](PHASE9_LIVE_CYCLE.md), [state restoration](PHASE9_STATE_RESTORE.md), [workers](PHASE9_WORKERS.md)
 - [Phase 10 fresh CNPG installation](PHASE10_REPORT.md)
 - [Phase 10.2 R2 physical backup/WAL and isolated PITR](PHASE10_2_REPORT.md)
+- [Live PostgreSQL and etcd recovery procedures](RECOVERY_RUNBOOKS_2026-10-25.md)
 - [Phase 11 certificates and refinement](PHASE11_REPORT.md)
 - [Backup incident and retained-cycle recovery](BACKUP_INCIDENT_2026-10-24.md)
 - [Backup alert review](BACKUP_ALERTING_REVIEW_2026-10-24.md), [alerting correction](ALERTING_OPTIMIZATION_2026-10-24.md), [storage/replication alerting](STORAGE_REPLICATION_ALERTS_2026-10-24.md)

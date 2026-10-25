@@ -1191,10 +1191,11 @@ It does not replace PITR verification or complete pending Phase 9 work.
 - [x] Separate permanent fresh deployment, disaster recovery and backup/PITR operating procedures.
 - [x] Preserve migration-specific commands and evidence under `docs/testreports/`; retain operator scripts.
 - [x] Remove historical status/educational framing from operational runbooks and desired architecture.
-- [ ] Exercise the documented live CNPG restore/cutover route and complete its operator tooling: selected target, source archive protection, stable endpoint, Argo ownership, post-recovery archive identity and application checks.
+- [x] Provide live CNPG recovery preparation and etcd snapshot recovery procedures with protected inputs, source archive separation, workload holds and resumable local tooling. See [recovery runbook implementation](RECOVERY_RUNBOOKS_2026-10-25.md).
+- [ ] Exercise live CNPG restore/cutover and the three-server etcd restore route in a separate recovery checkpoint. Verify the selected target, stable endpoint, ownership, post-recovery archive, original-token decryption and application checks; local checks are not a live recovery exercise.
 - [ ] Complete generic current-K3s Jenkins stopped-home backup/restore and a reproducible fresh agent/job bootstrap independent of one-time transfer markers.
 - [ ] Complete project-specific off-host etcd/state/private-kit capture/retrieval and a full-system disaster recovery exercise.
 - [ ] Record monitoring history coverage explicitly; PostgreSQL R2 backups do not restore Prometheus/Alertmanager volume data.
 
 These remaining capabilities are not inferred from successful isolated PITR,
-controller migration, or this documentation-only rewrite.
+controller migration, or local recovery-tool validation.
