@@ -61,9 +61,9 @@ Do not apply it over a controller using an accepted restored home.
       selected controller home and leaves jobs held.
 - [ ] Configure `app-ci`, `dev-build` and `trusted/publish` through
       [the one authoritative job procedure](27-configure-jenkins-jobs.md#2-configure-the-three-jobs-while-disabled).
-- [ ] Prepare the STAGE observer only through
-      [its separate gate](27-configure-jenkins-jobs.md#3-prepare-the-stage-observer-separately).
-      A JCasC node declaration is not a running acceptance workload.
+- [ ] Connect the STAGE observer with
+      [the job procedure, section 3](27-configure-jenkins-jobs.md#3-connect-the-stage-observer).
+      A JCasC node declaration alone is not a running acceptance workload.
 
 **Stop:** A different selected home, missing credentials, unreviewed helper
 pin or mismatched job definition. Keep the controller quiet and preserve data.
@@ -73,14 +73,18 @@ pin or mismatched job definition. Keep the controller quiet and preserve data.
 - [ ] Review the job allowlist and schedules for the change window.
 - [ ] Run one controlled main CI and trusted publication; inspect both build results.
 - [ ] Require automatic STAGE acceptance for the exact application SHA and
-      frontend/backend digest pair. If the observer is still offline, keep
-      publication held and PROD blocked; follow
-      [the observer gate](27-configure-jenkins-jobs.md#3-prepare-the-stage-observer-separately).
+      frontend/backend digest pair. If the observer is offline, connect it with
+      [section 3 of the job procedure](27-configure-jenkins-jobs.md#3-connect-the-stage-observer)
+      before the next publication.
 - [ ] Confirm the infrastructure promotion commit, Argo Synced/Healthy and STAGE HTTPS.
 - [ ] Enable main SCM polling at `H/2 * * * *`.
 - [ ] Enable manual DEV entry only by operator request.
 - [ ] Enable recurring indexing or nightly schedules only when included in the approved job policy.
-- [ ] Keep PROD publication unavailable until its release-tag and exact-pair acceptance gate is approved for use.
+- [ ] PROD releases are manual: tag a STAGE-accepted SHA `vX.Y.Z`, run `trusted/publish` with
+      `ACTION=prod`, `APP_SHA` and `RELEASE_TAG`, review and merge the generated
+      `promotion/prod/<tag>` infrastructure PR. The publisher refuses any SHA or image pair
+      without an accepted STAGE receipt. Roll back by re-releasing the previous tag. See
+      [CI/CD, PROD release](../docs/CI_CD.md#prod-release-and-rollback). PROD is never deployed automatically.
 
 The publisher lock spans publication, STAGE update, observation and receipt.
 Superseded main builds are skipped. Preserve unrelated concurrent infrastructure

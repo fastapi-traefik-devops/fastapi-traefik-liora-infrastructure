@@ -103,10 +103,10 @@ Run everything from management VM 200 in the infrastructure checkout, NONPROD ku
    PVC, configures `host-ci` and `registry-publisher`, and leaves jobs held.
    Do not apply `agents/` or `initial-cycle/` directly to a fresh controller.
 5. **Helper bundles and observer.** Keep the trusted publisher definition and
-   immutable helper pin matched. The
-   [observer gate](../runbooks/27-configure-jenkins-jobs.md#3-prepare-the-stage-observer-separately)
-   is separate from agent connection. Keep PROD blocked on a rebuilt
-   controller until automatic acceptance is implemented and verified there.
+   immutable helper pin matched. Connect the observer with its own installer
+   ([runbook 27, section 3](../runbooks/27-configure-jenkins-jobs.md#3-connect-the-stage-observer));
+   it creates the observer connection Secret from the controller and mounts the
+   separately pinned observer bundle.
 6. **Activate.** Follow [runbook 17, section 4](../runbooks/17-install-operate-jenkins.md#4-activate-delivery).
    Restore the recorded job/trigger policy on a recovered controller. Before
    releasing quiet mode, check the allowlist and empty queue.
@@ -131,8 +131,9 @@ Deploying the SHA that DEV already runs is a no-op. Migrations of the branch app
 database and cannot be rolled back.
 
 ### PROD release and rollback
-Keep PROD blocked on a rebuilt controller until its automatic STAGE acceptance
-gate is verified. Then see application `ci/RELEASE.md`: tag an accepted SHA, run `trusted/publish` with
+PROD is released manually, never automatically. A release requires an automatic STAGE
+acceptance receipt for the exact SHA and image pair, so on a rebuilt controller the first
+controlled STAGE cycle comes first. See application `ci/RELEASE.md`: tag an accepted SHA, run `trusted/publish` with
 `ACTION=prod`, `APP_SHA`, `RELEASE_TAG`, merge the generated infrastructure PR, verify
 `https://liora.aprt.info`. Roll back by re-releasing the previous tag (a
 `promotion/prod/<tag>-redeploy-<sha>` branch); check forward-only Alembic migrations first.
@@ -147,7 +148,9 @@ Application `ci/` changes affect builds immediately, while the trusted
 publisher uses a commit-pinned immutable bundle. Follow
 [runbook 27](../runbooks/27-configure-jenkins-jobs.md#1-check-identities-and-immutable-helpers)
 to review source, prepare the bundle and validate the matching publisher
-definition. Review observer pin alignment separately before activation.
+definition. The observer bundle has its own pin (`OBSERVER_SOURCE_COMMIT`);
+repin it only when `ci/stage_acceptance.py` changes, together with
+`acceptance/observer.yaml`.
 Keep old immutable bundles for rollback.
 
 ## 6. Troubleshooting
