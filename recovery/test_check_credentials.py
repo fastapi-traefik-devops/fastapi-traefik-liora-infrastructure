@@ -33,7 +33,7 @@ spec.loader.exec_module(checker)
 class CredentialsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.fixture = tempfile.TemporaryDirectory(prefix='liora-credential-tests-', dir=Path.home())
+        cls.fixture = tempfile.TemporaryDirectory(prefix='liora-credential-tests-')
         cls.root = Path(cls.fixture.name)
         key = ed25519.Ed25519PrivateKey.generate()
         cls.private = key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.OpenSSH,
@@ -200,7 +200,8 @@ class CredentialsTest(unittest.TestCase):
                     else:
                         parent[path[-1]] = False
                     self.write()
-                    self.run_check(expected=1)
+                    expected = 0 if path == ('kubernetes',) and mutation == 'missing' else 1
+                    self.run_check(expected=expected)
 
     def test_password_boundaries_and_no_invented_secret_limits(self):
         for length in (7, 8, 40, 41):
@@ -228,6 +229,11 @@ class CredentialsTest(unittest.TestCase):
         self.yaml_values['application_credentials']['stage']['db-secrets']['POSTGRES_PASSWORD'] += 'mismatch'
         self.write()
         self.run_check(expected=1)
+
+    def test_current_yaml_does_not_require_controller_keys(self):
+        del self.yaml_values['kubernetes']
+        self.write()
+        self.run_check()
 
     def test_unknown_locations_obsolete_names_and_preservation(self):
         canary = secrets.token_urlsafe(27)

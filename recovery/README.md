@@ -1,6 +1,8 @@
 # Recovery inputs and validation
 
-Keep real inputs in this Git-ignored directory, with `.env`, `recovery.yaml`, SSH
+Keep real inputs in this Git-ignored directory. New files under `recovery/`
+are ignored by default; tracked examples and validator source files are
+exceptions. Set `.env`, `recovery.yaml`, SSH
 private keys and optional cluster tokens mode `0600` (or more restrictive).
 The public SSH key may be `0644`. Back up these files outside Git; the checker
 only reads them. Tracked `.example` files intentionally contain unusable fake
@@ -102,7 +104,7 @@ placeholders. Seven are required in both modes:
 | `DISK_STORAGE` | Proxmox storage ID: at least two ASCII characters, starts with a letter, ends with a letter/digit; interior letters/digits/`.`/`_`/`-`. |
 | `TF_VAR_cloud_init_datastore_id` | Same storage format, and must equal `DISK_STORAGE`; `"$DISK_STORAGE"` is supported. |
 | `TAILSCALE_API_KEY` | Literal `tskey-api-` followed by a nonempty opaque letters/digits/`_`/`-` body. Auth keys and OAuth/client secrets are different inputs. No undocumented fixed token length is imposed. |
-| `TAILSCALE_TAILNET` | Nonempty tailnet identifier using letters/digits/`.`/`_`/`@`/`-`, or `-` for the credential owner's tailnet. Opaque and legacy identifiers are supported. |
+| `TAILSCALE_TAILNET` | Nonempty tailnet identifier using letters/digits/`.`/`_`/`@`/`-`, or `-` for the credential owner's tailnet. |
 
 Three more are required by `--all`, and checked if present with `--tailscale`:
 
@@ -110,7 +112,7 @@ Three more are required by `--all`, and checked if present with `--tailscale`:
 | --- | --- |
 | `GHCR_REGISTRY` | Exactly `ghcr.io`, as required by the bootstrap consumer. |
 | `GHCR_USERNAME` | GitHub username, 1–39 ASCII letters/digits/hyphens; no initial, final or consecutive hyphens. |
-| `GHCR_TOKEN` | Personal access token (classic): `ghp_` plus 36 alphanumeric characters, or legacy 40 hexadecimal characters. Fine-grained PATs and GitHub App tokens are outside this persistent schema. The operator must grant `read:packages` and authorize organization access as needed. |
+| `GHCR_TOKEN` | Personal access token (classic): `ghp_` plus 36 alphanumeric characters, or 40 hexadecimal characters. Grant `read:packages` and authorize organization access as needed. |
 
 Optional `PROXMOX_PUBLIC_IP` is a dotted IPv4 address for the management SSH
 procedure. Documentation-only addresses in `.example` are not real endpoints.
@@ -124,23 +126,14 @@ Token shape does not establish validity, scopes or expiry.
 
 ## `recovery.yaml`
 
-The version 1 document retains legacy archive compatibility alongside current
-private application inputs. The current deployment uses Ansible/helpers/manual
-Secret provisioning; it does not require an encryption controller. Every listed
-field, including the legacy archive list, is still required by `--all` until
-the separate schema update is implemented. Mappings use unique string keys;
-YAML anchors,
-aliases, merges and custom tags are unsupported. Unknown fields warn at every
-mapping level, including controller list items, Secret key maps and nested keys
-inside unsupported sections.
+The version 1 document holds application credentials and database backup
+inputs. With `--all`, the checker requires `application_credentials`.
+Mappings use unique string keys. YAML anchors, aliases, merges, and custom
+tags are unsupported. Unknown fields warn at every mapping level.
 
 | Path | Constraint |
 | --- | --- |
 | `schema_version` | Integer `1` (a Boolean or quoted number is invalid). |
-| `kubernetes.nonprod` legacy archive section | The current v1 validator still requires the original nonempty controller-key list. See the exact legacy list field in [the fake YAML example](recovery.yaml.example); this is archive compatibility, not a platform installation requirement. A separate schema update must retire this requirement without deleting old recovery material. |
-| `…[i].secret_name` | Unique original Kubernetes Secret DNS subdomain name, at most 253 characters: lowercase letters/digits/`-`/`.` with each component starting and ending with a letter/digit. |
-| `…[i].tls_crt_pem` | Parseable PEM X.509 certificate whose public key matches the private key below. |
-| `…[i].tls_key_pem` | Parseable, unencrypted RSA PEM private key (PKCS#1 or PKCS#8), used by the legacy archive format. Keys shorter than 2048 bits warn. |
 | `application_credentials` | Mapping containing `dev`, `stage`, `prod`; each has all fields below. |
 | `application_credentials.<env>.namespace` | Exactly `app-dev`, `app-stage` or `app-prod`, matching `<env>`. |
 | `…first_superuser` | Valid application `EmailStr`, at most 255 characters, with deliverability checks disabled. Must match the current ConfigMaps/bootstrap account `admin007@liora.aprt.info`. The tracked example intentionally uses a fake address that must be replaced. |
@@ -150,11 +143,6 @@ inside unsupported sections.
 | `…backend-secrets.SMTP_PASSWORD` | String without NUL; empty is explicitly supported when SMTP authentication is disabled. Nonempty example placeholders fail. |
 | `…db-secrets.POSTGRES_PASSWORD` | Same constraint as the backend database password and must equal it within this environment. |
 
-Expired/not-yet-valid controller certificates warn rather than fail: historical
-private keys can still be needed to decrypt backups. Retain all required original
-key pairs while historical encrypted archives are retained; do not replace
-their original keys merely because current Secret provisioning has changed. Name
-rules follow [Kubernetes resource names](https://kubernetes.io/docs/concepts/overview/working-with-objects/names/).
 Application constraints come from `backend/app/models.py` (`UserBase`/`UserCreate`)
 and `backend/app/core/config.py` in the application repository; consumer-specific
 namespace/account requirements come from
@@ -180,8 +168,8 @@ format and must not replace these producer-managed raw token files.
 "$RECOVERY_PYTHON" recovery/test_check_credentials.py
 ```
 
-Tests generate disposable SSH/controller keys and secret canaries in a temporary
-directory under the operator's home, then remove it. They exercise every required
+Tests generate disposable keys and secret canaries in a system temporary
+directory, then remove it. They exercise every required
 field, formats/types/boundaries, strict warning exits, unknown-field preservation,
 parser attacks and redaction on success and failure. API coverage uses mocks and
 a disposable local HTTPS server, including redirect rejection; no live credentials
@@ -196,9 +184,9 @@ under an execution hold and verify administrator access and credential decryptio
 before allowing jobs. Follow the [Jenkins state checklist](../runbooks/17-migrate-jenkins-ci.md#6-controller-backup-and-recovery-checklist).
 
 The fresh foundation overlay creates a new home. An accepted controller must
-retain its selected PVC and matching configuration; applying a foundation overlay
-is not a controller-state restore. One-time transfer artifacts remain described
-in [the Phase 9 restore report](../docs/testreports/PHASE9_STATE_RESTORE.md).
+retain its selected PVC and matching configuration. Use
+[the controller restore runbook](../runbooks/23-restore-jenkins-controller.md)
+before starting a restored controller.
 
 Restoring a GitHub App key does not restore its repository selection or granted
 permissions. Recover the existing `fastapi-gitops` installation with access to
@@ -275,8 +263,7 @@ the YAML/environment schema checked by `check_credentials.sh`.
 
 See [certificate preparation and activation](../kubernetes/platform/public-certificates/README.md).
 Use [runbook 15](../runbooks/15-publish-application.md) to reissue certificates
-after rebuilding clusters. Historical migration and renewal evidence is in
-[the Phase 11 report](../docs/testreports/PHASE11_REPORT.md).
+after rebuilding clusters.
 
 ## Recovery kit checklist
 
@@ -287,10 +274,6 @@ after rebuilding clusters. Historical migration and renewal evidence is in
 - [ ] Preserve generated coordinator access and its source configuration; after cluster replacement review CA/token changes before regenerating its access profile.
 - [ ] Match every database recovery point to the environment archive and credentials applicable at that point.
 - [ ] Keep original archived key/state copies while preparing working recovery copies.
-
-Historical schema compatibility requirements are validation rules, not instructions
-to install retired components. Scope and implementation status are recorded in
-[the recovery capability register](../docs/testreports/OPERATIONAL_DOCUMENTATION_REVIEW_2026-10-24.md).
 
 ## Private operator data
 
@@ -311,4 +294,4 @@ before cleanup or moving the checkout:
 - [ ] Copy required private data into the protected off-host recovery kit and verify its integrity before deleting a local copy.
 - [ ] Keep SSH identities and kubeconfigs in protected locations; do not put them into VM templates or ordinary source artifacts.
 - [ ] Keep browser sessions, traces, raw Secret responses and password-helper output out of public evidence.
-- [ ] Publish only sanitized results under `docs/testreports/`. Migration-specific directory locations belong in the corresponding historical reports, not deployment prerequisites.
+- [ ] Publish only sanitized results under `docs/testreports/`.

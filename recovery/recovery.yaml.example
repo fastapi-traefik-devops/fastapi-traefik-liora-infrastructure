@@ -1,15 +1,6 @@
 # Deliberately unusable placeholders; never use example credentials on a cluster.
 # Complete schema and constraints: recovery/README.md.
 schema_version: 1
-kubernetes:
-  nonprod:
-    # Restore every historical controller key needed to decrypt existing backups.
-    sealed_secrets_controller_keys:
-      - secret_name: replace-with-original-controller-secret-name
-        tls_crt_pem: |
-          REPLACE_WITH_ORIGINAL_PEM_CERTIFICATE
-        tls_key_pem: |
-          REPLACE_WITH_MATCHING_UNENCRYPTED_RSA_PRIVATE_KEY
 application_credentials:
   dev:
     namespace: app-dev
@@ -43,7 +34,7 @@ application_credentials:
     db-secrets:
       POSTGRES_PASSWORD: REPLACE_WITH_PROD_DATABASE_PASSWORD
 
-# Optional until Phase 10.2; all values below are deliberately fake.
+# All values below are deliberately fake.
 database_backups:
   account_id: REPLACE_WITH_32_HEX_ACCOUNT_ID
   api_token: REPLACE_WITH_OPTIONAL_R2_API_TOKEN

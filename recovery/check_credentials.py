@@ -282,7 +282,7 @@ class Check:
             return
         root = self.mapping(data, 'recovery/recovery.yaml',
                             {'schema_version', 'kubernetes', 'application_credentials', 'database_backups'},
-                            {'schema_version', 'kubernetes', 'application_credentials'} if self.all_fields else {'schema_version'})
+                            {'schema_version', 'application_credentials'} if self.all_fields else {'schema_version'})
         if type(root.get('schema_version')) is not int or root.get('schema_version') != 1:
             self.error('recovery/recovery.yaml.schema_version', 'must be integer 1')
         if 'database_backups' in root:
