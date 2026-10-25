@@ -156,7 +156,7 @@ Keep Jenkins scheduling and GitOps automation disabled while comparing state.
     its mounted configuration. Start under an execution hold and verify users,
     history and credential decryption before allowing builds.
     - [ ] [Restore the Jenkins controller home](runbooks/23-restore-jenkins-controller.md).
-    - [ ] [Check restored jobs, credentials and observer gate](runbooks/27-configure-jenkins-jobs.md).
+    - [ ] [Check restored jobs, credentials and the STAGE observer](runbooks/27-configure-jenkins-jobs.md).
 20. **Restore GitOps ownership.** Compare child and root Application diffs
     against the recovered database and application revision before automation.
     - [ ] [Install Argo CD and reconcile resources](runbooks/14-install-argocd.md).

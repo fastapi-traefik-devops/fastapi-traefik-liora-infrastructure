@@ -83,37 +83,59 @@ bash scripts/local-python.sh scripts/kubernetes/phase9-live-cycle.py approve-pub
 credential scope. Do not approve unrelated signatures or use the archived
 `jobs.groovy`: it targets the old application repository and Docker bootstrap.
 
-## 3. Prepare the STAGE observer separately
+## 3. Connect the STAGE observer
 
-The controller JCasC declares `stage-observer`, but the node alone is not the
-acceptance workload. Its namespace, read-only RBAC, immutable helper bundle,
-connection Secret and Deployment are in
+The controller JCasC declares the `stage-observer` node. Its namespace,
+read-only RBAC, NetworkPolicy and Deployment are in
 [`acceptance/`](../kubernetes/platform/nonprod/jenkins/acceptance/kustomization.yaml).
-The current observer manifest references `jenkins-acceptance-ci-8b584055a83c`;
-the current bundle helper's `--observer` mode uses a different source commit.
-Do not apply a mismatched bundle or silently change the live publisher policy.
+The observer runs only `stage_acceptance.py` from its own immutable bundle,
+pinned separately from the publisher bundle (`OBSERVER_SOURCE_COMMIT` in
+[the bundle helper](../scripts/kubernetes/prepare-jenkins-publisher-source.py)).
+The observer installer creates its inbound connection Secret from the held
+controller; it never reads Git or a publisher token for it.
 
-- [ ] Before activation, reconcile the observer ConfigMap pin, the reviewed
-      application `stage_acceptance.py`, the publisher's invocation and the
-      existing live policy in one reviewed change. Prepare the bundle with
-      `--observer --output <new-private-path>` and compare the emitted name
-      with the manifest reference. Keep it immutable.
-- [ ] Add and review a bounded installer for the required
-      `jenkins-acceptance/stage-observer-connection` inbound Secret. The
-      existing two-worker installer does not create it. The `acceptance/`
-      overlay contains read-only RBAC and the Deployment, but cannot connect
-      without this Secret. Do not reuse a publisher connection token.
-- [ ] After those inputs and an activation decision exist, apply the pinned
-      observer bundle before the `acceptance/` overlay. Verify the observer
-      Pod and Jenkins node are online, the exact STAGE Application is
-      Synced/Healthy, ready Pod image IDs match the promotion digest pair,
-      and the canonical STAGE HTTPS endpoint responds. Require an
-      automatically produced `acceptance.json` for the exact SHA and pair.
+- [ ] Keep the controller quiet with all jobs disabled. Confirm that the
+      generated observer bundle name matches the manifest reference:
 
-**Stop:** The pin mismatch and absent observer Secret installer make this
-activation incomplete for a newly installed controller. It also requires an
-explicit decision about the approved live delivery path. Until then, the
-observer stays offline on a new controller and PROD promotion remains blocked.
+```sh
+cd "$HOME/fastapi-traefik-liora-infrastructure"
+bash scripts/local-python.sh scripts/kubernetes/prepare-jenkins-publisher-source.py \
+  --observer --output .local-work/jenkins/observer-source-$(date -u +%Y%m%dT%H%M%SZ).json
+rg 'jenkins-acceptance-ci-' kubernetes/platform/nonprod/jenkins/acceptance/observer.yaml
+```
+
+**Expected:** `"name": "jenkins-acceptance-ci-8b584055a83c"`, the same name in
+`observer.yaml`, and `data_sha256`
+`d0dad33b2c91f444c6acae0299fc96489a36fd91c8675e4a1bd0687b19f911fe`.
+
+- [ ] Connect the observer:
+
+```sh
+bash scripts/local-python.sh scripts/kubernetes/deploy-jenkins-observer.py
+```
+
+Standalone script: [deploy-jenkins-observer.py](../scripts/kubernetes/deploy-jenkins-observer.py).
+It checks the execution hold and the bundle pin, validates the overlay with a
+server-side dry run, installs the immutable bundle before the Deployment,
+copies the registry pull Secret, creates
+`jenkins-acceptance/stage-observer-connection` (key `agent-secret`) from the
+controller's `stage-observer` inbound identity, deploys the observer, waits for
+the node to be online and verifies the mounted helper hash. It refuses to
+replace a different existing bundle or Secret. Private receipts are written
+under `.local-work/private/phase9/observer-*`.
+
+**Expected:** `deployed: true`, `controller_quiet: true`, `jobs_enabled: false`,
+`observer_bundle: jenkins-acceptance-ci-8b584055a83c`. In **Manage Jenkins →
+Nodes**, `stage-observer` is online with one executor.
+
+- [ ] Acceptance is proven by the first controlled main cycle in section 4:
+      the publisher commits the STAGE promotion and then an automatically
+      produced `overlays/stage/acceptance.json` with `"status": "accepted"`
+      for the exact application SHA and frontend/backend digest pair.
+
+**If interrupted:** Keep jobs disabled. Inspect the latest receipt and the
+observer Pod events, then rerun the same command; a matching bundle and Secret
+are reused.
 
 ## 4. Release only the approved policy
 
@@ -121,6 +143,11 @@ observer stays offline on a new controller and PROD promotion remains blocked.
       Activate only the agreed jobs and schedules. Test one controlled main
       cycle and require automatic STAGE acceptance before considering PROD.
       Follow [runbook 17, section 4](17-install-operate-jenkins.md#4-activate-delivery).
+- [ ] PROD has no job to enable: releases run on demand in `trusted/publish`
+      with `ACTION=prod`, `APP_SHA` and `RELEASE_TAG` (see
+      [CI/CD, PROD release](../docs/CI_CD.md#prod-release-and-rollback)).
+      Confirm the three parameters are visible after installing
+      `Jenkinsfile.promote`.
 - [ ] On a restored controller, restore the *recorded* job allowlist and
       trigger state, not generic defaults. On restart, check those settings
       before selecting **Cancel Shutdown**.

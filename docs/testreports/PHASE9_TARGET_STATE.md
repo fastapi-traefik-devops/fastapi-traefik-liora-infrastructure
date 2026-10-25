@@ -111,6 +111,43 @@ Candidate: `2a6e05a…` (PR #58, accepted on STAGE in step 3), backend `sha256:1
 Rollback from start of the Jenkins job to working site: ~8 min. Nothing was rebuilt; the
 pair accepted for `v1.0.0` was reused from GHCR.
 
+### 7. Nightly `full` run on main
+
+| Check | Result |
+| --- | --- |
+| `app-ci/main` #24, cause `TimerTriggerCause` (`H 2 * * *`), description «Profile full (nightly)» | SUCCESS, 2026-10-25 02:15:15 → ~02:41 (26 min) |
+| Commit | `cce22bf5728ffb9b256d755206e95da0e6559b54` (main at that time) |
+| Stages | all 18 gates (`config`, `secrets`, 8 backend, 8 frontend incl. `backend-integration` and `frontend-tests`) and `gitops`; JUnit results without failures; Playwright 41 passed |
+| Publication | none: no `trusted/publish` build between 2026-10-24 19:29 and 2026-10-25 15:29 |
+
+The build history also keeps the nightly runs of the previous Jenkins host (#3, #5 on
+2026-10-19/20, `full`, SUCCESS); #7 and #11 (2026-10-21/22) failed before the profile
+restoration and the CVE triage of app PR #69.
+
+### 8. Reproducible observer installation
+
+Goal: a new or restored controller gets the STAGE observer from Git and the controller alone,
+without copying anything from the running cluster. Changes (infrastructure branch
+`ci/observer-reproducible-install`):
+
+- The observer bundle has its own pin `OBSERVER_SOURCE_COMMIT = 8b584055a83c…` (merge of app
+  PR #65) in `prepare-jenkins-publisher-source.py`; the publisher stays on `9c2084ceb24c…`.
+  `ci/stage_acceptance.py` is identical in both commits.
+- New installer `scripts/kubernetes/deploy-jenkins-observer.py` (runbook 27, section 3):
+  requires the execution hold, checks the manifest pin against the generated bundle,
+  installs the immutable bundle before the Deployment, creates
+  `jenkins-acceptance/stage-observer-connection` (key `agent-secret`) from the controller's
+  `stage-observer` inbound identity, waits for the node and verifies the mounted helper hash.
+  It refuses to replace a different bundle or Secret and never reuses a publisher token.
+
+| Check | Result |
+| --- | --- |
+| Generated observer bundle vs live ConfigMap `jenkins-acceptance-ci-8b584055a83c` | identical name and `data_sha256` `d0dad33b…f911fe` |
+| Generated publisher bundle vs live `jenkins-publisher-ci-9c2084ceb24c` | identical `data_sha256` `47402c0c…30009b` |
+| Live Secret `stage-observer-connection` format | `Opaque`, single key `agent-secret`, as created by the installer |
+| `acceptance/` overlay render | OK |
+| Unit tests: `test-deploy-jenkins-observer.py` (6), `test-jenkins-publisher-source.py` (8, incl. manifest pin guard), `test-deploy-jenkins-agents.py` (6) | all passed |
+
 ### Summary
 
 | Area | Result |
@@ -120,18 +157,5 @@ pair accepted for `v1.0.0` was reused from GHCR.
 | STAGE automatic deployment and acceptance | passed |
 | PROD release by tag through reviewed PR | passed (`v1.0.0`, `v1.0.1`) |
 | PROD rollback by re-release | passed, ~8 min |
-
-## Observations and open items
-
-- Not yet tested: the first nightly `full` run on main (expected ~02:00), re-release of a version
-  that PROD already runs (expected `unchanged`), PROD refusal of a SHA without acceptance, a live
-  failed-acceptance drill (requires disabling Argo auto-sync for `app-stage`), a controller
-  restart.
-- PROD deploy time is dominated by Argo CD polling (about 3–7 min after the merge).
-- `/api/v1/utils/health-check/` returns `true` without a database, so neither STAGE acceptance
-  nor the PROD check proves database connectivity (Phase 9 item 8).
-- The startup quiet-mode hook still needs *Cancel Shutdown* after every controller restart.
-- Cluster notes for the infrastructure owner: a stale Pod `backend-59b9bb8fdf-tgmnw`
-  (`ContainerStatusUnknown`) remained in `app-prod`; DEV `liora-db-1` showed 3 restarts.
-- Removal of the obsolete application paths is prepared in app PR #78
-  ([cleanup report](APPLICATION_REPOSITORY_CLEANUP.md)) and not merged yet.
+| Nightly `full` run | passed (#24) |
+| Observer bundle reproducible from Git | passed (hash equal to live) |

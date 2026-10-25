@@ -786,8 +786,9 @@ Any change to the application `ci/` helpers takes effect only after the bundle i
 4. If `Jenkinsfile.promote` changed: paste it into `trusted/publish` and approve it in
    In-process Script Approval.
 
-Older ConfigMaps stay in the cluster for rollback. Live bundle on 2026-10-25:
-`jenkins-publisher-ci-c6a70f44808d`; the observer bundle `jenkins-acceptance-ci-8b584055a83c`.
+Older ConfigMaps stay in the cluster for rollback. Live bundles on 2026-10-25:
+`jenkins-publisher-ci-9c2084ceb24c`; the observer bundle `jenkins-acceptance-ci-8b584055a83c`
+(own pin `OBSERVER_SOURCE_COMMIT`, installed with `deploy-jenkins-observer.py`, runbook 27 §3).
 
 #### Evidence
 
@@ -798,6 +799,7 @@ Older ConfigMaps stay in the cluster for rollback. Live bundle on 2026-10-25:
 | `f96cb41` (PR #70) | publisher with DEV support, STAGE unchanged | `e509095`, `54fd02a` accepted |
 | `5243708` (PR #71) | `dev` = `release` gates | `9cbcfae`, `8f4d266` accepted |
 | `cce22bf` (PR #73) | STAGE and first DEV deployment from Jenkins | `68c90bc`, `5d4a9fb` accepted; DEV `90ec738` |
+| `cce22bf` | nightly `full`, `app-ci/main` #24, 2026-10-25 02:15, SUCCESS, no publication | — |
 | `9bd6f60` (PR #58 head) | `dev-build`, DEV deployment | DEV `698889e` |
 | `2a6e05a` (PR #58) | target-state STAGE cycle | `289f323`, `004b90e` accepted |
 | `48b443f` (`v1.0.0`) | first PROD release | `e8c303f`, PR #15 `da4704a` |
@@ -907,6 +909,9 @@ current state above):
 2. [x] **Automatic STAGE acceptance.** Live since 2026-10-24 (application PR #65; infrastructure
    PRs #1, #3, #4, #6); five accepted cycles, see Evidence. The observer reaches STAGE through
    the private HAProxy route; fresh external reachability is not part of the check.
+   Reproducible on a new controller: the observer bundle is pinned separately and generated
+   byte-identical to the live one; `deploy-jenkins-observer.py` creates its connection Secret
+   from the held controller (runbook 27 §3, [report](PHASE9_TARGET_STATE.md#8-reproducible-observer-installation)).
 3. [x] **Serialization through acceptance.** One `liora-stage-promotion` lock covers publication,
    the STAGE commit, observation and the receipt; superseded candidates are skipped and new
    promotions remove the previous receipt (fixture-tested). Open: a live failed-acceptance drill.

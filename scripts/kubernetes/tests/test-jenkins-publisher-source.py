@@ -28,7 +28,7 @@ class PublisherSourceTests(unittest.TestCase):
             if command[:2] == ['remote', 'get-url']:
                 result = b'https://example.invalid/other.git' if wrong_remote else ('git@github.com:' + MODULE['SOURCE_REPOSITORY'] + '.git').encode()
             elif command[0] == 'rev-parse':
-                result = MODULE['SOURCE_COMMIT'].encode()
+                result = command[1].removesuffix('^{commit}').encode()
             elif command[0] == 'ls-tree':
                 mode = '120000' if unsafe_mode else '100644'
                 result = b''.join(f'{mode} blob {oid}\tci/{name}\0'.encode() for name in
@@ -73,6 +73,13 @@ class PublisherSourceTests(unittest.TestCase):
 
     def test_observer_bundle_excludes_all_writer_helpers(self):
         self.invoke(observer=True)
+
+    def test_manifests_reference_the_generated_bundle_names(self):
+        root = SCRIPT.parents[2]
+        observer = (root / 'kubernetes/platform/nonprod/jenkins/acceptance/observer.yaml').read_text()
+        workloads = (root / 'kubernetes/platform/nonprod/jenkins/agents/workloads.yaml').read_text()
+        self.assertIn('jenkins-acceptance-ci-' + MODULE['OBSERVER_SOURCE_COMMIT'][:12], observer)
+        self.assertIn('jenkins-publisher-ci-' + MODULE['SOURCE_COMMIT'][:12], workloads)
 
     def test_wrong_repository_is_rejected(self):
         self.invoke(wrong_remote=True)
