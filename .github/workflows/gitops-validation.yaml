@@ -4,6 +4,9 @@ on:
     paths:
     - kubernetes/apps/liora/**
     - scripts/ci/**
+    - kubernetes/platform/cert-manager/upstream/**
+    - kubernetes/platform/cloudnative-pg/upstream/**
+    - kubernetes/platform/barman-cloud/upstream/**
     - .github/workflows/gitops-validation.yaml
 permissions:
   contents: read
@@ -19,6 +22,8 @@ jobs:
         python3 -m pip install PyYAML==6.0.3
         python3 scripts/ci/install-validation-tools.py "$RUNNER_TEMP/liora-validators"
         echo "$RUNNER_TEMP/liora-validators" >> "$GITHUB_PATH"
+    - name: Test custom resource validation
+      run: python3 -B -m unittest discover -s scripts/ci -p 'test_*.py'
     - name: Render and validate every environment
       env:
         REQUIRE_KUBECONFORM: '1'
