@@ -8,7 +8,7 @@ Zainullina. Detailed history and evidence: [Phase 9](testreports/IMPLEMENTATION_
 
 ```mermaid
 flowchart LR
-  PR[Pull request] -->|app-ci PR job: pr profile| Check[GitHub status pr-merge]
+  PR[Pull request] -->|app-ci PR job: full profile| Check[GitHub status pr-merge]
   Main[Merge to main] -->|poll H/2: release profile + attest| Pub1[trusted/publish ACTION=stage]
   Pub1 -->|push sha-SHA images| GHCR[(GHCR)]
   Pub1 -->|commit overlays/stage| Infra[(infrastructure main)]
@@ -58,7 +58,7 @@ Source files:
 
 | Repository | Path | What |
 | --- | --- | --- |
-| application | `Jenkinsfile` | profile selection (`pr` / `full` nightly / `release`), triggers, hand-off to the publisher |
+| application | `Jenkinsfile` | profile selection (`full` for PRs and nightly / `release` for main), triggers, hand-off to the publisher |
 | application | `Jenkinsfile.dev`, `Jenkinsfile.promote` | `dev-build` and `trusted/publish` definitions |
 | application | `ci/phase1.py` | the 19 steps (18 gates + `attest`) and the profiles |
 | application | `ci/registry.py`, `ci/promote.py`, `ci/publisher-action.sh` | trusted publication and GitOps writer |
@@ -73,8 +73,7 @@ Source files:
 
 | Profile | Used by | Steps |
 | --- | --- | --- |
-| `full` | nightly main (`H 2 * * *`) | all 18 gates + `gitops` |
-| `pr` (temporary) | pull requests | `full` without `backend-integration` and `frontend-tests` |
+| `full` | pull requests, nightly main (`H 2 * * *`) | all 18 gates + `gitops` |
 | `release` | new commits on main | config, secrets, dependency installs and audits, image builds, non-root smokes, Trivy, `attest` |
 | `dev` | `dev-build` | same as `release` |
 
@@ -148,7 +147,7 @@ See application `ci/RELEASE.md`: tag an accepted SHA, run `trusted/publish` with
 `promotion/prod/<tag>-redeploy-<sha>` branch); check forward-only Alembic migrations first.
 
 ### Typical durations
-`pr` ~20 min; `release` ~15 min; publisher ~20 min (archive copy) + acceptance ~3–5 min;
+`full` ~30 min; `release` ~15 min; publisher ~20 min (archive copy) + acceptance ~3–5 min;
 DEV end to end ~40 min; PROD release ~10 min plus PR review and Argo sync.
 
 ## 5. Changing the CI helpers (bundle pinning)
@@ -185,7 +184,6 @@ infrastructure commit, if any.
 
 ## 7. Known limitations
 
-- Pull requests temporarily skip integration and e2e tests (nightly `full` runs them).
 - No webhooks: Jenkins is private; main is polled, PR builds are started manually.
 - Acceptance checks the health endpoint, which does not prove database connectivity.
 - Bundle re-pinning is manual.

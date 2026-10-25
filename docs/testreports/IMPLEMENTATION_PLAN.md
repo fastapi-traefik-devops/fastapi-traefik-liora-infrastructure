@@ -706,7 +706,7 @@ supersedes the historical boundaries below where they differ: the vulnerability-
 
 | Trigger | Jenkins job | Gate profile (`ci/phase1.py`) | Publishes | Target |
 | --- | --- | --- | --- | --- |
-| Pull request | `app-ci/PR-<n>` (multibranch, build started manually) | `pr`: `full` without `backend-integration` and `frontend-tests` (**temporary**) | no | — |
+| Pull request | `app-ci/PR-<n>` (multibranch, build started manually) | `full`: all 18 gates + `gitops` | no | — |
 | Nightly, main | `app-ci/main`, `cron H 2 * * *` | `full`: all 18 gates + `gitops` | no | — |
 | New commit on main | `app-ci/main`, `pollSCM H/2 * * * *` | `release`: config, secrets, dependency installs and audits, image builds, non-root smokes, Trivy, `attest` | yes | STAGE, automatic, with acceptance |
 | Manual | `dev-build` (`BRANCH` parameter) | `dev` = `release` gates | yes | DEV, direct commit |
@@ -816,8 +816,6 @@ Full-profile PR runs: PR #69 passed all 18 gates and `gitops` after the triage f
 
 #### Temporary measures
 
-- Profile `pr` skips `backend-integration` and `frontend-tests` to speed up CI setup; the
-  nightly `full` run still executes them. Delete `PROFILES["pr"]` to return PRs to `full`.
 - The restored startup quiet-mode hook (`init.groovy.d/00-migration-hold.groovy`) still holds
   the controller after every restart: cancel quiet mode after checking that only `app-ci/main`,
   `trusted/publish` and `dev-build` are enabled.
@@ -914,7 +912,8 @@ current state above):
 6. [ ] **Rollback and obsolete paths.** Rollback by re-release is implemented (redeploy branches,
    `unchanged`). Open: live drill `v1.0.1` → `v1.0.0`; review of the obsolete application paths
    (`deploy/`, `argocd/`, `monitoring/`, `k8s/`, `infra/`).
-7. [ ] **Return pull requests to `full`** once CI is stable (remove the temporary `pr` profile).
+7. [x] **Return pull requests to `full`.** The temporary `pr` profile (2026-10-24/25) is removed;
+   pull requests run all 18 gates again (application branch `ci/restore-full-pr-checks`).
 8. [ ] **Acceptance database check** (close the health-check gap above).
 9. [ ] **Automate bundle pinning** (a trusted job that prepares the pin PR after a merge).
 
