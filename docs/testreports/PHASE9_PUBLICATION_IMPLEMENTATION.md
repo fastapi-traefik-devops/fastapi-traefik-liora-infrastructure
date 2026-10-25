@@ -9,7 +9,7 @@ The live publisher mounts `jenkins-publisher-ci-d87b3c9599c5`, and required
 controller GitHub egress is installed. Manual Argo/running-digest/HTTPS checks
 passed through the private edge route. Automatic acceptance remains deferred
 and PROD remains blocked. See [live evidence](PHASE9_LIVE_CYCLE.md) and the
-[ordered pending work](IMPLEMENTATION_PLAN.md#next-pending-work--execution-order).
+[Phase 9 work items](IMPLEMENTATION_PLAN.md#phase-9-work-items--status).
 
 The remaining sections preserve the **2026-10-22 local-preparation snapshot**,
 including its original test results and then-held activation boundary. Statements
@@ -156,13 +156,13 @@ Then run/record one initial cycle and manually verify Argo, running pair and URL
 ## Remaining target work and preservation
 
 The initial cycle is complete. Follow the
-[ordered pending checklist](IMPLEMENTATION_PLAN.md#next-pending-work--execution-order):
+[Phase 9 work items](IMPLEMENTATION_PLAN.md#phase-9-work-items--status):
 restart-guard cutover, observer/receipts with serialization through acceptance,
 manual DEV, gated manual PROD, then manual rollback/obsolete-path review.
 Reuse the preserved code and existing pipelines. PROD remains blocked until
 the automatic acceptance gate is implemented and live-verified; preserve exact
 accepted-pair reuse, release-tag checks and no rebuilds. Security scans/remediation
-remain deferred. See [runbook 17](../../runbooks/17-migrate-jenkins-ci.md).
+remain deferred. See the [historical Jenkins procedure record](PHASE9_JENKINS_PROCEDURES_ARCHIVE.md).
 
 Preparation-only final Jenkins snapshot: **29 disabled jobs, zero triggers, quiet mode,
 zero controller executors/queued/running work, 141 build records, three persisted

@@ -13,7 +13,7 @@ The original PVC remains available. Jobs start disabled under an execution hold.
 - [ ] Select a complete stopped-home backup from the protected recovery kit. Keep the source immutable. To create a new archive of the current controller, complete section 2 first, then return here.
 - [ ] Require `home.tar.gz`, its `manifest.json`, matching controller Deployment/configuration, private credentials, and image/plugin pins. PostgreSQL and etcd backups do not contain Jenkins home files.
 - [ ] Confirm the replacement controller uses the archived controller image and plugin versions. Do not upgrade during recovery.
-- [ ] If the cluster has no controller, install only the foundation using [runbook 17, section 1](17-migrate-jenkins-ci.md#1-install-a-fresh-controller). Do not create jobs or connect agents yet.
+- [ ] If the cluster has no controller, install only the foundation using [runbook 17, section 1](17-install-operate-jenkins.md#1-install-a-fresh-controller). Do not create jobs or connect agents yet.
 - [ ] Set the source directory and a new target PVC name:
 
 ```sh
@@ -64,7 +64,9 @@ kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n jenkins rollout status de
 ```
 
 - [ ] Confirm jobs remain disabled, login works and no work has started.
-- [ ] Include the completed backup and private configuration in the encrypted off-host recovery kit using [recovery/README.md](../recovery/README.md).
+- [ ] Stage the completed backup, its configuration and other ignored state
+      with [the recovery-kit capture procedure](../recovery/README.md#recovery-kit-checklist),
+      then create and verify the encrypted off-host ZIP.
 
 ## 3. Restore to new storage
 
@@ -132,7 +134,7 @@ kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n jenkins create secret gen
 ```
 
 - [ ] Connect workers using [runbook 22](22-install-fresh-jenkins-agents.md).
-- [ ] Keep jobs disabled until the separate activation decision in [runbook 17](17-migrate-jenkins-ci.md#4-activate-delivery).
+- [ ] Keep jobs disabled until the separate activation decision in [runbook 17](17-install-operate-jenkins.md#4-activate-delivery).
 - [ ] Retain the old PVC and backup helper Pods until the recovery is accepted. Delete only the specifically recorded temporary helper Pods; do not delete PVCs as routine cleanup.
 
 If rollback is required, stop the restored controller before switching homes:

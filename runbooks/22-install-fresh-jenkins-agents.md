@@ -7,7 +7,7 @@
 
 ## 1. Check prerequisites
 
-- [ ] Install a fresh controller with [runbook 17, section 1](17-migrate-jenkins-ci.md#1-install-a-fresh-controller), or restore its home with [runbook 23](23-restore-jenkins-controller.md).
+- [ ] Install a fresh controller with [runbook 17, section 1](17-install-operate-jenkins.md#1-install-a-fresh-controller), or restore its home with [runbook 23](23-restore-jenkins-controller.md).
 - [ ] Open Jenkins. Confirm the administrator login works.
 - [ ] Disable every job. In each job, select **Disable Project**; for multibranch projects, also remove periodic folder scanning under **Configure**.
 - [ ] Select **Manage Jenkins → Prepare for Shutdown**. Let running builds finish. Cancel queued requests after recording them.
@@ -80,11 +80,14 @@ kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n jenkins-publisher rollout
 - [ ] Open **Manage Jenkins → Nodes**. Confirm `host-ci` and `registry-publisher` are online, each with one executor, its matching label and remote root `/home/jenkins/agent`.
 - [ ] Confirm the controller remains in quiet mode, all jobs are disabled, and the queue is empty.
 - [ ] If a Pod is Ready but the node is offline, inspect that namespace's Pod events and agent container logs. Check the inbound identity and controller URL. Do not launch a build to test the connection.
-- [ ] Keep `stage-observer` offline until its separate acceptance workload and credentials are deliberately installed. Its node declaration alone does not install the observer.
+- [ ] Treat `stage-observer` separately from these two workers. Follow
+      [the acceptance gate](27-configure-jenkins-jobs.md#3-prepare-the-stage-observer-separately)
+      before enabling automatic acceptance. Its node declaration alone does
+      not install the workload.
 
 **Done when:** Both workers are online; administrator login and controller home
 are unchanged; no build, publication or deployment has run.
 
 For job configuration and approved activation, continue with
-[runbook 17, sections 2–4](17-migrate-jenkins-ci.md#2-configure-delivery-identities).
+[runbook 17, sections 2–4](17-install-operate-jenkins.md#2-configure-delivery-identities).
 Agent connection alone does not authorize enabling polling or promotion.

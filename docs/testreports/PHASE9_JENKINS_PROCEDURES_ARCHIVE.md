@@ -6,7 +6,7 @@ about current status describe their original checkpoint. Do not use this record
 as the installation or incident-response entrypoint. Operator scripts remain
 in their original locations.
 
-Current procedure: [17-migrate-jenkins-ci.md](../../runbooks/17-migrate-jenkins-ci.md).
+Current procedure: [17-install-operate-jenkins.md](../../runbooks/17-install-operate-jenkins.md).
 
 ---
 

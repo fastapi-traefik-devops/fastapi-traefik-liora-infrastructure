@@ -90,7 +90,7 @@ foundation rollback above is unaffected.
   and [runtime verifier](../../scripts/kubernetes/verify-jenkins-migration.py).
 - Added the [held overlay](../../kubernetes/platform/nonprod/jenkins/held/kustomization.yaml)
   while retaining the foundation under `base/`; no image/plugin upgrade.
-- Updated [runbook 17](../../runbooks/17-migrate-jenkins-ci.md) with standalone
+- Updated the [historical Jenkins procedure](PHASE9_JENKINS_PROCEDURES_ARCHIVE.md) with standalone
   links, fresh-bootstrap boundaries, transfer, acceptance and retained-PVC rollback.
 
 All 24 relevant fixture tests passed: 12 staging, three transfer, three runtime

@@ -48,50 +48,34 @@ Do not apply it over a controller using an accepted restored home.
 
 ## 2. Configure delivery identities
 
-- [ ] Configure the existing CI GitHub App with application contents/PR read and commit-status write.
-- [ ] Configure `fastapi-gitops` installation access to both repositories:
-  `fastapi-traefik-liora-application` and `fastapi-traefik-liora-infrastructure`.
-- [ ] Require Contents read/write, Pull requests read/write and Metadata read.
-- [ ] Restore the App IDs/private keys through Jenkins credential management using IDs `github-ci-app` and `gitops-app` in their respective CI/trusted scopes.
-- [ ] Restore `ghcr-write` in the trusted publisher scope.
-- [ ] Inspect infrastructure main rules before enabling the direct STAGE writer. Resolve a rejected write through the repository owner; do not bypass branch rules.
-
-GitHub installation settings are external configuration. Restoring a private key
-does not restore the installation's repository selection or permissions.
-Never place publishing credentials on `host-ci`.
+- [ ] Confirm the GitHub App installation permissions, folder-scoped Jenkins
+      credential IDs and trusted GHCR identity in
+      [the job procedure](27-configure-jenkins-jobs.md#1-check-identities-and-immutable-helpers).
+      Restoring a private key does not restore an App installation's repository
+      selection. Keep publisher credentials out of `host-ci`.
 
 ## 3. Prepare pinned agents and jobs
 
-- [ ] For either a fresh or restored home, complete
-      [agent connection](22-install-fresh-jenkins-agents.md) first.
+- [ ] Connect `host-ci` and `registry-publisher` using
+      [runbook 22](22-install-fresh-jenkins-agents.md). It preserves the
+      selected controller home and leaves jobs held.
+- [ ] Configure `app-ci`, `dev-build` and `trusted/publish` through
+      [the one authoritative job procedure](27-configure-jenkins-jobs.md#2-configure-the-three-jobs-while-disabled).
+- [ ] Prepare the STAGE observer only through
+      [its separate gate](27-configure-jenkins-jobs.md#3-prepare-the-stage-observer-separately).
+      A JCasC node declaration is not a running acceptance workload.
 
-- [ ] Review the controller, agent images and resource settings under [Jenkins manifests](../kubernetes/platform/nonprod/jenkins/).
-- [ ] Prepare matching immutable trusted helper bundles from the helper's pinned application revision:
-
-```sh
-mkdir -p .local-work/jenkins
-bash scripts/local-python.sh scripts/kubernetes/prepare-jenkins-publisher-source.py --output .local-work/jenkins/publisher-source.json
-bash scripts/local-python.sh scripts/kubernetes/prepare-jenkins-publisher-source.py --observer --output .local-work/jenkins/observer-source.json
-```
-
-Standalone script: [prepare-jenkins-publisher-source.py](../scripts/kubernetes/prepare-jenkins-publisher-source.py).
-
-- [ ] Match bundle names to the publisher/observer volume references before installation.
-- [ ] Configure the three inbound nodes with one executor each and their matching labels.
-- [ ] Provision each agent's connection Secret privately; keep registry-write and GitOps credentials in Jenkins trusted scope.
-- [ ] Review the selected controller configuration and PVC before applying
-      agent manifests.
-- [ ] Install job definitions from the reviewed application revision: multibranch `app-ci`, manual `dev-build` and trusted `trusted/publish`.
-- [ ] Validate the Declarative definitions before saving; approve only the reviewed publisher's required signatures/scripts.
-- [ ] Leave jobs and triggers disabled until all agent connections and credential scopes are correct.
-
-**Stop:** If the selected manifests require a different home, missing required home files, missing credentials or different helper revision, stop before applying them. Preserve the existing home and resolve the configuration mismatch.
+**Stop:** A different selected home, missing credentials, unreviewed helper
+pin or mismatched job definition. Keep the controller quiet and preserve data.
 
 ## 4. Activate delivery
 
 - [ ] Review the job allowlist and schedules for the change window.
 - [ ] Run one controlled main CI and trusted publication; inspect both build results.
-- [ ] Require STAGE acceptance for the exact application SHA and frontend/backend digest pair.
+- [ ] Require automatic STAGE acceptance for the exact application SHA and
+      frontend/backend digest pair. If the observer is still offline, keep
+      publication held and PROD blocked; follow
+      [the observer gate](27-configure-jenkins-jobs.md#3-prepare-the-stage-observer-separately).
 - [ ] Confirm the infrastructure promotion commit, Argo Synced/Healthy and STAGE HTTPS.
 - [ ] Enable main SCM polling at `H/2 * * * *`.
 - [ ] Enable manual DEV entry only by operator request.
@@ -119,24 +103,15 @@ kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n jenkins-acceptance get de
 - [ ] If Jenkins starts in quiet mode, release it through the UI only after those checks. Inspect recorded queued requests before requesting replacement builds.
 - [ ] Recheck main polling. Do not use a helper that requests a build merely to leave quiet mode.
 
-## 6. Controller backup and recovery checklist
+## 6. Preserve or restore the controller
 
-For recovery, use [the controller restore runbook](23-restore-jenkins-controller.md)
-with this artifact inventory.
-
-- [ ] Block new builds and promotions; drain active work.
-- [ ] Stop the controller before taking the final home copy.
-- [ ] Preserve the complete home, including users, jobs/builds/artifacts, plugins, credentials, `secrets/master.key`, `secrets/hudson.util.Secret` and other files under `secrets/`.
-- [ ] Preserve mounted JCasC/configuration, initialization hooks, image/plugin pins, agent configuration and private external credentials alongside the home archive.
-- [ ] Record archive checksum, controller/plugin versions, PVC/PV identity and the stopped-copy timestamp.
-- [ ] Store the archive and private recovery configuration off-host. Keep the original immutable during restoration.
-- [ ] Restore to separately identified empty storage with Jenkins stopped. Match its filesystem ownership and mounted configuration to the saved deployment.
-- [ ] Start under an execution hold; verify decryption, administrator login, retained users/history, agent identities and job definitions before allowing work.
-- [ ] Restore only the approved job/trigger settings after a controlled delivery check.
-
-Docker build cache and agent workspaces are disposable; they are not substitutes
-for controller state. Database R2 backups do not include the Jenkins home.
-Use the [disaster recovery inventory](../01-Disaster_recovery.md#2-select-recovery-artifacts) to identify the controller archive and its matching deployment configuration.
+- [ ] Create a stopped-home archive or restore an existing one with
+      [runbook 23](23-restore-jenkins-controller.md). Include its matching
+      Deployment, mounted configuration and protected external inputs in the
+      [encrypted recovery kit](../recovery/README.md#recovery-kit-checklist).
+- [ ] Preserve the old PVC, administrator, encryption keys, jobs and history.
+      Keep the execution hold until the restored login and credential
+      decryption pass; then use the job procedure above.
 
 ## Failure response
 

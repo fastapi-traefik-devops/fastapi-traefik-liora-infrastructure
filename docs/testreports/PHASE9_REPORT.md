@@ -39,7 +39,7 @@ use the current CNPG baseline, not require the retired `postgres-vol` PVCs.
 
 ## Next pending work
 
-Follow the [ordered Phase 9 checklist](IMPLEMENTATION_PLAN.md#next-pending-work--execution-order):
+Follow the [Phase 9 work items](IMPLEMENTATION_PLAN.md#phase-9-work-items--status):
 
 1. Finish the startup quiet-mode guard cutover and verify controller restart.
 2. Activate automatic STAGE observation and source/digest-bound receipts.
@@ -250,7 +250,7 @@ is **not** a running restore test. The copy is explicitly marked
 consistent-backup support, target JCasC/user ownership and startup behavior still
 need implementation/validation before cutover.
 
-[Runbook 17](../../runbooks/17-migrate-jenkins-ci.md) records source/runtime mapping,
+[The archived Jenkins procedure](PHASE9_JENKINS_PROCEDURES_ARCHIVE.md) records source/runtime mapping,
 backup boundaries, App prerequisites, proposed agent/DinD/publisher placement and
 resources, and the ordered consistent-backup/state-transfer/cutover/rollback
 procedure. The proposed layout keeps the source labels and one-executor agents,

@@ -80,7 +80,7 @@ Source files:
 `gitops` validates a fresh clone of infrastructure main with the change's validator.
 `attest` writes `gates.json`; the publisher refuses main/DEV candidates without it.
 
-## 3. Set up from zero
+## 3. Set up or restore
 
 Run everything from management VM 200 in the infrastructure checkout, NONPROD kubeconfig
 `$HOME/.kube/config-dev-stage`. Follow the linked runbooks for the exact commands.
@@ -91,34 +91,25 @@ Run everything from management VM 200 in the infrastructure checkout, NONPROD ku
    - CI App (`github-ci-app`): application Contents/PR read, commit-status write;
    - `fastapi-gitops` (`gitops-app`): Contents and Pull requests read/write on **both** repositories.
 2. **Controller.** Fresh install or restore
-   ([runbook 17 §1](../runbooks/17-migrate-jenkins-ci.md),
+   ([runbook 17 §1](../runbooks/17-install-operate-jenkins.md),
    [runbook 23](../runbooks/23-restore-jenkins-controller.md)). Do not apply the fresh foundation
    over a restored home.
-3. **Credentials** in Jenkins ([runbook 17 §2](../runbooks/17-migrate-jenkins-ci.md)):
-   `github-ci-app` (CI scope), `gitops-app` and `ghcr-write` (trusted scope only).
+3. **Credentials and jobs.** Follow the single
+   [job configuration procedure](../runbooks/27-configure-jenkins-jobs.md).
+   It specifies credential scopes, SCM, publisher definition, validation and
+   approvals. Preserve existing jobs and history when restoring a controller.
 4. **Agents and nodes** ([runbook 22](../runbooks/22-install-fresh-jenkins-agents.md)).
    Use the agent helper for both fresh and restored homes. It preserves the selected
    PVC, configures `host-ci` and `registry-publisher`, and leaves jobs held.
    Do not apply `agents/` or `initial-cycle/` directly to a fresh controller.
-5. **Helper bundles** (§5 below). Keep publisher definitions and helper pins matched.
-   Install the separate acceptance workload only as part of its approved activation;
-   connecting the two build/publication workers does not enable the observer or PROD.
-6. **Jobs:**
-   - `app-ci`: Multibranch Pipeline, GitHub source `fastapi-traefik-liora-application` with
-     `github-ci-app`; discover branches and PRs (merge with target); filter `main PR-*`;
-     property *Suppress automatic SCM triggering* (PR builds are started manually, main is
-     driven by the Jenkinsfile triggers); optional periodic scan every 5 minutes so new PRs
-     appear; orphaned item strategy: keep old items.
-   - `trusted/publish`: folder `trusted`, Pipeline, definition *Pipeline script* = contents of
-     `Jenkinsfile.promote`; approve it in *In-process Script Approval*.
-   - `dev-build`: top-level Pipeline, *Pipeline script from SCM*, Git URL of the application
-     repository (public, no credentials), branch `*/main`, script path `Jenkinsfile.dev`,
-     **lightweight checkout on**.
-7. **Activate** ([runbook 17 §4](../runbooks/17-migrate-jenkins-ci.md)): one controlled main
-   build → publication → STAGE acceptance `accepted`; the first main build installs its own
-   triggers from the Jenkinsfile.
-8. **Release the startup hold:** if the controller shows the quiet-mode banner, check that only
-   `app-ci`, `trusted/publish` and `dev-build` are enabled, then *Cancel Shutdown*.
+5. **Helper bundles and observer.** Keep the trusted publisher definition and
+   immutable helper pin matched. The
+   [observer gate](../runbooks/27-configure-jenkins-jobs.md#3-prepare-the-stage-observer-separately)
+   is separate from agent connection. Keep PROD blocked on a rebuilt
+   controller until automatic acceptance is implemented and verified there.
+6. **Activate.** Follow [runbook 17, section 4](../runbooks/17-install-operate-jenkins.md#4-activate-delivery).
+   Restore the recorded job/trigger policy on a recovered controller. Before
+   releasing quiet mode, check the allowlist and empty queue.
 
 ## 4. Daily use
 
@@ -127,7 +118,7 @@ Open the PR → Jenkins `app-ci` → `PR-<n>` (or *Scan Multibranch Pipeline Now
 GitHub shows `continuous-integration/jenkins/pr-merge`; merge only when it is green.
 
 ### STAGE
-Nothing to do: merging to main triggers `app-ci/main` within ~2 minutes, then
+After the observer and approved job policy are active, merging to main triggers `app-ci/main` within ~2 minutes, then
 `trusted/publish` (`ACTION=stage`). Expect two infrastructure commits
 `chore(gitops): update stage for <sha>`; the second adds `acceptance.json` with
 `"status": "accepted"`. A newer main commit supersedes an older one; failed acceptance
@@ -140,7 +131,8 @@ Deploying the SHA that DEV already runs is a no-op. Migrations of the branch app
 database and cannot be rolled back.
 
 ### PROD release and rollback
-See application `ci/RELEASE.md`: tag an accepted SHA, run `trusted/publish` with
+Keep PROD blocked on a rebuilt controller until its automatic STAGE acceptance
+gate is verified. Then see application `ci/RELEASE.md`: tag an accepted SHA, run `trusted/publish` with
 `ACTION=prod`, `APP_SHA`, `RELEASE_TAG`, merge the generated infrastructure PR, verify
 `https://liora.aprt.info`. Roll back by re-releasing the previous tag (a
 `promotion/prod/<tag>-redeploy-<sha>` branch); check forward-only Alembic migrations first.
@@ -151,17 +143,12 @@ DEV end to end ~40 min; PROD release ~10 min plus PR review and Argo sync.
 
 ## 5. Changing the CI helpers (bundle pinning)
 
-`ci/` changes affect builds immediately but the **publisher** only after re-pinning:
-
-1. Infrastructure PR: `SOURCE_COMMIT` in `prepare-jenkins-publisher-source.py` and the ConfigMap
-   name `jenkins-publisher-ci-<sha[:12]>` in `agents/workloads.yaml`.
-2. VM 200: generate the bundle, compare `data_sha256`.
-3. `kubectl apply -f <bundle>` **first**, confirm the ConfigMap exists, **then** `kubectl diff`
-   and `apply -k …/initial-cycle`, `rollout status deploy/registry-publisher`.
-4. If `Jenkinsfile.promote` changed: paste it into `trusted/publish` and approve it.
-
-Old ConfigMaps remain for rollback. The observer bundle changes only when
-`stage_acceptance.py` changes.
+Application `ci/` changes affect builds immediately, while the trusted
+publisher uses a commit-pinned immutable bundle. Follow
+[runbook 27](../runbooks/27-configure-jenkins-jobs.md#1-check-identities-and-immutable-helpers)
+to review source, prepare the bundle and validate the matching publisher
+definition. Review observer pin alignment separately before activation.
+Keep old immutable bundles for rollback.
 
 ## 6. Troubleshooting
 
