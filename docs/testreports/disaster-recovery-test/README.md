@@ -36,7 +36,7 @@ Terraform state or production database data are included.
 Verify artifact integrity from the infrastructure repository root:
 
 ```sh
-sha256sum -c disaster-recovery-test/evidence/SHA256SUMS
+sha256sum -c docs/testreports/disaster-recovery-test/evidence/SHA256SUMS
 ```
 
 

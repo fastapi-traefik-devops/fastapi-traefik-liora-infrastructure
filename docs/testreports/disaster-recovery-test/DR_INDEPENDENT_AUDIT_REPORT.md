@@ -98,7 +98,7 @@ Original production/helper/test scripts were not edited.
 
 ## Preservation and publication safety
 
-All new work is under disaster-recovery-test/. Existing report, scripts,
+All new work is under docs/testreports/disaster-recovery-test/. Existing report, scripts,
 screenshots and recorded results remain intact. Only navigation sections are
 appended to the existing README/index; their two checksum entries are refreshed.
 Original navigation hashes remain in the publication base commit. All other

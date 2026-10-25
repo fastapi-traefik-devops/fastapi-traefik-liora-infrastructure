@@ -8,7 +8,7 @@ from pathlib import Path
 import subprocess
 
 ROOT=Path(__file__).resolve().parent
-WORKSPACE=ROOT.parent
+WORKSPACE=ROOT.parents[2]
 E=ROOT/'evidence'
 
 
@@ -72,7 +72,7 @@ All example screenshots carry **SIMULATED — NOT A REAL TEST**. They are purpos
 - No R2 credentials were loaded and no R2 objects were read, downloaded, copied, written or deleted. Required immutable copied physical backups and a restricted restore identity remain unavailable/unverified.
 - Existing live configuration was sampled before and after via explicit kubeconfigs and read-only `kubectl get` calls over the already trusted SSH connection.
 
-Evidence: [local preflight](disaster-recovery-test/evidence/real/local-preflight.json), [before](disaster-recovery-test/evidence/real/live-before.json), [after](disaster-recovery-test/evidence/real/live-after.json), [comparison](disaster-recovery-test/evidence/real/live-comparison.json).
+Evidence: [local preflight](docs/testreports/disaster-recovery-test/evidence/real/local-preflight.json), [before](docs/testreports/disaster-recovery-test/evidence/real/live-before.json), [after](docs/testreports/disaster-recovery-test/evidence/real/live-after.json), [comparison](docs/testreports/disaster-recovery-test/evidence/real/live-comparison.json).
 
 ## Recovery test matrix
 
@@ -80,40 +80,40 @@ Status refers to the **real named recovery test**, not the simulation. “Comple
 
 | Test | Real result | Simulation result | Evidence | Status |
 |---|---|---|---|---|
-| 1. Complete Proxmox host failure | NOT EXECUTED: no independent lab; original host deliberately left running | Synthetic source directory removed after independent fixture bundle was copied; sequence continued without it | [Mock host-loss panel](disaster-recovery-test/evidence/simulated/01-proxmox.png), steps 1–2 | BLOCKED |
-| 2. Proxmox networking and VM rebuild | No separate hypervisor, lab credentials, storage or network | Nine JSON VM records and a documentation-only lab subnet reconstructed | [Proxmox panel](disaster-recovery-test/evidence/simulated/01-proxmox.png), step 2 | BLOCKED |
-| 3. K3s using Terraform and Ansible | No disposable hypervisor/cluster target; neither tool applied | Two mock clusters with three Ready node records each; not a Terraform provider or Ansible execution | [Nodes panel](disaster-recovery-test/evidence/simulated/02-kubernetes.png), step 3 | BLOCKED |
-| 4. Kubernetes configuration and Secrets | No independent cluster and no verified complete off-site Secret inventory | Synthetic config/Secret file restored from fixture bundle, permission 0600 checked | [Nodes panel](disaster-recovery-test/evidence/simulated/02-kubernetes.png), step 4 | BLOCKED |
-| 5. CNPG restore from copied R2 backups | No copied physical archive or read-only R2 identity; no CNPG target | Real local SQLite fixture copied/opened; independent of deleted synthetic source | [Database panel](disaster-recovery-test/evidence/simulated/03-database.png), step 5 | BLOCKED |
-| 6. PostgreSQL PITR | No PostgreSQL/Barman recovery environment or copied WAL | SQL event-list replay into SQLite; included marker retained, later marker excluded. Not PostgreSQL WAL replay | [Database panel](disaster-recovery-test/evidence/simulated/03-database.png), step 6 | BLOCKED |
-| 7. FastAPI and React restoration | No isolated deployment target or independently supplied deployable image/Secret set | In-process adapter exercised recovered SQLite fixture; no FastAPI/React process | [Application panel](disaster-recovery-test/evidence/simulated/04-application.png), step 7 | BLOCKED |
-| 8. ArgoCD restoration/GitOps | No isolated ArgoCD controller; live Applications inspected only | Mock drift comparison/reconciliation with automation disabled; real source policies inspected offline | [GitOps panel](disaster-recovery-test/evidence/simulated/05-argocd.png), step 8 | BLOCKED |
-| 9. Jenkins configuration/jobs/history | No current independent Jenkins home/key archive and target controller | Held synthetic job/build records restored. Separately, 12 actual repository archive fixture tests passed | [Jenkins panel](disaster-recovery-test/evidence/simulated/06-jenkins.png), [actual fixture log](disaster-recovery-test/evidence/real/jenkins-fixture-tests.log) | BLOCKED |
-| 10. Monitoring and alerting restoration | No isolated Prometheus/Grafana/Alertmanager deployment; historical PVC backups unverified | Mock targets and local firing/resolution transitions with external notifications disabled | [Monitoring panel](disaster-recovery-test/evidence/simulated/07-grafana.png), step 10 | BLOCKED |
-| 11. HAProxy and isolated HTTPS | HAProxy/Traefik not restored. Actual independent loopback TLS/Host checks passed with a Python fixture | Mock routing/SNI metadata checked separately; no public DNS or ACME operations | [Routing example](disaster-recovery-test/evidence/simulated/04-application.png), [real TLS fixture results](disaster-recovery-test/evidence/real/local-https-results.json) | BLOCKED |
-| 12. Recovered application auth/API/CRUD | Recovered FastAPI/React not available. Python/SQLite HTTPS fixture accepted/rejected synthetic credentials and performed CRUD | Mock app adapter auth, integrity and CRUD assertions completed | [Application panel](disaster-recovery-test/evidence/simulated/04-application.png), [real fixture results](disaster-recovery-test/evidence/real/local-https-results.json) | BLOCKED |
-| 13. Actual platform RPO/RTO | NOT MEASURABLE: no real outage/recovery; no independent current commit/WAL baseline | Synthetic time 35 minus replayed event time 20 = 15 fixture units; explicitly not actual RPO | [Completion panel](disaster-recovery-test/evidence/simulated/08-completion.png), step 13 | BLOCKED |
-| 14. Full lab rollback | No real infrastructure lab exists. Local filesystem checkpoint and SQLite byte-level rollback genuinely passed | Mock lab reset to recorded initial checkpoint | [Rollback panel](disaster-recovery-test/evidence/simulated/09-rollback.png), [TLS rollback](disaster-recovery-test/evidence/real/local-https-results.json) | BLOCKED |
-| 15. Infrastructure cleanup verification | No infrastructure test resources created, so real teardown was NOT EXECUTED. Local fixture cleanup verified | Owned fixture removal, run-ID checks and source-copy hash preservation completed | [Cleanup panel](disaster-recovery-test/evidence/simulated/10-cleanup.png), step 15 | BLOCKED |
+| 1. Complete Proxmox host failure | NOT EXECUTED: no independent lab; original host deliberately left running | Synthetic source directory removed after independent fixture bundle was copied; sequence continued without it | [Mock host-loss panel](docs/testreports/disaster-recovery-test/evidence/simulated/01-proxmox.png), steps 1–2 | BLOCKED |
+| 2. Proxmox networking and VM rebuild | No separate hypervisor, lab credentials, storage or network | Nine JSON VM records and a documentation-only lab subnet reconstructed | [Proxmox panel](docs/testreports/disaster-recovery-test/evidence/simulated/01-proxmox.png), step 2 | BLOCKED |
+| 3. K3s using Terraform and Ansible | No disposable hypervisor/cluster target; neither tool applied | Two mock clusters with three Ready node records each; not a Terraform provider or Ansible execution | [Nodes panel](docs/testreports/disaster-recovery-test/evidence/simulated/02-kubernetes.png), step 3 | BLOCKED |
+| 4. Kubernetes configuration and Secrets | No independent cluster and no verified complete off-site Secret inventory | Synthetic config/Secret file restored from fixture bundle, permission 0600 checked | [Nodes panel](docs/testreports/disaster-recovery-test/evidence/simulated/02-kubernetes.png), step 4 | BLOCKED |
+| 5. CNPG restore from copied R2 backups | No copied physical archive or read-only R2 identity; no CNPG target | Real local SQLite fixture copied/opened; independent of deleted synthetic source | [Database panel](docs/testreports/disaster-recovery-test/evidence/simulated/03-database.png), step 5 | BLOCKED |
+| 6. PostgreSQL PITR | No PostgreSQL/Barman recovery environment or copied WAL | SQL event-list replay into SQLite; included marker retained, later marker excluded. Not PostgreSQL WAL replay | [Database panel](docs/testreports/disaster-recovery-test/evidence/simulated/03-database.png), step 6 | BLOCKED |
+| 7. FastAPI and React restoration | No isolated deployment target or independently supplied deployable image/Secret set | In-process adapter exercised recovered SQLite fixture; no FastAPI/React process | [Application panel](docs/testreports/disaster-recovery-test/evidence/simulated/04-application.png), step 7 | BLOCKED |
+| 8. ArgoCD restoration/GitOps | No isolated ArgoCD controller; live Applications inspected only | Mock drift comparison/reconciliation with automation disabled; real source policies inspected offline | [GitOps panel](docs/testreports/disaster-recovery-test/evidence/simulated/05-argocd.png), step 8 | BLOCKED |
+| 9. Jenkins configuration/jobs/history | No current independent Jenkins home/key archive and target controller | Held synthetic job/build records restored. Separately, 12 actual repository archive fixture tests passed | [Jenkins panel](docs/testreports/disaster-recovery-test/evidence/simulated/06-jenkins.png), [actual fixture log](docs/testreports/disaster-recovery-test/evidence/real/jenkins-fixture-tests.log) | BLOCKED |
+| 10. Monitoring and alerting restoration | No isolated Prometheus/Grafana/Alertmanager deployment; historical PVC backups unverified | Mock targets and local firing/resolution transitions with external notifications disabled | [Monitoring panel](docs/testreports/disaster-recovery-test/evidence/simulated/07-grafana.png), step 10 | BLOCKED |
+| 11. HAProxy and isolated HTTPS | HAProxy/Traefik not restored. Actual independent loopback TLS/Host checks passed with a Python fixture | Mock routing/SNI metadata checked separately; no public DNS or ACME operations | [Routing example](docs/testreports/disaster-recovery-test/evidence/simulated/04-application.png), [real TLS fixture results](docs/testreports/disaster-recovery-test/evidence/real/local-https-results.json) | BLOCKED |
+| 12. Recovered application auth/API/CRUD | Recovered FastAPI/React not available. Python/SQLite HTTPS fixture accepted/rejected synthetic credentials and performed CRUD | Mock app adapter auth, integrity and CRUD assertions completed | [Application panel](docs/testreports/disaster-recovery-test/evidence/simulated/04-application.png), [real fixture results](docs/testreports/disaster-recovery-test/evidence/real/local-https-results.json) | BLOCKED |
+| 13. Actual platform RPO/RTO | NOT MEASURABLE: no real outage/recovery; no independent current commit/WAL baseline | Synthetic time 35 minus replayed event time 20 = 15 fixture units; explicitly not actual RPO | [Completion panel](docs/testreports/disaster-recovery-test/evidence/simulated/08-completion.png), step 13 | BLOCKED |
+| 14. Full lab rollback | No real infrastructure lab exists. Local filesystem checkpoint and SQLite byte-level rollback genuinely passed | Mock lab reset to recorded initial checkpoint | [Rollback panel](docs/testreports/disaster-recovery-test/evidence/simulated/09-rollback.png), [TLS rollback](docs/testreports/disaster-recovery-test/evidence/real/local-https-results.json) | BLOCKED |
+| 15. Infrastructure cleanup verification | No infrastructure test resources created, so real teardown was NOT EXECUTED. Local fixture cleanup verified | Owned fixture removal, run-ID checks and source-copy hash preservation completed | [Cleanup panel](docs/testreports/disaster-recovery-test/evidence/simulated/10-cleanup.png), step 15 | BLOCKED |
 
-All 15 detailed simulation records: [results.json](disaster-recovery-test/evidence/simulated/results.json). Script: [run_local_tests.py](disaster-recovery-test/run_local_tests.py).
+All 15 detailed simulation records: [results.json](docs/testreports/disaster-recovery-test/evidence/simulated/results.json). Script: [run_local_tests.py](docs/testreports/disaster-recovery-test/run_local_tests.py).
 
 ## What genuinely passed locally
 
 **30 local test/check cases plus five static GitOps assertions passed.** These are actual software checks, not evidence of whole-system recovery:
 
-1. **12 existing Jenkins archive fixture tests**, run on byte-identical copies of the inspected repository helper in a disposable directory. Tests cover archive integrity, unsafe paths/links/duplicates, unknown job types, absent encryption inputs, private input handling, held job configuration, build/key preservation and redacted errors. No Jenkins runtime or real credential decryption occurred. Source hash and copied-helper hash match in [local-checks.json](disaster-recovery-test/evidence/real/local-checks.json).
+1. **12 existing Jenkins archive fixture tests**, run on byte-identical copies of the inspected repository helper in a disposable directory. Tests cover archive integrity, unsafe paths/links/duplicates, unknown job types, absent encryption inputs, private input handling, held job configuration, build/key preservation and redacted errors. No Jenkins runtime or real credential decryption occurred. Source hash and copied-helper hash match in [local-checks.json](docs/testreports/disaster-recovery-test/evidence/real/local-checks.json).
 2. **Five new local guard tests:** reject live/unknown endpoints; reject corrupted bundle manifests; refuse unowned cleanup or wrong run IDs; refuse symlink cleanup; deny networking in the mock adapter.
 3. **13 actual loopback fixture checks:** TLS certificate/hostname validation; wrong HTTP Host and TLS hostname rejection; absent/invalid fixture credential rejection; create/read/update/delete over HTTPS backed by SQLite; integrity; server/thread/socket shutdown; exact checkpoint rollback; removal of fixture directory and generated TLS private key. This was Python HTTPServer, not HAProxy or FastAPI. Certificate trust was local and custom, not public CA trust.
 4. **Five actual source assertions:** three child Application local destinations/pruning/self-healing policies and two root non-pruning policies. These inspect repository YAML only and do not prove runtime synchronization.
 
-Logs and actual result screenshot: [guard tests](disaster-recovery-test/evidence/real/local-guard-tests.log), [Jenkins tests](disaster-recovery-test/evidence/real/jenkins-fixture-tests.log), [TLS results](disaster-recovery-test/evidence/real/local-https-results.json), [local-results screenshot](disaster-recovery-test/evidence/real/actual-local-checks.png).
+Logs and actual result screenshot: [guard tests](docs/testreports/disaster-recovery-test/evidence/real/local-guard-tests.log), [Jenkins tests](docs/testreports/disaster-recovery-test/evidence/real/jenkins-fixture-tests.log), [TLS results](docs/testreports/disaster-recovery-test/evidence/real/local-https-results.json), [local-results screenshot](docs/testreports/disaster-recovery-test/evidence/real/actual-local-checks.png).
 
 ## What failed, what was simulated, and what was not executed
 
 - No executed local functional test failed in the final run.
 - Runtime availability checks failed: Docker socket access denied and libvirt runtime-path creation unavailable. These are blockers, not failed infrastructure restores.
-- The first local Chrome screenshot attempt failed in the restricted sandbox. The approved process retry succeeded. A caption substitution bug was corrected after visual inspection, and all screenshots were regenerated. [Attempt history](disaster-recovery-test/evidence/real/attempt-history.json)
+- The first local Chrome screenshot attempt failed in the restricted sandbox. The approved process retry succeeded. A caption substitution bug was corrected after visual inspection, and all screenshots were regenerated. [Attempt history](docs/testreports/disaster-recovery-test/evidence/real/attempt-history.json)
 - Fifteen infrastructure recovery scenarios were simulated with JSON adapters, synthetic secrets, copied SQLite state and SQL event replay. No real product UI/log/backup result was fabricated.
 - No real Proxmox failure, VM rebuild, K3s install, copied-R2 restore, PostgreSQL PITR, application deployment, ArgoCD sync, Jenkins startup, monitoring deployment or HAProxy recovery was executed.
 
@@ -133,7 +133,7 @@ Prior PITR results from 23 October remain historical evidence only. They were no
 
 - Synthetic adapters used no network. Source removal affected only a freshly created fixture directory. The mock checkpoint/ownership inventory was recorded before mock lab changes.
 - The actual HTTPS fixture bound **127.0.0.1 only**, used an OS-assigned ephemeral port and generated fixture certificates. No production identity, key, data, DNS or certificate was used. The listener was closed, thread joined and owned temporary directory removed.
-- Repository fixture tests operated on copies. Both existing local repositories remain clean at the recorded revisions; no commit, push, merge or PR was created. [Repository provenance](disaster-recovery-test/evidence/real/repository-provenance.json)
+- Repository fixture tests operated on copies. Both existing local repositories remain clean at the recorded revisions; no commit, push, merge or PR was created. [Repository provenance](docs/testreports/disaster-recovery-test/evidence/real/repository-provenance.json)
 - Mock rollback hash manifest equals the checkpoint manifest. Actual SQLite rollback restores the original database file bytes. Cleanup guards rejected unowned and mismatched targets.
 - No real VMs, containers, clusters, namespaces, volumes or backup objects were created, so none required cleanup. Reports, screenshots, source files and logs are intentionally retained as authorized deliverables.
 - Live snapshots: {comparison['before_utc']} → {comparison['after_utc']}. **{comparison_text}** Comparison covers six node identities; 49 Deployments; six StatefulSets; 13 PVCs; five Applications; and three Ingresses, using the fields specified in the comparison JSON.
@@ -160,14 +160,19 @@ Sources: [DR navigator](infrastructure/01-Disaster_recovery.md), [recovery input
 
 This run demonstrates local archive-handling checks, fixture recovery logic, real local TLS/CRUD, rollback and guarded cleanup. It does not replace a separate-host recovery exercise. Stop here; no production preparation or mutation is part of these deliverables.
 
-Complete artifact list: [evidence index](disaster-recovery-test/evidence/INDEX.md). Integrity inventory: [SHA256SUMS](disaster-recovery-test/evidence/SHA256SUMS).
+Complete artifact list: [evidence index](docs/testreports/disaster-recovery-test/evidence/INDEX.md). Integrity inventory: [SHA256SUMS](docs/testreports/disaster-recovery-test/evidence/SHA256SUMS).
 '''
     if infra==WORKSPACE:
         report=report.replace('](infrastructure/', '](')
         revision=provenance['application'].get('revision') or '7aaf28740b227fee925e23383d6d589a3ea35336'
         report=report.replace('](application/backend/scripts/prestart.sh)',
             '](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/blob/'+revision+'/backend/scripts/prestart.sh)')
-    (WORKSPACE/'DISASTER_RECOVERY_TEST_REPORT.md').write_text(report)
+    report=report.replace('](docs/testreports/disaster-recovery-test/', '](disaster-recovery-test/')
+    report=report.replace('](01-Disaster_recovery.md)', '](../../01-Disaster_recovery.md)')
+    for prefix in ('runbooks/', 'infrastructure/', 'kubernetes/', 'edge/'):
+        report=report.replace(']('+prefix, '](../../'+prefix)
+    report=report.replace('](docs/testreports/PHASE9_STATE_RESTORE.md)', '](PHASE9_STATE_RESTORE.md)')
+    (ROOT.parent/'DISASTER_RECOVERY_TEST_REPORT.md').write_text(report)
     real_files=sorted(p for p in (E/'real').rglob('*') if p.is_file())
     sim_files=sorted(p for p in (E/'simulated').rglob('*') if p.is_file())
     index=['# Disaster recovery evidence index','',
@@ -178,16 +183,16 @@ Complete artifact list: [evidence index](disaster-recovery-test/evidence/INDEX.m
     index+=['','## Simulated evidence and labeled example screenshots','']
     index.extend('- ['+str(p.relative_to(E))+']('+str(p.relative_to(E))+')' for p in sim_files)
     index+=['','## Reproducibility and safety','',
-            'The Python sources under `disaster-recovery-test/` are retained. Existing repositories were not edited. No dependencies were installed.',
+            'The Python sources under `docs/testreports/disaster-recovery-test/` are retained. Existing repositories were not edited. No dependencies were installed.',
             'The mock runner uses only disposable fixtures and explicitly rejects live endpoints. The HTTPS fixture uses a disposable loopback listener.',
             'The capture script performs read-only live metadata queries and requires the existing trusted SSH access. It is not necessary to rerun it to read these results.',
-            'SHA256SUMS paths are relative to the workspace root. The manifest excludes itself.','']
+            'SHA256SUMS paths are relative to the infrastructure repository root. The manifest excludes itself.','']
     (E/'INDEX.md').write_text('\n'.join(index))
     files=sorted(p for p in ROOT.rglob('*') if p.is_file() and p.name!='SHA256SUMS' and '__pycache__' not in p.parts)
-    files.append(WORKSPACE/'DISASTER_RECOVERY_TEST_REPORT.md')
+    files.append(ROOT.parent/'DISASTER_RECOVERY_TEST_REPORT.md')
     manifest=''.join(hashlib.sha256(p.read_bytes()).hexdigest()+'  '+str(p.relative_to(WORKSPACE))+'\n' for p in files)
     (E/'SHA256SUMS').write_text(manifest)
-    print(json.dumps({'report':str(WORKSPACE/'DISASTER_RECOVERY_TEST_REPORT.md'),'indexed_artifacts':len(real_files)+len(sim_files),
+    print(json.dumps({'report':str(ROOT.parent/'DISASTER_RECOVERY_TEST_REPORT.md'),'indexed_artifacts':len(real_files)+len(sim_files),
                       'checksummed_files':len(files),'live_fields_unchanged':first==last,'local_repositories_clean':all(not provenance[n]['status_porcelain'] for n in ['application','infrastructure'])}))
 
 

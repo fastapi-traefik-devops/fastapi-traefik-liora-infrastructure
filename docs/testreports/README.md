@@ -12,6 +12,7 @@ point-in-time results; later decisions and reports supersede earlier status.
 
 ## Delivery, databases and recovery
 
+- [24 October disaster recovery test report](DISASTER_RECOVERY_TEST_REPORT.md) and [evidence package](disaster-recovery-test/README.md)
 - [Phase 9 Jenkins migration](PHASE9_REPORT.md), [live cycle](PHASE9_LIVE_CYCLE.md), [state restoration](PHASE9_STATE_RESTORE.md), [workers](PHASE9_WORKERS.md)
 - [Phase 10 fresh CNPG installation](PHASE10_REPORT.md)
 - [Phase 10.2 R2 physical backup/WAL and isolated PITR](PHASE10_2_REPORT.md)

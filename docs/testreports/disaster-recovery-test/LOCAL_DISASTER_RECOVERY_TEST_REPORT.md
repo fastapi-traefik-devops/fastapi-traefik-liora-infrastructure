@@ -276,7 +276,7 @@ or before/after content hash of original volumes was performed.
 
 The user asked to reuse existing repository documents/screenshots when a protected backup was unavailable. Historical sources are linked without duplication under [evidence/historical](astra-review/HISTORICAL_REFERENCES.md). Source infrastructure commit `ff154ae7a81858f5dcdf49d0582cb1d1074a6943`; application checkout `7aaf28740b227fee925e23383d6d589a3ea35336`. Both checkouts remained clean.
 
-The [existing Phase 10.2 report](../docs/testreports/PHASE10_2_REPORT.md) reports these original-environment exercises on **23 October 2026**:
+The [existing Phase 10.2 report](../PHASE10_2_REPORT.md) reports these original-environment exercises on **23 October 2026**:
 
 | Environment | Historical backup ID | Historical target UTC | Historical usable-app time |
 |---|---|---|---|
