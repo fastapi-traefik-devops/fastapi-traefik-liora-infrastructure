@@ -1,8 +1,8 @@
 {
-  "sha": "48b443fc69f2bdb17d52d95526e84811ab13b6d0",
+  "sha": "2a6e05a91489b2d9475e25157ab73d8ff9c98d08",
   "digests": {
-    "backend": "sha256:640a26a7e474b5fb686cbfc000518f32766d8bd25b91e721d086bfd32e898c40",
+    "backend": "sha256:160875c4cef16487423fd2e16e86fe8f86638bdff348d92847ed690c7d95b17c",
     "frontend": "sha256:3ac9b636798dbfb6864bda96303e3c00f55dab48b7af18a0d19d98484bbc9368"
   },
-  "release": "v1.0.0"
+  "release": "v1.0.1"
 }
