@@ -638,7 +638,10 @@ confirmed external Tailscale browser access and passwords; Phase 8 is closed.
 
 ## Phase 9 — Move promotion and CI ownership
 
-Status: **in progress; initial live STAGE cycle accepted on 2026-10-23**.
+Status: **in progress; automatic STAGE acceptance, restored gate profiles and manual DEV
+deployment live since 2026-10-24; manual PROD release implemented, first release pending**.
+The current state and how it works are in [Current CI/CD state](#current-cicd-state--2026-10-25);
+the text that follows it is the historical record of the migration.
 Legacy Jenkins state is restored to a separate NONPROD home, preserving the
 current K3s admin, users, history, credential scopes and encryption material.
 Existing CI/DinD and trusted publisher agents are connected. After the MTU
@@ -680,7 +683,8 @@ The operator confirmed that kind's demo/STAGE/PROD applications contained only
 default installation data. No application/database transfer from kind is needed;
 retain the current PostgreSQL content in K3s without replacement or reseeding.
 
-Vulnerability deferral, 2026-10-22: the operator explicitly accepted proceeding
+Vulnerability deferral, 2026-10-22 (**superseded on 2026-10-24**: security gates run again on
+pull requests, main and nightly; see the current state above): the operator explicitly accepted proceeding
 with deployment for this educational setup and deferred remediation/further
 vulnerability scanning. Preserve the failed DinD scan as a failed result and do
 not run further image audits in this increment. This does not change the
@@ -690,6 +694,134 @@ Preserve the maximum working behavior from the application's Jenkins proof of
 concept while adapting it to the nonprod K3s foundation and repository split.
 GitOps App access and Contents/Pull requests write grants on both repositories
 were verified on 2026-10-22 after the operator updated the installation.
+
+### Current CI/CD state — 2026-10-25
+
+Jenkins decisions are owned by Tatiana Zainullina (CI owner) since 2026-10-23. This section
+supersedes the historical boundaries below where they differ: the vulnerability-scan deferral,
+"no nightly schedule", "functional-only main candidate" and "PROD blocked" are no longer current.
+
+#### What runs where
+
+| Trigger | Jenkins job | Gate profile (`ci/phase1.py`) | Publishes | Target |
+| --- | --- | --- | --- | --- |
+| Pull request | `app-ci/PR-<n>` (multibranch, build started manually) | `pr`: `full` without `backend-integration` and `frontend-tests` (**temporary**) | no | — |
+| Nightly, main | `app-ci/main`, `cron H 2 * * *` | `full`: all 18 gates + `gitops` | no | — |
+| New commit on main | `app-ci/main`, `pollSCM H/2 * * * *` | `release`: config, secrets, dependency installs and audits, image builds, non-root smokes, Trivy, `attest` | yes | STAGE, automatic, with acceptance |
+| Manual | `dev-build` (`BRANCH` parameter) | `dev` = `release` gates | yes | DEV, direct commit |
+| Manual | `trusted/publish` with `ACTION=prod` | none: reuses the STAGE-accepted pair | no | PROD via reviewed infrastructure PR |
+
+Both triggers of `app-ci/main` are declared in the application `Jenkinsfile`, so they live in Git
+and replace triggers set in the job UI. Jenkins is private (Tailscale only), so GitHub cannot
+send webhooks; main is polled and pull-request builds are started from the job page. Source
+tests (lint, unit, integration, e2e) belong to the pull request; the `release` and `dev`
+profiles re-verify what is actually deployed: secrets, dependency audits and the scanned images.
+
+#### How a change reaches each environment
+
+**STAGE (automatic).** `app-ci/main` runs `release`; `attest` writes `gates.json` with the SHA,
+the passed gates and the SHA-256 of both scanned image archives. Main archives the tarballs and
+`gates.json` and requests `trusted/publish` (`ACTION=stage`). The publisher runs on its own agent
+with the only write credentials (`ghcr-write`, `gitops-app`) and executes helpers exclusively
+from the pinned ConfigMap at `/opt/phase1-ci`, never from a build checkout. Under one Jenkins
+lock (`liora-stage-promotion`) it:
+
+1. verifies the source run is SUCCESS and its Git revision equals `gates.json`
+   (`registry.py --mode release`); functional-only candidates are accepted solely from the
+   manual `migration-ci` checkpoint;
+2. skips the candidate if application main has moved on (`superseded`);
+3. pushes `sha-<SHA>` images to GHCR (write-once: an existing tag with different bytes is refused);
+4. updates `overlays/stage/kustomization.yaml` and `promotion.json`, removes the previous
+   `acceptance.json`, validates all three overlays (`ci/validate.sh`) and commits directly to
+   infrastructure main (`chore(gitops): update stage for <sha>`), rechecking main before push;
+5. runs `ci/stage_acceptance.py` on the read-only `stage-observer` agent (namespace
+   `jenkins-acceptance`, RBAC: get `app-stage` Application, get Deployments, list Pods): Argo
+   Synced/Healthy at a revision containing the promotion, every Pod running exactly the published
+   digests, and `https://stage.liora.aprt.info` serving the UI root and `health-check = true`
+   (resolved to HAProxy `192.168.77.240` inside the Pod, see incidents);
+6. commits the receipt as `overlays/stage/acceptance.json` (accepted or failed). A failed
+   acceptance makes the publisher build red; nothing is rolled back automatically.
+
+**DEV (manual, any branch).** Job `dev-build` (Pipeline script from SCM, branch `*/main`,
+`Jenkinsfile.dev`, lightweight checkout on) fetches only `refs/heads/<BRANCH>`, runs the `dev`
+profile on the real branch head and requests `trusted/publish` with `ACTION=dev`. The publisher
+accepts `dev` only from `dev-build` and `stage` only from `app-ci/main`, publishes in release
+mode and commits the two DEV overlay files directly to infrastructure main. DEV is never
+superseded and has no acceptance. Deploying the SHA that DEV already runs is a no-op.
+
+**PROD (manual release).** Implemented in application branch `ci/prod-promotion` (publisher
+pin `ci/publisher-pin-9c2084c`), not yet merged. A release tags an accepted main SHA `vX.Y.Z` and
+runs `trusted/publish` with `ACTION=prod`, `APP_SHA`, `RELEASE_TAG`. Nothing is built or
+published: `promote.py` reads the `sha-<SHA>` digests from GHCR, requires the tag on that exact SHA
+and an accepted STAGE receipt for exactly that pair in infrastructure history, and pushes the
+review branch `promotion/prod/<tag>` (two PROD overlay files). Merging that PR deploys PROD
+through its own Argo CD. Rollback re-releases an earlier tag; because its branch is already
+merged, a fresh branch `promotion/prod/<tag>-redeploy-<infra sha>` is created; a release that
+PROD already runs reports `unchanged`. Procedure: application `ci/RELEASE.md`.
+
+**Validation of deployment manifests.** `ci/validate.sh` renders DEV, STAGE and PROD and runs
+`validate_gitops.py` plus `kubeconform -strict`. Built-in kinds use the default schemas;
+operator kinds use strict JSON schemas generated offline by `ci/crd_schema.py` from the
+installed CRDs (`postgresql.cnpg.io/v1 Cluster`, `barmancloud.cnpg.io/v1 ObjectStore`,
+`cert-manager.io/v1 Certificate`; identical in NONPROD and PROD). A kind without a schema fails
+closed. The PR gate `gitops` validates a fresh clone of infrastructure main with the PR's
+validator, so a new operator kind breaks an application PR instead of the STAGE promotion.
+When operators are upgraded or new CRDs are added, regenerate the schemas with
+`python3 ci/crd_schema.py <crd.json> <version>`.
+
+#### Pinning the publisher helper bundle
+
+Any change to the application `ci/` helpers takes effect only after the bundle is re-pinned:
+
+1. In this repository set `SOURCE_COMMIT` in `scripts/kubernetes/prepare-jenkins-publisher-source.py`
+   and the ConfigMap name in `kubernetes/platform/nonprod/jenkins/agents/workloads.yaml`
+   (`jenkins-publisher-ci-<sha[:12]>`); merge through a PR.
+2. On VM 200: `prepare-jenkins-publisher-source.py --output <new file>` (reads `ci/` from Git
+   objects, verifies blob hashes, never overwrites) and compare `data_sha256`.
+3. **First** `kubectl apply -f <bundle>` and confirm the ConfigMap exists, **then**
+   `kubectl diff`/`apply -k kubernetes/platform/nonprod/jenkins/initial-cycle` (expected diff:
+   only the bundle name) and `rollout status deploy/registry-publisher`.
+4. If `Jenkinsfile.promote` changed: paste it into `trusted/publish` and approve it in
+   In-process Script Approval.
+
+Older ConfigMaps stay in the cluster for rollback. Live bundle on 2026-10-25:
+`jenkins-publisher-ci-c6a70f44808d`; the observer bundle `jenkins-acceptance-ci-8b584055a83c`.
+
+#### Evidence
+
+| Application SHA | What | Infrastructure commits |
+| --- | --- | --- |
+| `62bf447` (PR #68) | first automatic STAGE cycle with acceptance | `5c0b7c2` promotion, `ecea2d2` accepted |
+| `00862d5` (PR #69) | first `release` profile run, release-mode publication | `0155c04`, `fba9709` accepted |
+| `f96cb41` (PR #70) | publisher with DEV support, STAGE unchanged | `e509095`, `54fd02a` accepted |
+| `5243708` (PR #71) | `dev` = `release` gates | `9cbcfae`, `8f4d266` accepted |
+| `cce22bf` (PR #73) | STAGE and first DEV deployment from Jenkins | `68c90bc`, `5d4a9fb` accepted; DEV `90ec738` |
+
+Full-profile PR runs: PR #69 passed all 18 gates and `gitops` after the triage fixes below.
+
+#### Incidents and fixes, 2026-10-23 to 2026-10-25
+
+| Problem | Cause | Fix |
+| --- | --- | --- |
+| Observer smoke could never pass | No hairpin NAT: `151.115.96.5` refuses connections from vnet77 | `hostAliases` to HAProxy `.240` and egress `.240:443` (infrastructure PR #3) |
+| Observer Pod `RunContainerError` | Connection Secret mounted read-only at `/run/secrets` blocked the ServiceAccount token mount | Mount at `/run/agent-connection` (PR #4) |
+| Observer node vanished after a controller restart | JCasC replaces the node list on start; the node was created in the UI | `stage-observer` declared in `agents/controller-config.yaml` (PR #6) |
+| Publisher failed before the STAGE commit | `kubeconform -strict` had no schema for CNPG kinds, later for `Certificate` | Strict pinned CRD schemas, fail-closed (application PRs #67, #68) |
+| First `full` run red | 13 CVEs in dev tools (filelock, virtualenv); 3 HIGH in nginx 1.30.5 | `uv.lock` upgrade; `nginx-unprivileged:1.30.6-alpine` (PR #69) |
+| NONPROD OOM kills, nodes NotReady, Jenkins restart, STAGE DB Pending (2026-10-23/24) | Proxmox ballooning shrank K3s nodes to ~1.8–2.5 GiB | Fixed 8 GiB RAM per node (`4ce8dd5`); flaky e2e during the incident |
+| First `dev-build` failed `secrets` | Checkout fetched all branches; gitleaks matched SHA-256 fields in an unmerged docs branch | Fetch only the selected branch (PR #73) |
+| Publisher Pod stuck `ContainerCreating` | Deployment re-pinned before the new ConfigMap was applied | Order rule in the pinning procedure above |
+| PR #75 unit gate failed | DB-dependent test placed in the unit test path | Moved to integration tests (PR #75) |
+
+#### Temporary measures
+
+- Profile `pr` skips `backend-integration` and `frontend-tests` to speed up CI setup; the
+  nightly `full` run still executes them. Delete `PROFILES["pr"]` to return PRs to `full`.
+- The restored startup quiet-mode hook (`init.groovy.d/00-migration-hold.groovy`) still holds
+  the controller after every restart: cancel quiet mode after checking that only `app-ci/main`,
+  `trusted/publish` and `dev-build` are enabled.
+- Known acceptance gap: `/api/v1/utils/health-check/` returns `true` without a database, so
+  STAGE acceptance does not prove database connectivity.
 
 ### Initial working cycle — completed checkpoint
 
@@ -749,7 +881,7 @@ Synced/Healthy, running pair and STAGE URL. Do not call that automated acceptanc
       All related PR jobs are disabled again; nightly schedules and recurring
       folder indexing remain disabled.
 
-### Next pending work — execution order
+### Phase 9 work items — status
 
 **2026-10-24 reconciliation:** automatic STAGE receipts and manual DEV are
 present in live builds; treat items 2–4 below as completion/coverage review,
@@ -759,55 +891,32 @@ until that review is authorized; do not restore a historical main-only snapshot
 as a side effect of documentation maintenance. See the
 [current documentation review](OPERATIONAL_DOCUMENTATION_REVIEW_2026-10-24.md#jenkins-documentation-boundary).
 
-The following work remains in Phase 9. The initial cycle is complete; the whole
-phase remains open. This documentation update does not activate any pending
-component or broaden the live checkpoint. Observer integration and lock
-extension form one acceptance checkpoint; partial setup does not qualify PROD.
+Status of the Phase 9 work items on 2026-10-25 (how each was done is described in the
+current state above):
 
-1. [ ] **Finish controller restart cutover.** Adapt the retained startup
-   quiet-mode guard and verify restart with only main polling and trusted
-   publication enabled. Preserve zero controller executors, restored-home
-   checks, admin login and retained history. Until verified, controller restart
-   requires deliberate release from quiet mode after inspecting job/trigger
-   states; automatic continuation across restart is not claimed.
-2. [ ] **Activate automatic STAGE acceptance.** Reuse the preserved separate
-   observer and receipt helpers. Verify Argo Synced/Healthy, ready running
-   frontend/backend digests and the STAGE HTTPS smoke. Persist evidence tied
-   to application SHA, both digests and infrastructure/Argo revisions. Resolve
-   and document the observer's URL route; existing manual evidence used the
-   private HAProxy route and does not prove fresh external reachability.
-3. [ ] **Extend serialization through acceptance.** Keep the same publisher
-   lock through observation and receipt recording. Verify that stale builds,
-   failed acceptance and unrelated concurrent infrastructure changes cannot
-   qualify the wrong pair or overwrite newer evidence. Preserve exact-main
-   rechecks and the STAGE file allowlist.
-4. [ ] **Complete manual DEV promotion.** Adapt and verify the existing
-   pipelines/helpers without creating a duplicate pipeline or another migration.
-   DEV remains an explicit operator request, independent of the STAGE path.
-5. [ ] **Enable manual PROD promotion only after its gate passes.** First
-   implement AND live-verify the agreed automatic STAGE acceptance gate. Then
-   verify release-tag selection and promotion of the exact accepted pair,
-   without rebuilding. Until then the initial publisher exposes no PROD action
-   and the writer/CLI explicitly blocks it; manual smoke results and fixture
-   receipts do not satisfy the gate.
-6. [ ] **Verify manual rollback and review obsolete paths.** Exercise rollback
-   in a reviewed checkpoint, then determine which old GitOps paths can be
-   retired. Preserve recovery inputs and required history; do not delete paths
-   solely because the initial STAGE cycle works.
+1. [ ] **Controller restart cutover.** Partly done: nodes are declared in JCasC and survive a
+   restart (infrastructure PR #6). Open: the quiet-mode hook still requires a manual
+   *Cancel Shutdown* after every restart.
+2. [x] **Automatic STAGE acceptance.** Live since 2026-10-24 (application PR #65; infrastructure
+   PRs #1, #3, #4, #6); five accepted cycles, see Evidence. The observer reaches STAGE through
+   the private HAProxy route; fresh external reachability is not part of the check.
+3. [x] **Serialization through acceptance.** One `liora-stage-promotion` lock covers publication,
+   the STAGE commit, observation and the receipt; superseded candidates are skipped and new
+   promotions remove the previous receipt (fixture-tested). Open: a live failed-acceptance drill.
+4. [x] **Manual DEV promotion.** Job `dev-build`, `ACTION=dev` (application PRs #70, #71, #73;
+   infrastructure PR #10); first DEV deployment `90ec738` for `cce22bf`.
+5. [ ] **Manual PROD promotion.** Implemented and fixture/rehearsal-tested in application branch
+   `ci/prod-promotion` with publisher pin `ci/publisher-pin-9c2084c`. Open: merge, first release
+   `v1.0.0` of an accepted SHA, PROD verification.
+6. [ ] **Rollback and obsolete paths.** Rollback by re-release is implemented (redeploy branches,
+   `unchanged`). Open: live drill `v1.0.1` → `v1.0.0`; review of the obsolete application paths
+   (`deploy/`, `argocd/`, `monitoring/`, `k8s/`, `infra/`).
+7. [ ] **Return pull requests to `full`** once CI is stable (remove the temporary `pr` profile).
+8. [ ] **Acceptance database check** (close the health-check gap above).
+9. [ ] **Automate bundle pinning** (a trusted job that prepares the pin PR after a merge).
 
-Keep unrelated imported jobs, nightly schedules and recurring multibranch
-indexing disabled. Vulnerability scans/remediation remain deferred. Preserve the
-current Jenkins admin and private recovery inputs throughout. Database contents
-remain protected during Jenkins work; the separately authorized Phase 10 fresh
-CNPG replacement is an explicit exception for application database data only.
-
-The earlier local-only boundary is superseded by the live authorization above.
-The authorized initial live actions and application integration are complete;
-the remaining work is listed above. Branch-rule and GitHub App permission
-changes remain prohibited.
-Automatic acceptance remains the agreed final architecture; its activation is
-simply deferred behind the first working cycle. See
-[implementation report](PHASE9_PUBLICATION_IMPLEMENTATION.md).
+The pinned bundle is re-pinned to a merge commit after each feature lands; content is identical,
+only provenance changes. Branch-rule and GitHub App permission changes remain out of scope.
 
 ### Confirmed migration scope and activation boundary
 
