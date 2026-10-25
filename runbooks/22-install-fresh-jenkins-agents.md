@@ -80,8 +80,8 @@ kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n jenkins-publisher rollout
 - [ ] Open **Manage Jenkins → Nodes**. Confirm `host-ci` and `registry-publisher` are online, each with one executor, its matching label and remote root `/home/jenkins/agent`.
 - [ ] Confirm the controller remains in quiet mode, all jobs are disabled, and the queue is empty.
 - [ ] If a Pod is Ready but the node is offline, inspect that namespace's Pod events and agent container logs. Check the inbound identity and controller URL. Do not launch a build to test the connection.
-- [ ] Treat `stage-observer` separately from these two workers. Follow
-      [the acceptance gate](27-configure-jenkins-jobs.md#3-prepare-the-stage-observer-separately)
+- [ ] Connect `stage-observer` separately from these two workers with
+      [its installer](27-configure-jenkins-jobs.md#3-connect-the-stage-observer)
       before enabling automatic acceptance. Its node declaration alone does
       not install the workload.
 

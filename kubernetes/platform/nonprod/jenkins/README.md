@@ -9,8 +9,8 @@ for jobs and STAGE acceptance. Restore a stopped home with
 
 The `agents/` and `initial-cycle/` overlays select a specific controller home.
 Use the agent helper on a fresh or restored controller; do not apply those
-overlays directly over an unreviewed PVC. Keep the observer separate until
-its bundle pin and live delivery policy are reviewed.
+overlays directly over an unreviewed PVC. Install the observer separately with
+`scripts/kubernetes/deploy-jenkins-observer.py` (runbook 27, section 3).
 
 Historical migration states and execution evidence are in
 [Jenkins manifest history](../../../../docs/testreports/JENKINS_MANIFEST_HISTORY.md).

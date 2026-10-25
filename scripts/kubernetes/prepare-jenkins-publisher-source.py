@@ -15,6 +15,10 @@ ROOT = Path(__file__).resolve().parents[2]
 # compatible with the current pipelines, so it may be installed before the merge.
 # Re-pin to the merge commit afterwards.
 SOURCE_COMMIT = '9c2084ceb24cf8b39ee6309f3f648416f47bc719'
+# Merge of application PR #65. The read-only observer bundle carries only
+# stage_acceptance.py, unchanged since this commit; it stays on its own pin so
+# the live jenkins-acceptance-ci-8b584055a83c ConfigMap is reproduced exactly.
+OBSERVER_SOURCE_COMMIT = '8b584055a83c8f73be1bc3d81f085bbd0db02484'
 SOURCE_REPOSITORY = 'fastapi-traefik-devops/fastapi-traefik-liora-application'
 
 
@@ -31,10 +35,11 @@ def prepare(source, observer=False):
                       f'https://github.com/{SOURCE_REPOSITORY}.git',
                       f'https://github.com/{SOURCE_REPOSITORY}']:
         raise RuntimeError('Unexpected application repository')
-    resolved = git(source, 'rev-parse', SOURCE_COMMIT + '^{commit}').decode().strip()
-    if resolved != SOURCE_COMMIT:
+    commit = OBSERVER_SOURCE_COMMIT if observer else SOURCE_COMMIT
+    resolved = git(source, 'rev-parse', commit + '^{commit}').decode().strip()
+    if resolved != commit:
         raise RuntimeError('Unexpected application source commit')
-    entries = git(source, 'ls-tree', '-r', '-z', SOURCE_COMMIT, '--', 'ci/').split(b'\0')
+    entries = git(source, 'ls-tree', '-r', '-z', commit, '--', 'ci/').split(b'\0')
     data = {}
     for entry in filter(None, entries):
         metadata, path = entry.split(b'\t', 1)
@@ -50,19 +55,21 @@ def prepare(source, observer=False):
         if hashlib.sha1(blob).hexdigest() != oid:
             raise RuntimeError('Publisher source integrity failure')
         data[name] = content.decode('utf-8')
-    if not {'registry.py', 'phase1.py', 'candidate.py', 'promote.py', 'publish.sh',
-            'promote-stage.sh', 'publisher-action.sh', 'stage_acceptance.py', 'validate_gitops.py', 'validate.sh'} <= data.keys():
+    if observer:
+        if 'stage_acceptance.py' not in data:
+            raise RuntimeError('Required observer helper is missing')
+        data = {'stage_acceptance.py': data['stage_acceptance.py']}
+    elif not {'registry.py', 'phase1.py', 'candidate.py', 'promote.py', 'publish.sh',
+              'promote-stage.sh', 'publisher-action.sh', 'stage_acceptance.py', 'validate_gitops.py', 'validate.sh'} <= data.keys():
         raise RuntimeError('Required publisher helpers are missing')
     if sum(len(k.encode()) + len(v.encode()) for k, v in data.items()) > 900 * 1024:
         raise RuntimeError('Publisher bundle exceeds ConfigMap budget')
-    if observer:
-        data = {'stage_acceptance.py': data['stage_acceptance.py']}
     digest = hashlib.sha256(json.dumps(data, sort_keys=True).encode()).hexdigest()
     return {'apiVersion': 'v1', 'kind': 'ConfigMap', 'immutable': True,
-            'metadata': {'name': ('jenkins-acceptance-ci-' if observer else 'jenkins-publisher-ci-') + SOURCE_COMMIT[:12],
+            'metadata': {'name': ('jenkins-acceptance-ci-' if observer else 'jenkins-publisher-ci-') + commit[:12],
                          'namespace': 'jenkins-acceptance' if observer else 'jenkins-publisher',
                          'annotations': {'liora.aprt.info/source-repository': 'https://github.com/' + SOURCE_REPOSITORY,
-                                         'liora.aprt.info/source-commit': SOURCE_COMMIT,
+                                         'liora.aprt.info/source-commit': commit,
                                          'liora.aprt.info/data-sha256': digest}},
             'data': data}
 
@@ -79,7 +86,9 @@ def main():
     with args.output.open('x') as stream:
         json.dump(bundle, stream, indent=2)
         stream.write('\n')
-    print(json.dumps({'prepared': True, 'commit': SOURCE_COMMIT, 'files': len(bundle['data']),
+    print(json.dumps({'prepared': True, 'name': bundle['metadata']['name'],
+                      'commit': bundle['metadata']['annotations']['liora.aprt.info/source-commit'],
+                      'files': len(bundle['data']),
                       'data_sha256': bundle['metadata']['annotations']['liora.aprt.info/data-sha256']}))
 
 

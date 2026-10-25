@@ -68,8 +68,8 @@ metadata:
   name: stage-observer
   namespace: jenkins-acceptance
 spec:
-  # Applying this overlay needs live approval; create the stage-observer inbound
-  # node and its stage-observer-connection Secret first.
+  # deploy-jenkins-observer.py creates the stage-observer-connection Secret and
+  # the helper bundle before this Deployment.
   replicas: 1
   selector:
     matchLabels:
