@@ -276,7 +276,7 @@ or before/after content hash of original volumes was performed.
 
 The user asked to reuse existing repository documents/screenshots when a protected backup was unavailable. Historical sources are linked without duplication under [evidence/historical](astra-review/HISTORICAL_REFERENCES.md). Source infrastructure commit `ff154ae7a81858f5dcdf49d0582cb1d1074a6943`; application checkout `7aaf28740b227fee925e23383d6d589a3ea35336`. Both checkouts remained clean.
 
-The [existing Phase 10.2 report](../PHASE10_2_REPORT.md) reports these original-environment exercises on **23 October 2026**:
+The [existing Phase 10.2 report](../phases/phase-10/history/r2-backup-pitr-2026-10-23.md) reports these original-environment exercises on **23 October 2026**:
 
 | Environment | Historical backup ID | Historical target UTC | Historical usable-app time |
 |---|---|---|---|
@@ -288,7 +288,7 @@ These values are historical documented claims, not independently repeated local 
 
 ## Reproduction and remaining inputs
 
-Selected recorded scripts/manifests live in [disaster-recovery-local](astra-review/recorded-scripts/). test01.sh, test02.sh, prepare-app.py, prepare-argocd.py, prepare-monitoring.py, stage-real-jenkins.py, test07.py and test08.py preserve the implementation and scoped command patterns. Scripts assume this specifically identified lab and recorded state; read the evidence first. The recorded scripts preserve their original workspace assumptions and are not turnkey runners from this directory. Use astra-review/scripts/verify_local_lab.py for guarded read-only rechecks. test07.py intentionally creates a new synthetic table and is not blindly rerunnable over an existing checkpoint table. prepare-app.py refuses credential regeneration when private credentials already exist.
+Selected recorded scripts/manifests live in [disaster-recovery-local](astra-review/recorded-scripts). test01.sh, test02.sh, prepare-app.py, prepare-argocd.py, prepare-monitoring.py, stage-real-jenkins.py, test07.py and test08.py preserve the implementation and scoped command patterns. Scripts assume this specifically identified lab and recorded state; read the evidence first. The recorded scripts preserve their original workspace assumptions and are not turnkey runners from this directory. Use astra-review/scripts/verify_local_lab.py for guarded read-only rechecks. test07.py intentionally creates a new synthetic table and is not blindly rerunnable over an existing checkpoint table. prepare-app.py refuses credential regeneration when private credentials already exist.
 
 For a genuine new R2 restore, supply a protected DEV physical backup plus complete required WAL/metadata or an independently verified read-only R2 identity. Original writer/delete credentials must stay out of the restore lab. For recovered-app acceptance, also supply read-only registry access to the exact pinned backend/frontend digests and the required independent recovery inputs. A document or screenshot cannot supply the missing physical data.
 

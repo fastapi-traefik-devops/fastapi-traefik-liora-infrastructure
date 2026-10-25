@@ -1,5 +1,5 @@
 > Historical investigation of the retired Kubernetes Jenkins setup. The active
-> Docker-only Phase 1 guide is [infra/jenkins-host/README.md](infra/jenkins-host/README.md).
+> Docker-only Phase 1 guide is [infra/jenkins-host/README.md](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/blob/2a6e05a91489b2d9475e25157ab73d8ff9c98d08/infra/jenkins-host/README.md).
 
 # Jenkins on Kubernetes: troubleshooting cheat sheet
 

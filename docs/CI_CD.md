@@ -2,7 +2,7 @@
 
 How the Liora application gets from a pull request to DEV, STAGE and PROD, how to set the
 pipeline up from zero and how to use and operate it. Owner of the Jenkins setup: Tatiana
-Zainullina. Detailed history and evidence: [Phase 9](testreports/IMPLEMENTATION_PLAN.md#current-cicd-state--2026-10-25).
+Zainullina. Detailed history and evidence: [Phase 9](testreports/phases/phase-09/REPORT.md).
 
 ## 1. Overview
 

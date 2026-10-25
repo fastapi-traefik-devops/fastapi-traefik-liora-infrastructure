@@ -53,4 +53,4 @@ Use [runbook 15](../../runbooks/15-publish-application.md) to provision the priv
 Cloudflare DNS token and independent per-cluster issuer, verify namespace-local
 certificates and test renewal. Do not install the legacy distribution units.
 Retained Certbot state and synchronization scripts are historical rollback
-artifacts; see [Phase 11](../../docs/testreports/PHASE11_REPORT.md).
+artifacts; see [Phase 11](../../docs/testreports/phases/phase-11/history/certificate-migration-2026-10-24.md).

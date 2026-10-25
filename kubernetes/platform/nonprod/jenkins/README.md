@@ -13,4 +13,4 @@ overlays directly over an unreviewed PVC. Install the observer separately with
 `scripts/kubernetes/deploy-jenkins-observer.py` (runbook 27, section 3).
 
 Historical migration states and execution evidence are in
-[Jenkins manifest history](../../../../docs/testreports/JENKINS_MANIFEST_HISTORY.md).
+[Jenkins manifest history](../../../../docs/testreports/evidence/records/jenkins-manifest-history.md).

@@ -2,7 +2,7 @@
 
 **No real infrastructure recovery was executed.** Real evidence below is local software verification or read-only observation. Mock illustrations carry SIMULATED — NOT A REAL TEST.
 
-[Complete report](../../DISASTER_RECOVERY_TEST_REPORT.md)
+[Complete report](../../evidence/records/disaster-recovery-test-report.md)
 
 ## Actual local checks and read-only observations
 

@@ -12,7 +12,7 @@ flowchart LR
   P --> R[GHCR sha-full-Git-SHA tags]
 ```
 
-The reviewed pipeline source is [Jenkinsfile](../../Jenkinsfile) for `app-ci/main` and [Jenkinsfile.promote](../../Jenkinsfile.promote) for `trusted/publish`. JCasC and Job DSL load those local files at controller startup; regular CI source is checked out from the public repository's `main`. Changes must be committed to that branch before a Jenkins SCM checkout can execute them. Until then, use the local `python3 ci/phase1.py all` validation.
+The reviewed pipeline source is [Jenkinsfile](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/blob/2a6e05a91489b2d9475e25157ab73d8ff9c98d08/Jenkinsfile) for `app-ci/main` and [Jenkinsfile.promote](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/blob/2a6e05a91489b2d9475e25157ab73d8ff9c98d08/Jenkinsfile.promote) for `trusted/publish`. JCasC and Job DSL load those local files at controller startup; regular CI source is checked out from the public repository's `main`. Changes must be committed to that branch before a Jenkins SCM checkout can execute them. Until then, use the local `python3 ci/phase1.py all` validation.
 
 ## Start and verify
 

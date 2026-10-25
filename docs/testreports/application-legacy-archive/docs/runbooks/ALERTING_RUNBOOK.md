@@ -1,6 +1,6 @@
 # Alerting runbook
 
-Scope: existing `kind-fastapi-dev` monitoring with DEV and STAGE application alerts. Node alerts cover the shared local node. Rules are in [monitoring/rules/dev-stage.yaml](monitoring/rules/dev-stage.yaml); thresholds and durations were preserved. All eight have severity `warning`.
+Scope: existing `kind-fastapi-dev` monitoring with DEV and STAGE application alerts. Node alerts cover the shared local node. Rules are in [monitoring/rules/dev-stage.yaml](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/blob/2a6e05a91489b2d9475e25157ab73d8ff9c98d08/monitoring/rules/dev-stage.yaml); thresholds and durations were preserved. All eight have severity `warning`.
 
 ## Alert lifecycle and notification limits
 

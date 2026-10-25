@@ -18,7 +18,7 @@ explicit approval after NONPROD review. The old kind Slack Secret is not importe
 Follow the [Slack alerting runbook](../../../../docs/operations/SLACK_ALERTING.md)
 for current routing, validation, rollout gates and verification status.
 
-Apply the [approved status ownership guard](../../../../docs/testreports/PHASE8_ADMIN_VIP_DECISION.md) before
+Apply the [approved status ownership guard](../../../../docs/testreports/decisions/admin-vip-status-ownership.md) before
 creating VIP Services, then chart values with Helm and this directory with
 kubectl. Actual sequential rollout and acceptance are in the Phase 8 report.
 

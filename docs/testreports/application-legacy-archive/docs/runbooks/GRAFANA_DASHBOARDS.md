@@ -23,7 +23,7 @@ Open http://127.0.0.1:13000/login and use the existing admin account backed by `
 
 ## Provisioning and changes
 
-Source definitions: [monitoring/dashboards/platform.yaml](monitoring/dashboards/platform.yaml). The ConfigMap carries the existing `grafana_dashboard: '1'` label. [monitoring/bootstrap.py](monitoring/bootstrap.py) embeds the same definitions in Helm values for the currently active unpublished-source bootstrap.
+Source definitions: [monitoring/dashboards/platform.yaml](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/blob/2a6e05a91489b2d9475e25157ab73d8ff9c98d08/monitoring/dashboards/platform.yaml). The ConfigMap carries the existing `grafana_dashboard: '1'` label. [monitoring/bootstrap.py](https://github.com/fastapi-traefik-devops/fastapi-traefik-liora-application/blob/2a6e05a91489b2d9475e25157ab73d8ff9c98d08/monitoring/bootstrap.py) embeds the same definitions in Helm values for the currently active unpublished-source bootstrap.
 
 The live monitoring Application currently uses chart source plus inline values, not the unpublished Git paths. This change patched **only** `spec.source.helm.valuesObject.grafana.dashboards.default` on that Application, preserving chart version, authentication, datasource, storage, resources, monitors, alert rules and sync policy. Argo reconciles the existing resources; no Helm installation or stack reinstall. Do not blindly apply `argocd/app-monitoring.yaml` before its Git paths are published. No publication, commit or push was performed.
 

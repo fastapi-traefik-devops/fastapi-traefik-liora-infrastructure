@@ -1,6 +1,6 @@
 # Disaster recovery test evidence
 
-Start with [the report](../DISASTER_RECOVERY_TEST_REPORT.md) and the
+Start with [the report](../evidence/records/disaster-recovery-test-report.md) and the
 [evidence index](evidence/INDEX.md).
 
 These artifacts record the 24 October 2026 assessment/exercise. **No real
@@ -56,3 +56,10 @@ republished. Local Kubernetes storage, limited Argo/monitoring, synthetic Jenkin
 restore and logical/workload rollback passed. **R2 restore and complete application
 recovery remain blocked.** These results do not supersede historical simulations
 or prove full Proxmox disaster recovery.
+
+## Archive maintenance
+
+The [documentation rules](../../docs-structure.md) govern new records.
+Recorded generators retain their original report names and source paths.
+They are historical executable snapshots, not documentation maintenance tools.
+The [reports index](../README.md) locates moved phase records.

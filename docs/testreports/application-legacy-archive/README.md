@@ -5,7 +5,8 @@ Historical source: application repository commit
 
 These files preserve old kind/Docker-host deployment decisions, procedures
 and observations during repository cleanup. They are not installation
-entrypoints. Relative links and commands retain their original source context.
+entrypoints. Commands retain their original source context. Links to omitted source files
+use the original revision on GitHub; their existence was checked in local Git objects.
 Use current infrastructure runbooks for operations.
 
 Host image Dockerfiles, build scripts and tool locks were compared byte for

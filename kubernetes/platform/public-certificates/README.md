@@ -24,5 +24,5 @@ Errors withhold token values and API response bodies. Actual DNS-01 issuance
 verifies DNS write permission.
 
 The one-time Certbot handover and its private rollback artifacts are recorded in
-[the Phase 11 report](../../../docs/testreports/PHASE11_REPORT.md). The retained
+[the Phase 11 report](../../../docs/testreports/phases/phase-11/history/certificate-migration-2026-10-24.md). The retained
 legacy synchronization helpers are not part of fresh deployment or recovery.

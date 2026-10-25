@@ -18,7 +18,7 @@ clears foreign VIP status. `status-ownership.yaml` is the operator-approved
 compatibility guard: only this service account may update administrative-class
 Service status. Other classes, API VIPs, workload admission and network access
 are unaffected. The binding is included in this kustomization; apply it before
-creating VIP Services. See the [decision record](../../../../docs/testreports/PHASE8_ADMIN_VIP_DECISION.md).
+creating VIP Services. See the [decision record](../../../../docs/testreports/decisions/admin-vip-status-ownership.md).
 
 NONPROD admission and direct status/routing checks passed after enforcement.
 ServiceLB creates no administrative DaemonSets, but still retries its rejected
