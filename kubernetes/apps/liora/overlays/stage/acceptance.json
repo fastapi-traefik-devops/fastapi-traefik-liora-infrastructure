@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "status": "accepted",
+  "sha": "f295b4e52ce632f7e2d9280fdd5f5163a626988a",
+  "digests": {
+    "backend": "sha256:160875c4cef16487423fd2e16e86fe8f86638bdff348d92847ed690c7d95b17c",
+    "frontend": "sha256:3ac9b636798dbfb6864bda96303e3c00f55dab48b7af18a0d19d98484bbc9368"
+  },
+  "infrastructure_commit": "ac335581067ed2fd0de30dbdbbc5e86beb212341",
+  "argo_revision": "4312a155b293f1e2206998f4dfa85fe234827d67",
+  "checks": {
+    "argo": true,
+    "running_images": true,
+    "url": true
+  },
+  "pods": [
+    {
+      "component": "backend",
+      "uid": "e7770ab7-abce-489f-9d2f-e7182fa0215b",
+      "image_id": "ghcr.io/fastapi-traefik-devops/fastapi-backend@sha256:160875c4cef16487423fd2e16e86fe8f86638bdff348d92847ed690c7d95b17c"
+    },
+    {
+      "component": "frontend",
+      "uid": "a0401d19-d9ca-4ed3-969b-160ca36c13d3",
+      "image_id": "ghcr.io/fastapi-traefik-devops/fastapi-frontend@sha256:3ac9b636798dbfb6864bda96303e3c00f55dab48b7af18a0d19d98484bbc9368"
+    }
+  ],
+  "observed_at": "2026-10-25T21:42:20.592700+00:00"
+}
