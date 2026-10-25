@@ -33,6 +33,7 @@ kubeconfig
 !/recovery/*.example
 !/recovery/check_credentials.py
 !/recovery/check_credentials.sh
+!/recovery/make_recovery_backup.sh
 !/recovery/requirements.txt
 !/recovery/show_passwords.py
 !/recovery/test_check_credentials.py
