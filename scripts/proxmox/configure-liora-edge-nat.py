@@ -13,14 +13,17 @@ import tempfile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--https', action='store_true', help='also publish HTTPS after certificate verification')
+    parser.add_argument('--interface', default='vmbr0', help='public-facing Proxmox interface (default: vmbr0)')
     args = parser.parse_args()
     if os.geteuid() != 0:
         raise SystemExit('Run on the Proxmox host as root.')
+    if not re.fullmatch(r'[A-Za-z0-9_.:-]+', args.interface):
+        raise SystemExit('Invalid public interface name.')
     path = Path('/etc/nftables.d/custom77-nat.nft')
     original = path.read_text()
     ports = [(80, 'HTTP'), (443, 'HTTPS')] if args.https else [(80, 'HTTP')]
     rules = [
-        f'        iifname "vmbr0" tcp dport {port} dnat to 192.168.77.240:{port} comment "Liora edge {name}"'
+        f'        iifname "{args.interface}" tcp dport {port} dnat to 192.168.77.240:{port} comment "Liora edge {name}"'
         for port, name in ports
     ]
     active = '\n'.join(line for line in original.splitlines() if not line.lstrip().startswith('#'))

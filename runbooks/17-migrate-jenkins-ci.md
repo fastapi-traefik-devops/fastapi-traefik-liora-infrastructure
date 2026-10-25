@@ -62,6 +62,9 @@ Never place publishing credentials on `host-ci`.
 
 ## 3. Prepare pinned agents and jobs
 
+- [ ] For a new controller home, complete
+      [fresh agent installation](22-install-fresh-jenkins-agents.md) first.
+
 - [ ] Review the controller, agent images and resource settings under [Jenkins manifests](../kubernetes/platform/nonprod/jenkins/).
 - [ ] Prepare matching immutable trusted helper bundles from the helper's pinned application revision:
 
@@ -76,7 +79,8 @@ Standalone script: [prepare-jenkins-publisher-source.py](../scripts/kubernetes/p
 - [ ] Match bundle names to the publisher/observer volume references before installation.
 - [ ] Configure the three inbound nodes with one executor each and their matching labels.
 - [ ] Provision each agent's connection Secret privately; keep registry-write and GitOps credentials in Jenkins trusted scope.
-- [ ] Review the selected controller configuration and PVC before applying agent manifests. The `agents/` overlay includes a restored-home controller; do not apply it to an empty foundation home.
+- [ ] Review the selected controller configuration and PVC before applying
+      agent manifests.
 - [ ] Install job definitions from the reviewed application revision: multibranch `app-ci`, manual `dev-build` and trusted `trusted/publish`.
 - [ ] Validate the Declarative definitions before saving; approve only the reviewed publisher's required signatures/scripts.
 - [ ] Leave jobs and triggers disabled until all agent connections and credential scopes are correct.
@@ -116,6 +120,9 @@ kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n jenkins-acceptance get de
 - [ ] Recheck main polling. Do not use a helper that requests a build merely to leave quiet mode.
 
 ## 6. Controller backup and recovery checklist
+
+For recovery, use [the controller restore runbook](23-restore-jenkins-controller.md)
+with this artifact inventory.
 
 - [ ] Block new builds and promotions; drain active work.
 - [ ] Stop the controller before taking the final home copy.

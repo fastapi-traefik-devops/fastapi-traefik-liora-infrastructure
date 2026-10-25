@@ -1,6 +1,7 @@
 # Configure private platform access and monitoring
 
 **Where:** Management VM 200, infrastructure repository root.
+
 **Order:** NONPROD, then PROD.
 
 ## Preconditions

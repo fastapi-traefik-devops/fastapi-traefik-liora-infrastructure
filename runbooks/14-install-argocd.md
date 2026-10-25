@@ -1,6 +1,7 @@
 # Install Argo CD and adopt application resources
 
-**Where:** Reviewed infrastructure checkout on the management host.
+**Where:** Management VM 200, from the reviewed infrastructure checkout;
+open each Argo CD UI through Tailscale from an authorized browser.
 
 **Order:** NONPROD, then PROD. Preserve application data and private Secrets.
 
@@ -118,10 +119,10 @@ kubectl --kubeconfig="$kubeconfig" kustomize "$argocd_path/bootstrap"
 
 - [ ] For a fresh bootstrap, apply a reviewed local render of the child
       Applications with automation disabled. Use it to inspect Argo CD's
-      repository comparison. Run `set -o pipefail` in the same Bash shell
-      before this pipeline:
+      repository comparison:
 
 ```sh
+set -o pipefail
 kubectl --kubeconfig="$kubeconfig" kustomize "$argocd_path" |
   python3 scripts/kubernetes/render-manual-argocd-bootstrap.py |
   kubectl --kubeconfig="$kubeconfig" apply -f -
@@ -173,6 +174,7 @@ from the same approved image, and `HookSucceeded` removes the successful hook.
       selected cluster:
 
 ```sh
+set -o pipefail
 kubectl --kubeconfig="$kubeconfig" kustomize "$argocd_path/bootstrap" |
   python3 scripts/kubernetes/render-manual-argocd-bootstrap.py |
   kubectl --kubeconfig="$kubeconfig" apply -f -

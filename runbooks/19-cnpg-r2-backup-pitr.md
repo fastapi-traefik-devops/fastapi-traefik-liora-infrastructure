@@ -1,6 +1,8 @@
-# Operate PostgreSQL backups and recovery
+# Install and operate PostgreSQL backups
 
-**Where:** Management VM 200 for Kubernetes operations; VM 250 for the recurring coordinator.
+**Where:** Management VM 200 for Kubernetes commands; VM 250 for the
+backup coordinator.
+
 **Scope:** Physical base backups and continuous WAL archiving. Preserve application data and image digests.
 
 ## Configuration reference
@@ -22,12 +24,17 @@ clusters and R2. WAL archiving does not depend on VM 250.
 
 ## 1. Install backup dependencies and access
 
+### Install platform operators in either scenario
+
 - [ ] Confirm explicit kubeconfigs, selected revision and capacity.
 - [ ] Before modifying an existing database, record its digest pair and data/credential identities. Drain conflicting delivery work and hold Argo roots before children.
 - [ ] Install the pinned CNPG operator using [runbook 18](18-cloudnative-pg.md#1-install-the-operator).
-- [ ] Install the following independently in each cluster, setting `kubeconfig` explicitly:
+- [ ] Install the following independently in each cluster. Start with NONPROD,
+      confirm its API identity, then repeat with `config-prod`:
 
 ```sh
+kubeconfig="$HOME/.kube/config-dev-stage"  # Repeat with config-prod after NONPROD succeeds.
+kubectl --kubeconfig="$kubeconfig" config view --minify -o jsonpath='{.clusters[0].cluster.server}'
 kubectl --kubeconfig="$kubeconfig" apply --server-side --field-manager=liora-backup-platform -k kubernetes/platform/cert-manager
 kubectl --kubeconfig="$kubeconfig" -n cert-manager rollout status deployment/cert-manager --timeout=600s
 kubectl --kubeconfig="$kubeconfig" -n cert-manager rollout status deployment/cert-manager-webhook --timeout=600s
@@ -38,6 +45,13 @@ kubectl --kubeconfig="$kubeconfig" -n cnpg-system rollout status deployment/barm
 
 Pins and resource budgets: [cert-manager](../kubernetes/platform/cert-manager/UPSTREAM.md),
 [Barman plugin](../kubernetes/platform/barman-cloud/UPSTREAM.md).
+
+### Provision R2 access for a fresh database
+
+This section applies only to a fresh database. During disaster recovery,
+return to the [recovery checklist](../01-Disaster_recovery.md) after installing
+the operators. Use the selected backup and matching credentials in the
+[live database restore runbook](20-restore-live-postgresql.md).
 
 - [ ] Prepare `database_backups` in ignored `recovery/recovery.yaml`; see the [input schema](../recovery/README.md#database-physical-backup-r2-inputs).
 - [ ] Create all three application namespaces before running the all-environment provisioner. Do not create database Clusters yet on a fresh installation.
@@ -59,7 +73,25 @@ Standalone script: [provision.py](../scripts/backups/provision.py).
 ## 2. Install the coordinator on VM 250
 
 - [ ] Confirm Tailscale routing is active and the VM 250 SSH host key is trusted.
-- [ ] Place its trusted host-key entry in `.local-work/private/phase10-2/known_hosts`, as required by the installer. Do not disable host-key verification.
+- [ ] From VM 200, collect VM 250's SSH host key:
+
+```sh
+umask 077
+mkdir -p .local-work/private/phase10-2
+ssh-keyscan -t ed25519 192.168.77.250 > .local-work/private/phase10-2/known_hosts.candidate
+ssh-keygen -lf .local-work/private/phase10-2/known_hosts.candidate
+```
+
+- [ ] Through the trusted Proxmox VM console, compare that fingerprint with
+      `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on VM 250. Only after
+      they match, install the scanned key:
+
+```sh
+mv .local-work/private/phase10-2/known_hosts.candidate .local-work/private/phase10-2/known_hosts
+```
+
+Do not disable host-key verification. The installer requires the resulting
+`.local-work/private/phase10-2/known_hosts` path.
 - [ ] Install coordinator source, pinned dependencies, private configuration and systemd units:
 
 ```sh
@@ -114,7 +146,6 @@ kubectl --kubeconfig="$HOME/.kube/config-dev-stage" -n app-dev get backups.postg
 
 - [ ] Require current successful base backups, healthy continuous archiving and current telemetry.
 - [ ] For a manual full cycle, use `coordinator.py run` under the same identity and global fence. Do not create parallel per-environment schedules.
-- [ ] From another trusted administrator machine, use `coordinator.py --config /private/backup-coordinator.json --state-dir /private/backup-state run`; preserve the shared Lease protocol.
 
 The oneshot service is normally `inactive/dead` between cycles. A local lock,
 durable Lease, owner-session fence and deterministic Backup names prevent

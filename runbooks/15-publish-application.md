@@ -1,6 +1,7 @@
 # Publish application routing and trusted TLS
 
-**Where:** Reviewed infrastructure checkout and private management access.
+**Where:** Management VM 200, from the infrastructure checkout. Use the
+Cloudflare console for DNS checks and a separate client for public HTTPS tests.
 
 > [!IMPORTANT]
 > Preserve independent cluster, namespace, database and GitOps boundaries.
@@ -9,37 +10,43 @@
 
 ## 1. Inspect and provision the edge
 
-- [ ] Check that VM ID `240`, address `192.168.77.240`, and Proxmox capacity
-      are available. Review the [edge module](../edge/haproxy/README.md)
-      Terraform plan: **one** new edge VM, no changes or destruction of
-      existing VMs.
+- [ ] Check VM ID `240`, address `192.168.77.240`, and Proxmox
+      capacity. On an empty host, expect one new edge VM in the
+      [edge module](../edge/haproxy/README.md) plan. On a rebuilt host,
+      compare existing VM 240 and Terraform state first.
+- [ ] Stop on an unreviewed change or destruction of an existing VM.
 - [ ] Use protected recovery inputs and retain the module's local Terraform
       state in the operator archive.
 
 > [!NOTE]
-> Review the source template disk size and the resulting edge disk allocation. The module does not shrink existing disks.
+> Check the source template disk size and planned edge disk size.
+> The module does not shrink existing disks.
 
 - [ ] Apply the reviewed Terraform module, then the linked Ansible playbook:
 
 ```sh
+source recovery/.env
 terraform -chdir=edge/haproxy/terraform init
 terraform -chdir=edge/haproxy/terraform plan -out=edge.tfplan
 terraform -chdir=edge/haproxy/terraform apply edge.tfplan
-ansible-playbook -i edge/haproxy/ansible/inventory.yml edge/haproxy/ansible/site.yml
+ansible-playbook -i edge/haproxy/ansible/inventory.yml \
+  --private-key recovery/LIORA-id_ed25519 edge/haproxy/ansible/site.yml
 ```
 
-- [ ] Allow cloud-init and package upgrades to finish. Confirm the SSH
-      identity is authorized on the new VM; a forwarded agent can avoid
-      copying private keys onto VM 200.
+> [!WARNING]
+> On a replacement host or after restoring Terraform state, compare the plan
+> with `qm config 240` and the recovered state before applying. Stop if it
+> would replace a surviving edge VM or another resource unexpectedly.
+
+- [ ] Allow Cloud-Init and package upgrades to finish. Confirm the
+      archived SSH identity works on the new VM.
 - [ ] Validate `/etc/haproxy/haproxy.cfg` with `haproxy -c -f`. Require
       an active `haproxy` service. Certificate issuance runs in Kubernetes.
 
 > [!NOTE]
-> HAProxy accepts application Host/SNI names only. TLS passes through to
-> Traefik. Its backend sets are ServiceLB node addresses `.201`–`.203`
-> and `.211`–`.213`, never API VIPs `.11`/`.12`. Dedicated floating
-> ingress VIPs are not part of the accepted design. The single HAProxy edge
-> is a known failure domain; future edge HA is an optional separate review.
+> HAProxy accepts application Host/SNI names only and passes TLS to
+> Traefik. It sends traffic to ServiceLB nodes `.201`–`.203` and
+> `.211`–`.213`. It does not use API VIPs `.11` or `.12`.
 
 > [!WARNING]
 > Do not print tokens or store them in tracked tfvars.
@@ -48,14 +55,17 @@ ansible-playbook -i edge/haproxy/ansible/inventory.yml edge/haproxy/ansible/site
 
 - [ ] Obtain the **current** Proxmox public IPv4. Check for conflicting
       A/AAAA/CNAME records in the Cloudflare-managed `aprt.info` zone.
-- [ ] Create or verify only these application records without removing unrelated
-      records. DEV/STAGE use Cloudflare proxying and Access; PROD is DNS-only:
+- [ ] In Cloudflare, select zone `aprt.info`, then open **DNS → Records**.
+      For each name below, edit the existing A record or select
+      **Add record**. Set its content to the current Proxmox public IPv4
+      and its proxy status as shown. Save each record.
+      [Cloudflare DNS steps](https://developers.cloudflare.com/dns/manage-dns-records/how-to/create-dns-records/).
 
-| Host | Origin |
-| --- | --- |
-| `liora.aprt.info` | Current Proxmox public IPv4 |
-| `dev.liora.aprt.info` | Same public IPv4 |
-| `stage.liora.aprt.info` | Same public IPv4 |
+| Host | A record content | Proxy status |
+| --- | --- | --- |
+| `liora.aprt.info` | Current Proxmox public IPv4 | DNS only |
+| `dev.liora.aprt.info` | Same public IPv4 | Proxied |
+| `stage.liora.aprt.info` | Same public IPv4 | Proxied |
 
 Do not change unrelated DNS records, proxy settings or Access rules. The
 DNS-01 issuer is restricted to the three exact names above. Its only DNS writes
@@ -165,11 +175,25 @@ do not replace verification of the certificate actually served.
       certificates exist, set `liora_tls_nonprod_enabled: true` in the
       reviewed edge inventory and rerun its playbook.
 - [ ] Check the private edge with normal certificate validation and SNI.
-      **Only after** every selected route serves a matching trusted
-      certificate, publish HTTPS on Proxmox:
+      Only after every route serves a matching trusted certificate,
+      copy the NAT helper from VM 200 to Proxmox:
 
 ```sh
-python3 /path/to/configure-liora-edge-nat.py --https
+scp -i recovery/LIORA-id_ed25519 \
+  scripts/proxmox/configure-liora-edge-nat.py \
+  root@192.168.77.1:/root/configure-liora-edge-nat.py
+ssh -i recovery/LIORA-id_ed25519 root@192.168.77.1
+```
+
+- [ ] On Proxmox, find the public-facing interface. Confirm it owns the
+      current public route, then pass its name to the helper:
+
+```sh
+ip route get 1.1.1.1
+read -r -p 'Public-facing bridge/interface: ' public_interface
+ip -br address show "$public_interface"
+python3 /root/configure-liora-edge-nat.py --https --interface "$public_interface"
+nft list table ip custom77_nat
 ```
 
 - [ ] Recheck VM 200 SSH and all pre-existing forwarding rules after
@@ -224,6 +248,12 @@ bash scripts/local-python.sh scripts/kubernetes/verify-application-ui.py
 Configure protection/Access for DEV/STAGE and DNS-only access for PROD.
 Preserve the environment-specific policy during recovery.
 
+- [ ] In Cloudflare Zero Trust, open
+      **Access controls → Applications**. Create or inspect the
+      self-hosted applications for `dev.liora.aprt.info` and
+      `stage.liora.aprt.info`. Add each public hostname and its
+      intended Allow policy. Do not add a PROD Access application.
+      [Cloudflare Access steps](https://developers.cloudflare.com/cloudflare-one/access-controls/applications/http-apps/self-hosted-public-app/).
 - [ ] With trusted origin certificates, use Full (strict) for proxied
       DEV/STAGE. Check that unauthenticated browser access encounters Access,
       approved users can log in, and PROD remains publicly accessible.

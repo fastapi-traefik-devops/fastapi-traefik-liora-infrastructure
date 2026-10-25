@@ -1,16 +1,16 @@
 # Install CloudNativePG databases
 
 **Where:** Management VM 200, infrastructure repository root.
-**Use for:** Empty databases on a new installation.
+**Use for:** Install the CNPG operator in either scenario; sections 2–4
+initialize and verify empty databases on a new installation only.
 **Order:** DEV → STAGE → PROD. Complete each environment before continuing.
 
 ## Preconditions
 
 - [ ] Complete [K3s installation](09-install-k3s-clusters.md).
-- [ ] Select the environment and export the variables in [runbook 13](13-deploy-application-manifests.md#1-select-and-render-one-environment).
-- [ ] Confirm the target namespace has no application database or data-bearing PVCs.
-- [ ] For data recovery, use the [disaster recovery procedure](../01-Disaster_recovery.md). Do not initialize an empty database in place of a restore.
-- [ ] Provision `backend-secrets`, `db-secrets` and registry access using runbook 13.
+- [ ] For operator installation, select one cluster's kubeconfig in the command below, then repeat for the other cluster. For fresh database creation, select the environment and export its variables in [runbook 13](13-deploy-application-manifests.md#1-select-and-render-one-environment).
+- [ ] Before sections 2–4 on a fresh installation, confirm the target namespace has no application database or data-bearing PVCs and provision `backend-secrets`, `db-secrets` and registry access using runbook 13.
+- [ ] For data recovery, complete section 1 only, then return to the [disaster recovery procedure](../01-Disaster_recovery.md). Do not initialize an empty database in place of a restore.
 - [ ] Reserve resources for the database, backup sidecar and operators.
 
 ## Configuration reference
@@ -41,6 +41,7 @@ quotas; data and WAL share the backing filesystem.
 - [ ] Install independently in NONPROD and PROD:
 
 ```sh
+kubeconfig="$HOME/.kube/config-dev-stage"  # Repeat with config-prod after NONPROD succeeds.
 kubectl --kubeconfig="$kubeconfig" config view --minify -o jsonpath='{.clusters[0].cluster.server}'
 kubectl --kubeconfig="$kubeconfig" apply --server-side --field-manager=liora-cnpg-platform -k kubernetes/platform/cloudnative-pg
 kubectl --kubeconfig="$kubeconfig" -n cnpg-system rollout status deployment/cnpg-controller-manager --timeout=600s
@@ -65,11 +66,8 @@ Do not rotate passwords by editing a Secret alone.
 
 ## 3. Create and initialize the database
 
-- [ ] Return to [runbook 13, section 3](13-deploy-application-manifests.md#3-bring-up-postgresql-then-prestart).
-- [ ] Apply the selected configuration, ObjectStore, Cluster and stable `db` Service.
-- [ ] Wait for Cluster Ready and all requested instances.
-- [ ] Run the existing prestart Job. Require Alembic completion before application startup.
-- [ ] Start the application using the selected existing digest pair.
+- [ ] Follow [runbook 13, section 3](13-deploy-application-manifests.md#3-bring-up-postgresql-then-prestart)
+      for the exact apply order and readiness checks.
 
 Argo CD uses database readiness at wave -2, prestart at wave 0 and application
 workloads at wave 1. The fresh database initialization creates the application

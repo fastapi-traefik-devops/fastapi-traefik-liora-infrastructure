@@ -58,6 +58,22 @@ Standalone script: [split-application-render.py](../scripts/kubernetes/split-app
 
 ## 2. Prepare namespace, credentials and storage
 
+### Create the selected namespace
+
+After selecting and verifying the environment in section 1, create its
+namespace if it does not exist. This step is also used before the backup
+provisioner; stop here and return to the scenario checklist when preparing all
+three namespaces ahead of application deployment.
+
+- [ ] Create or confirm the selected namespace:
+
+```sh
+kubectl --kubeconfig="$kubeconfig" create namespace "$namespace" --dry-run=client -o yaml |
+  kubectl --kubeconfig="$kubeconfig" apply -f -
+```
+
+### Provision fresh application credentials
+
 - [ ] Validate private inputs:
 
 ```sh
@@ -66,11 +82,10 @@ RECOVERY_DIR="$recovery_dir" bash recovery/check_credentials.sh --all --offline
 
 - [ ] Review named-field warnings without deleting private data. Resolve errors before continuing.
 - [ ] Confirm recovery files are ignored, access-restricted and stored in the off-host recovery kit.
-- [ ] Create the selected namespace and fresh application Secrets:
+- [ ] Create fresh application Secrets only after confirming the namespace and
+      private inputs belong to this empty environment:
 
 ```sh
-kubectl --kubeconfig="$kubeconfig" create namespace "$namespace" --dry-run=client -o yaml |
-  kubectl --kubeconfig="$kubeconfig" apply -f -
 python3 scripts/kubernetes/bootstrap-application-secrets.py
 kubectl --kubeconfig="$kubeconfig" -n "$namespace" get secrets
 ```
@@ -82,8 +97,18 @@ The helper refuses existing application Secrets or PVCs. It creates
 Do not use it to rotate credentials or restore an existing database account.
 
 - [ ] Provision derived CNPG credentials using [runbook 18](18-cloudnative-pg.md#2-provision-database-credentials).
-- [ ] Provision R2 access and install dependencies using [runbook 19, section 1](19-cnpg-r2-backup-pitr.md#1-install-backup-dependencies-and-access). Current database manifests require the backup plugin and R2 Secret at startup.
-- [ ] Provision the DNS credential and issuers using [runbook 15, sections 2–3](15-publish-application.md#2-dns-and-certificate-prerequisites).
+- [ ] Confirm the Barman plugin and this environment's R2 Secret exist.
+      If absent, complete [backup access setup](19-cnpg-r2-backup-pitr.md#1-install-backup-dependencies-and-access)
+      before database startup.
+- [ ] Confirm the DNS credential and issuer exist. If absent, complete
+      [certificate preparation](15-publish-application.md#2-dns-and-certificate-prerequisites).
+
+```sh
+kubectl --kubeconfig="$kubeconfig" -n cnpg-system get deployment barman-cloud
+kubectl --kubeconfig="$kubeconfig" -n "$namespace" get secret r2-backup
+kubectl --kubeconfig="$kubeconfig" -n cert-manager get secret cloudflare-dns-token
+kubectl --kubeconfig="$kubeconfig" get clusterissuer letsencrypt-cloudflare
+```
 - [ ] Check that no `liora-storage-check` Pod/PVC already exists, then create the storage probe:
 
 ```sh
