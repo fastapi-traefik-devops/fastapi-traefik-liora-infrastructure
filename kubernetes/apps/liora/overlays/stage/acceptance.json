@@ -1,13 +1,13 @@
 {
   "version": 1,
   "status": "accepted",
-  "sha": "bad88a611b5cba741c17ef9c719beb14efa84275",
+  "sha": "a3661f55fad38c40bdeb6cd6550d3832d04b50f9",
   "digests": {
     "backend": "sha256:640a26a7e474b5fb686cbfc000518f32766d8bd25b91e721d086bfd32e898c40",
     "frontend": "sha256:3ac9b636798dbfb6864bda96303e3c00f55dab48b7af18a0d19d98484bbc9368"
   },
-  "infrastructure_commit": "4aef58c1af749eaf9f297cb197db7e1992696f99",
-  "argo_revision": "4aef58c1af749eaf9f297cb197db7e1992696f99",
+  "infrastructure_commit": "737950dd82bef8e9f8bc5fc24a0e0ecba1b5bf24",
+  "argo_revision": "737950dd82bef8e9f8bc5fc24a0e0ecba1b5bf24",
   "checks": {
     "argo": true,
     "running_images": true,
@@ -16,14 +16,14 @@
   "pods": [
     {
       "component": "backend",
-      "uid": "a974aa5a-a6bb-4fc5-a875-6b683c275bae",
+      "uid": "80ce0709-c9ed-4976-a6e4-78382373cb7c",
       "image_id": "ghcr.io/fastapi-traefik-devops/fastapi-backend@sha256:640a26a7e474b5fb686cbfc000518f32766d8bd25b91e721d086bfd32e898c40"
     },
     {
       "component": "frontend",
-      "uid": "2f27c3f6-e822-431e-98dd-2c035ef11203",
+      "uid": "cafd374f-27fd-4603-a29b-e0864de60b8b",
       "image_id": "ghcr.io/fastapi-traefik-devops/fastapi-frontend@sha256:3ac9b636798dbfb6864bda96303e3c00f55dab48b7af18a0d19d98484bbc9368"
     }
   ],
-  "observed_at": "2026-10-25T15:40:15.079812+00:00"
+  "observed_at": "2026-10-25T16:31:30.962983+00:00"
 }
