@@ -86,8 +86,6 @@ def stage(source, destination, admin_config=None):
     stopped = manifest.get('mode') == 'stopped-preservation' and manifest.get('consistent') is True
     if len(records) != 1 or not (stopped or manifest.get('mode') == 'online-preservation-only'):
         raise ValueError('Unsupported preservation manifest')
-    if stopped and admin_config is None:
-        raise ValueError('Stopped-source migration requires the current admin configuration')
     home = source / 'home.tar.gz'
     if digest(home) != records[0]['sha256'] or home.stat().st_size != records[0]['bytes']:
         raise ValueError('Source integrity mismatch')
@@ -116,6 +114,13 @@ def stage(source, destination, admin_config=None):
         # Jenkins 2.585 derives the directory from secrets/hudson.model.User.DIRNAMES.
         # Retain that source salt and replace account bytes at its expected path.
         admin_path = candidates[0]
+    if stopped and admin_config is None:
+        with tarfile.open(home, 'r:gz') as archive:
+            admins = [ET.fromstring(archive.extractfile(member).read()) for member in archive
+                      if member.isfile() and normalized(member.name).startswith('users/')
+                      and normalized(member.name).endswith('/config.xml')]
+        if sum(user.findtext('id') == 'admin' and bool(user.findtext('.//passwordHash')) for user in admins) != 1:
+            raise ValueError('Archive must contain exactly one complete administrator account')
     destination.mkdir(mode=0o700, parents=True, exist_ok=False)
     target = destination / 'inactive-home.tar.gz'
     counts = {'job_configs': 0, 'build_records': 0, 'user_configs': 0,
@@ -164,7 +169,7 @@ def stage(source, destination, admin_config=None):
             hook.mode, hook.uid, hook.gid, hook.size = 0o600, 1000, 1000, len(HOLD)
             staged.addfile(hook, io.BytesIO(HOLD))
     result = {'mode': 'offline-inactive-restore-candidate' if stopped else 'offline-inactive-preview',
-              'consistent': stopped, 'admin_login_preserved': admin_path is not None, 'restore_tested': False,
+              'consistent': stopped, 'admin_login_preserved': stopped, 'restore_tested': False,
               'ready_for_cutover': False, 'source_sha256': records[0]['sha256'],
               'archive_sha256': digest(target), 'counts': counts,
               'warning': 'No runtime hold or restore has been tested.' if stopped else

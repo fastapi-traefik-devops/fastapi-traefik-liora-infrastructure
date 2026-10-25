@@ -88,7 +88,7 @@ class StagingTests(unittest.TestCase):
             self.assertNotIn(SECRET, stdout.getvalue() + stderr.getvalue())
             # Source material is never rewritten, including after failed staging.
             self.assertEqual(hashlib.sha256(home.read_bytes()).hexdigest(), source_digest)
-            if alteration or missing_admin or wrong_admin or encrypted_admin:
+            if alteration or wrong_admin or encrypted_admin:
                 self.assertEqual(status, 1)
                 self.assertFalse(list(root.glob('.local-work/private/phase9/*/manifest.json')))
                 return
@@ -125,8 +125,9 @@ class StagingTests(unittest.TestCase):
                         self.assertIsNone(config.find('.//org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction'))
                         self.assertEqual(config.findtext('actions/retainedAction'), 'keep')
                 elif stopped and name == 'users/admin/config.xml':
-                    self.assertEqual(output[name], admin_bytes)
-                    self.assertNotIn(SECRET.encode(), output[name])
+                    self.assertEqual(output[name], files[name] if missing_admin else admin_bytes)
+                    if not missing_admin:
+                        self.assertNotIn(SECRET.encode(), output[name])
                 else:
                     self.assertEqual(output[name], data)
             self.assertIn(b'doQuietDown', output['init.groovy.d/00-migration-hold.groovy'])
@@ -158,7 +159,7 @@ class StagingTests(unittest.TestCase):
     def test_stopped_copy_preserves_current_admin_in_source_user_directory(self):
         self.invoke(stopped=True)
 
-    def test_stopped_copy_requires_current_admin(self):
+    def test_stopped_copy_preserves_archived_admin_by_default(self):
         self.invoke(stopped=True, missing_admin=True)
 
     def test_current_admin_identity_must_match(self):
