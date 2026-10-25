@@ -19,6 +19,20 @@ The [recovery capability register](OPERATIONAL_DOCUMENTATION_REVIEW_2026-10-24.m
 separates implemented isolated PITR from full live disaster restoration, generic
 Jenkins backup/restore, etcd/off-host kit work and full-system recovery exercises.
 
+## Fixed node-memory configuration — 2026-10-25
+
+The owner requires 8 GiB fixed RAM for all six K3s nodes, with no ballooning.
+Implementation and local validation: [fixed-memory report](K3S_FIXED_MEMORY_2026-10-25.md).
+The Terraform module uses `memory_mb = 8192` and `memory.floating = 0`, rejects
+lower memory overrides and removes `memory_min_mb`. Examples, architecture and
+VM provisioning instructions use the same policy. Historical incident reports
+retain the original 2 GiB ballooning configuration and its symptoms.
+
+This change updates provisioning code; it does not apply Terraform, restart
+nodes or establish the current guest/kubelet memory state. Review private tfvars
+before the next plan and verify guest/Kubernetes capacity during the planned
+infrastructure maintenance. Preserve cluster data and existing state.
+
 ## Target architecture
 
 Current operating-model decisions are recorded in

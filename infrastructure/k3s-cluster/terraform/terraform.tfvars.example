@@ -7,10 +7,9 @@ gateway     = "192.168.77.1"
 ssh_user            = "root-admin"
 ssh_public_key_file = "../../../recovery/LIORA-id_ed25519.pub"
 
-cpu_type      = "x86-64-v2-AES"
-cpu_cores     = 2
-memory_mb     = 8192 # Maximum memory (MiB)
-memory_min_mb = 2048 # Minimum ballooned memory (MiB)
+cpu_type  = "x86-64-v2-AES"
+cpu_cores = 2
+memory_mb = 8192 # Fixed RAM per K3s VM (MiB); ballooning disabled
 
 # Keep false for the first create. After Ansible installs qemu-guest-agent,
 # this can be changed to true and applied again.

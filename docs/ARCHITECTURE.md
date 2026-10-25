@@ -31,9 +31,10 @@ systems, K3s and the edge. VM 200 is the operator host for these tools and holds
 separate NONPROD and PROD kubeconfigs. Each infrastructure module has its own
 state and recovery procedure. Credentials, private keys and state stay outside Git.
 
-Each K3s cluster uses embedded etcd across its three server nodes. CPU, memory,
-replicas and storage requests are explicit configuration within the resource
-budget of the single Proxmox host.
+Each of the six K3s server VMs has 8 GiB fixed RAM with ballooning disabled
+(24 GiB per cluster, 48 GiB total). Each cluster uses embedded etcd across its
+three server nodes. CPU, workload resources, replicas and storage requests are
+explicit configuration within the resource budget of the single Proxmox host.
 
 ## Cluster networking
 

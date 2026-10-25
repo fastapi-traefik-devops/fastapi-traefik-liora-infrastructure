@@ -70,15 +70,14 @@ variable "cpu_cores" {
 }
 
 variable "memory_mb" {
-  description = "Maximum K3s VM memory in MiB."
+  description = "Fixed memory per K3s VM in MiB; ballooning is disabled."
   type        = number
   default     = 8192
-}
 
-variable "memory_min_mb" {
-  description = "Minimum K3s VM memory in MiB with Proxmox ballooning."
-  type        = number
-  default     = 2048
+  validation {
+    condition     = var.memory_mb == 8192
+    error_message = "Each K3s node requires 8192 MiB (8 GiB) of fixed RAM."
+  }
 }
 
 variable "qemu_agent_enabled" {

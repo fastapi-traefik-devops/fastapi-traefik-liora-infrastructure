@@ -18,8 +18,8 @@ Proxmox to inspect existing VMs and storage.
 - [ ] Confirm `recovery/LIORA-id_ed25519.pub` is the SSH public key for
       all six nodes.
 - [ ] Check local `infrastructure/k3s-cluster/terraform/terraform.tfvars`.
-      If it overrides memory, use `memory_mb = 8192` for the maximum and
-      `memory_min_mb = 2048` for the minimum.
+      Require `memory_mb = 8192` (8 GiB fixed RAM) and remove any retired
+      `memory_min_mb` assignment. Ballooning is disabled by the module.
 - [ ] Inspect VMs `201`–`203` and `211`–`213` in Proxmox before planning. VM `200` is reserved for management and is not part of either cluster.
 
 ## Initialize Terraform and reconcile state
@@ -61,7 +61,8 @@ The provider's [VM import format](https://github.com/bpg/terraform-provider-prox
       additions: VMs `201`–`203` and `211`–`213`.
 - [ ] Check template `9013`, bridge `vnet77`, selected Cloud-Init storage,
       static IPs, user `root-admin`, and the recovery public key.
-- [ ] Check ballooned memory: 2 GiB minimum and 8 GiB maximum.
+- [ ] Require `memory.dedicated = 8192` and `memory.floating = 0` for every node.
+      Reserve 48 GiB for the six cluster VMs, plus capacity for the host and other VMs.
       Inspect every update or replacement of an imported VM.
 
    ```sh
@@ -109,3 +110,16 @@ terraform plan
 ```
 
 - [ ] Confirm all six VMs are running with the planned IDs, names, IPs, VNet, Cloud-Init key, and storage. Continue to [K3s installation](09-install-k3s-clusters.md), where Ansible checks SSH access.
+
+## Check node memory
+
+- [ ] In Proxmox, require 8192 MiB RAM and ballooning disabled for VMs `201`–`203` and `211`–`213`.
+- [ ] After K3s installation, compare guest memory with Kubernetes capacity and allocatable:
+
+```sh
+kubectl --kubeconfig="$HOME/.kube/config-dev-stage" get nodes -o 'custom-columns=NAME:.metadata.name,CAPACITY:.status.capacity.memory,ALLOCATABLE:.status.allocatable.memory'
+kubectl --kubeconfig="$HOME/.kube/config-prod" get nodes -o 'custom-columns=NAME:.metadata.name,CAPACITY:.status.capacity.memory,ALLOCATABLE:.status.allocatable.memory'
+```
+
+- [ ] Require node capacity consistent with an 8 GiB guest; allocatable is lower because of operating-system/Kubernetes reservations. Stop if a node still reports approximately 2 GiB.
+- [ ] For existing nodes, use a planned maintenance window for any required restart; do not reboot all servers together or delete workloads/PVCs to correct a memory mismatch.
