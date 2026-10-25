@@ -29,6 +29,12 @@ flowchart LR
 | STAGE | automatic: every new commit on application main | release gates, then automatic acceptance |
 | PROD | manual release: `vX.Y.Z` tag + reviewed infrastructure PR | accepted STAGE receipt for the exact SHA and image pair; no rebuild |
 
+The course rubric requests automatic DEV deployment and approved PROD deployment.
+This project uses STAGE as the automatic integration environment: successful
+application main builds deploy there automatically. DEV supports manual deployment
+of selected branches, while PROD requires a reviewed promotion of the exact images
+accepted in STAGE.
+
 Key rules:
 
 - **Only the trusted publisher holds write credentials** (`ghcr-write`, `gitops-app`). Builds run
